@@ -20,7 +20,7 @@ Connect-ServiceFabricCluster -ConnectionEndpoint $ClusterName -KeepAliveInterval
 
 Compact script example
 
-```PowerShell
+```powershell
 #For Cert based authentication
 $ClusterName= "{yourclustername}.{region}.cloudapp.azure.com:19000"
 $Certthumprint = "{yourCertificateThumbprint}"
@@ -32,7 +32,7 @@ Connect-ServiceFabricCluster @connectArgs
 
 Unsecure cluster connection
 
-```PowerShell
+```powershell
 #For unsecure based authentication
 $ClusterName= "{yourclustername}.{region}.cloudapp.azure.com:19000"
 
@@ -43,7 +43,7 @@ Connect-ServiceFabricCluster @connectArgs
 
 Simple AAD Authentication
 
-```PowerShell
+```powershell
 $ClusterName= "{yourclustername}.{region}.cloudapp.azure.com:19000"
 $Certthumprint = "{yourCertificateThumbprint}"
 Connect-ServiceFabricCluster -ConnectionEndpoint $ClusterName -KeepAliveIntervalInSec 10 -AzureActiveDirectory -ServerCertThumbprint $Certthumprint
@@ -51,7 +51,7 @@ Connect-ServiceFabricCluster -ConnectionEndpoint $ClusterName -KeepAliveInterval
 
 Custom AAD Authentication
 
-```PowerShell
+```powershell
 $TenantID = "<guid>"
 $AppIDWeb = "<guid>" #ClientID for webApp
 $AppIDNative = "<guid>" #ClientID for nativeApp
@@ -73,7 +73,7 @@ Connect-ServiceFabricCluster -AzureActiveDirectory -ConnectionEndpoint $ClusterN
 
 ## Troubleshooting connection over a specific port
 
-```PowerShell
+```powershell
 Test-NetConnection -ComputerName "contosocluster.westus2.cloudapp.azure.com" -Port 19000 -InformationLevel "Detailed"
 
     ComputerName : contosocluster.westus2.cloudapp.azure.com

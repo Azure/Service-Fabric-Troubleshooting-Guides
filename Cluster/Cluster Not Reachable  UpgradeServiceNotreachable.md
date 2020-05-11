@@ -39,8 +39,8 @@ Sometimes the cluster is not recoverable and the worst case is a full rebuild of
 - RDP to one or more VMs
 - Identify the list of running processes that match Fabric*.exe (in taskmanager)
   - Are any of them restarting (changing PID)
-    - If Fabric.exe is running and not restarting may indicate the VM is fine. Collect rest of the information from the VM and repeat the process for other VMs.
-    - If Fabric.exe is not running or restarting, collect rest of the information. It is not necessary to gather information from rest of the VMs at this point.
+    - Fabric.exe running and not restarting may indicate the VM is fine. Collect rest of the information listed below from the VM and repeat the process for other VMs.
+    - Fabric.exe not running or restarting often, collect rest of the information listed below. It is not necessary to gather information from rest of the VMs at this point.
 - Check for errors in event viewer under the following
   - Applications and Services Logs \ Microsoft Service Fabric
   - Windows Logs \ System
