@@ -115,6 +115,12 @@ If an upgrade is unfeasible or the cluster is already affected:
 - Install the CA cert with Thumbprint 626d44e704d1ceabe3bf0d53397464ac8080142c in the LocalMachine\Disallowed store in certlm.msc, "Local Computer\Untrusted certificates"  
 - Issuer/ Intermediate certficate 626d44e704d1ceabe3bf0d53397464ac8080142c can be downloaded from https://www.digicert.com/kb/digicert-root-certificates.htm
 
+example command once .crt file has been downloaded:  
+
+```cmd
+certutil -addstore -enterprise Disallowed .\DigiCertSHA2SecureServerCA-2.crt
+```
+
 or  
 
 - If you have multiple certificates with the same CN from authorized issuers, fall back to one not signed by the shared key by deleting the conflicting certificate and let the cluster choose another certificate. This change however has risks and should be tested.
