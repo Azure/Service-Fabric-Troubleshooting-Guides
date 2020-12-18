@@ -1,14 +1,23 @@
+# [UPDATE 10/05/2019] 
+Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher), secured with self-signed certificates declared by thumbprint can now follow this much simpler process.
+
+* [Fix Expired Cluster Certificate](../Security/How%20to%20recover%20from%20an%20Expired%20Cluster%20Certificate.md)
+
+
 ## [Symptom] 
    * Cluster will show 'Upgrade Service not reachable' warning message 
    * Unable to see the SF Nodes in the Portal or SFX 
    * Error message related to Certificate in  '%SystemRoot%\System32\Winevt\Logs\Microsoft-ServiceFabric%4Admin.evtx'  event log from 'transport' resource  
 
 ## [Verify Certificate Expired Status on Node]
-   * RDP to any node
-        * Open the Certificate Mgr for 'Local Computer' and check below details  
+   * [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node
+        * Open the Certificate Manager for 'Local Computer' (certlm.msc) and check below details  
         * Make sure certificate is ACL'd to network service  
         * Verify the Certificate Expiry, if it is expired, follow below steps  
 
+![](../media/certlm1.png)  
+
+![](../media/certlm2.png)  
 
 ## [Fix Expired Cert steps] 
 
@@ -104,11 +113,12 @@
 6. **Wait** for the virtual machine scale set Updating the secondary certificate to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
 
 ![GET](../media/resourcemgr2.png)
+
 ![resources.azure.com vmss provisioningstate succeeded](../media/resourcemgr11.png)
 
 ## For each node { 
 
-7. RDP into **each** VM and make sure the certificate is present and the private key is already ACL'd to 'Network Service'  
+7. [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) into **each** VM and make sure the certificate is present and the private key is already ACL'd to 'Network Service'  
 
     * Run certlm.msc 
 
@@ -118,17 +128,24 @@
 
     * If RDP to each node is not feasible, alternatively you can automate through [Desired State Configuration](https://docs.microsoft.com/en-us/powershell/dsc/azuredsc "https://docs.microsoft.com/en-us/powershell/dsc/azuredsc")
 
- 
+
 
 8. Stop both "Azure Service Fabric Node Bootstrap Agent" and "Microsoft Service Fabric Host Service" service (run in this exact order) 
 
-    * net stop ServiceFabricNodeBootstrapAgent 
+    * net stop ServiceFabricNodeBootstrapAgent
 
-    * net stop FabricHostSvc 
+    * net stop FabricHostSvc
 
-  
+There is a race condition where sometimes `FabricInstallerService.exe` is stuck in a crashing loop. If this is the case first launch `Services.msc` and identify 3 Services:
 
-9. Locate ClusterManifest.current in the SvcFab folder like "D:\SvcFab\_sys_0\Fabric\ClusterManifest.current.xml" according to actual datapath deployed, and copy to somewhere like D:\Temp\clusterManifest.xml 
+- FabricInstallerService
+- FabricHostService
+- ServiceFabricNodeBootstrapAgent
+
+Then, set all services to startup type `Disabled`, and reboot the machine. On reboot `FabricInstallerService.exe` should never run. Continue along with the TSG.
+
+
+9. Locate ClusterManifest.current in the SvcFab folder like "D:\SvcFab\\_sys_0\Fabric\ClusterManifest.current.xml" according to actual datapath deployed, and copy to somewhere like D:\Temp\clusterManifest.xml 
 
     * Modify the D:\Temp\clusterManifest.xml and update with new thumbprint. 
 
@@ -136,16 +153,18 @@
 
         Note: Any deployed applications using old cert for application encryption\ssl\etc will need to be redeployed with the updated thumbprint *after* the cluster is restored 
 
-  
+10. Locate InfrastructureManifest.xml in the SvcFab folder like "D:\SvcFab\_sys_0\Fabric\Fabric.Data\InfrastructureManifest.xml" 
 
-10. Run following cmdlet to update the Service Fabric cluster, replace the SvcFab path according to the actual path.  Verify the Node version, use latest 
+    * Replace all occurrences of old cert with the new thumbprint
+
+11. Run following cmdlet to update the Service Fabric cluster, replace the SvcFab path according to the actual path.  Verify the Node version, use latest 
 
     ```PowerShell
     New-ServiceFabricNodeConfiguration -FabricDataRoot "D:\SvcFab" -FabricLogRoot "D:\SvcFab\Log" -ClusterManifestPath "D:\Temp\clusterManifest.xml" -InfrastructureManifestPath "D:\SvcFab\_sys_0\Fabric\Fabric.Data\InfrastructureManifest.xml"  
     ```
  
 
-11. Edit  "D:\SvcFab\\_sys_0\Fabric\Fabric.Package.current.xml" 
+12. Edit  "D:\SvcFab\\_sys_0\Fabric\Fabric.Package.current.xml" 
 
     * Note down the value for "ManifestVersion" attribute on line 2
 
@@ -160,21 +179,28 @@
     * Replace all occurrences of old cert with the new thumbprint 
 
 
-12. Start both services "Microsoft Service Fabric Host Service" and "Azure Service Fabric Node Bootstrap Agent" again **(run in this exact order)**
+13. Start both services "Microsoft Service Fabric Host Service" and "Azure Service Fabric Node Bootstrap Agent" again **(run in this exact order)**
 
     ```PowerShell
     net start FabricHostSvc 
     net start ServiceFabricNodeBootstrapAgent 
     ```
- 
 
-13. Open Task Manager and wait for a couple minutes to verify that **FabricGateway.exe** is running 
+If you previously encountered a race condition where `FabricInstallerService.exe` was crashing you can use `Services.msc` to reset the following services to these startup types. Be sure to set:
+
+- FabricInstallerService -> Manual
+- FabricHostService -> Automatic
+- ServiceFabricNodeBootstrapAgent -> Automatic
+
+
+
+14. Open Task Manager and wait for a couple minutes to verify that **FabricGateway.exe** is running 
 
 ## } 
 
  
 
-14. After all the nodes have been updated (or at least all the seed nodes), services should be restarting and when ready you see FabricGateway.exe running you can try to reconnect to the cluster over SFX and PowerShell from your development computer.  *(Make sure you have installed the new Cert to `CurrentUser\My`)*
+15. After all the nodes have been updated (or at least all the seed nodes), services should be restarting and when ready you see FabricGateway.exe running you can try to reconnect to the cluster over SFX and PowerShell from your development computer.  *(Make sure you have installed the new Cert to `CurrentUser\My`)*
 
 ```PowerShell
         $ClusterName= "clustername.cluster_region.cloudapp.azure.com:19000"
@@ -191,10 +217,10 @@
 
 **Note 1**: Please give the cluster 5-10 minutes to reconfigure.  Generally speaking you will see Fabric.exe startup in the Task Manager and a few minutes later FabricGateway.exe will start when the nodes have finished reconfiguration.  At this point the cluster should be running using the new certificate and SFX endpoint and PowerShell endpoints should be accessible. 
 
-**Note 2**: The cluster will not display Nodes/applications/or reflect the new Thumbprint yet because the Service Fabric Resource Provider (SFRP) record for this cluster has not be updated with the new thumbprint.  To correct this Contact Azure support to **create a support ticket from the Azure Portal for this cluster** to request the final update to the SFRP record with the new thumbprint.
+**Note 2**: The cluster will not display Nodes/applications/or reflect the new Thumbprint yet because the Service Fabric Resource Provider (SFRP) record for this cluster has not been updated with the new thumbprint.  To correct this Contact Azure support to **create a support ticket from the Azure Portal for this cluster** to request the final update to the SFRP record with the new thumbprint.
 
 
-15. The last step will be to update the cluster ARM template to reflect the location of the new Cert / Keyvault 
+16. The last step will be to update the cluster ARM template to reflect the location of the new Cert / Keyvault 
 
     * Go to https://resources.azure.com --> Resource Group --> providers --> Microsoft.Compute --> vmss 
 

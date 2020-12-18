@@ -3,11 +3,13 @@
 powershell script to collect service fabric node diagnostic data
 
 To download and execute:
-(new-object net.webclient).downloadfile("http://aka.ms/event-log-manager.ps1","$(get-location)\event-log-manager.ps1");
-(new-object net.webclient).downloadfile("https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sf-collect-node-info.ps1","$(get-location)\sf-collect-node-info.ps1");
-.\sf-collect-node-info.ps1 -certInfo -remoteMachines 10.0.0.4,10.0.0.5,10.0.0.6,10.0.0.7,10.0.0.8
+invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sf-collect-node-info.ps1" -outFile "$pwd\sf-collect-node-info.ps1";
+.\sf-collect-node-info.ps1
 
-upload to workspace sfgather* dir or zip
+optional download for event logs:
+invoke-webRequest "http://aka.ms/event-log-manager.ps1" -outFile "$pwd\event-log-manager.ps1";
+
+if working with microsoft support, upload to workspace the outputted sfgather* directory or zip file
 
 .DESCRIPTION
     To enable script execution, you may need to Set-ExecutionPolicy Bypass -Force
@@ -48,10 +50,9 @@ upload to workspace sfgather* dir or zip
 .NOTES
     File Name  : sf-collect-node-info.ps1
     Author     : microsoft service fabric support
-    Version    : 181029 fix -UseBasicParsing, add docker enumeration, tested on server core 1803
+    Version    : 200721 add collection of blg and sfcontainer.out files
     History    :
-                190209 continue on event-log-manager.ps1 not available
-                181031 fix path for clipboard
+                200719 add collection of log files default 60 min
 
 .EXAMPLE
     .\sf-collect-node-info.ps1
@@ -80,8 +81,9 @@ upload to workspace sfgather* dir or zip
     api version for testing fabricgateway endpoint with service fabric rest api calls.
 
 .PARAMETER certInfo
-    switch to enable collection of certificate store export to troubleshoot certificate issues.
+    bool to enable collection of certificate store export to troubleshoot certificate issues.
     thumbprints and serial numbers during export will be partially masked.
+    default true.
 
 .PARAMETER endTime
     end time in normal dateTime formatting.
@@ -94,6 +96,10 @@ upload to workspace sfgather* dir or zip
 
 .PARAMETER externalUrl
     url to use for network connectivity tests.
+
+.PARAMETER logMin
+    if greater than 0, minutes of log files to collect based on last write time
+    default 30 minutes
 
 .PARAMETER netmonMin
     minutes to run network trace at end of collection after all jobs run.
@@ -157,7 +163,7 @@ upload to workspace sfgather* dir or zip
 [CmdletBinding()]
 param(
     [string]$workdir,
-    [switch]$certInfo,
+    [bool]$certInfo = $true,
     [string]$eventLogNames = "System$|Application$|wininet|dns|Fabric|http|Firewall|Azure|insight",
     [string]$externalUrl = "bing.com",
     [dateTime]$startTime = (get-date).AddDays(-7),
@@ -175,10 +181,14 @@ param(
     [switch]$noNet,
     [switch]$noSF,
     [switch]$quiet,
-    [string]$runCommand
+    [string]$runCommand,
+    [int]$logMin = 30,
+    [string]$defaultFabricLogRoot = 'd:\svcfab\log',
+    [string]$defaultFabricDataRoot = 'd:\svcfab'
 )
 
 Set-StrictMode -Version Latest
+$PSModuleAutoLoadingPreference = 2
 $ErrorActionPreference = "Continue"
 $timer = get-date
 $currentWorkDir = get-location
@@ -192,13 +202,14 @@ $global:zipFile = $null
 $trustedHosts = $null
 $winrmClientInfo = $null
 $eventScriptFile = $null
+$wEvtUtilLogs = [collections.arraylist]@()
 $sfCollectInfoDir = "sfColInfo-"
 $restTimeoutSec = 15
 $serviceFabricInstallReg = "HKLM:\software\microsoft\service fabric"
 $warnonZoneCrossingReg = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
 $disableWarnOnZoneCrossing = $false
 $useBasicParsing = [bool](get-command invoke-webrequest).Parameters.UseBasicParsing
-$global:allparams = @{}
+$global:allparams = @{ }
 [string]$scriptUrl = 'https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sf-collect-node-info.ps1'
 
 # to bypass self-signed cert validation check
@@ -218,28 +229,24 @@ public class IDontCarePolicy : ICertificatePolicy {
 
 [System.Net.ServicePointManager]::CertificatePolicy = new-object IDontCarePolicy 
 
-function main()
-{
+function main() {
     $error.Clear()
     write-warning "to troubleshoot this issue, this script may collect sensitive information similar to other microsoft diagnostic tools."
     write-warning "information may contain items such as ip addresses, process information, user names, or similar."
     write-warning "information in directory / zip can be reviewed before uploading to workspace."
     write-warning "see: https://github.com/Azure/Service-Fabric-Trou-Guides/blob/master/Cluster/SF%20collect%20node%20info.md"
 
-    if (!$workDir -and $remoteMachines)
-    {
+    if (!$workDir -and $remoteMachines) {
         $workdir = "$($env:temp)\$($sfCollectInfoDir)$((get-date).ToString("yy-MM-dd-HH-mm"))"
     }
-    elseif (!$workDir)
-    {
+    elseif (!$workDir) {
         $workdir = "$($env:temp)\$($sfCollectInfoDir)$($env:COMPUTERNAME)"
     }
 
     $parentWorkDir = [io.path]::GetDirectoryName($workDir)
     $eventScriptFile = "$($parentWorkdir)\event-log-manager.ps1"
 
-    if ((test-path $workdir))
-    {
+    if ((test-path $workdir)) {
         remove-item $workdir -Recurse -Force
     }
 
@@ -247,19 +254,16 @@ function main()
     Set-Location $parentworkdir
     $logFile = "$($workdir)\sf-collect-node-info.log"
 
-    if (!$legacy)
-    {
+    if (!$legacy) {
         Start-Transcript -Path $logFile -Force
     }
 
     write-host "starting $(get-date)"
 
-    if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
-    {   
+    if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {   
         Write-Warning "please restart script in administrator powershell session"
 
-        if (!$noadmin)
-        {
+        if (!$noadmin) {
             Write-Warning "if unable to run as admin, restart and use -noadmin switch. This will collect less data that may be needed. exiting..."
             return $false
         }
@@ -267,8 +271,7 @@ function main()
 
     
     $disableSecuritySetting = (Get-ItemProperty -Path $warnonZoneCrossingReg -Name "WarnonZoneCrossing" -ErrorAction SilentlyContinue)
-    if (!$disableSecuritySetting -or $disableSecuritySetting.WarnonZoneCrossing -eq 1)
-    {
+    if (!$disableSecuritySetting -or $disableSecuritySetting.WarnonZoneCrossing -eq 1) {
         New-ItemProperty -Path $warnonZoneCrossingReg -Name "WarnonZoneCrossing" -Value 0 -PropertyType DWORD -Force | Out-Null
         $disableWarnOnZoneCrossing = $true
     }
@@ -278,29 +281,25 @@ function main()
     get-job | remove-job -Force
 
     # stage event-log-manager script
-    if (!$noEventLogs -and !(test-path $eventScriptFile))
-    {
-        try 
-        {
-            (new-object net.webclient).downloadfile("http://aka.ms/event-log-manager.ps1", $eventScriptFile)
+    if (!$noEventLogs -and !(test-path $eventScriptFile)) {
+        try {
+            invoke-webRequest "http://aka.ms/event-log-manager.ps1" -outFile $eventScriptFile
         }
-        catch 
-        {
+        catch {
             write-warning ($error | Out-String)
-            write-warning "unable to download $eventScriptFile. event logs will not be copied!"
+            write-warning "unable to download $eventScriptFile. using wEvtUtil.exe instead"
             $error.Clear()
-            $noEventLogs = $true            
+            Remove-Item $eventScriptFile
+            $wEvtUtilLogs.AddRange((get-childItem -Path "$env:SystemRoot\system32\winevt\Logs" | Where-Object BaseName -imatch $eventLogNames | Select-Object FullName))
         }
     }
 
-    if ($remoteMachines)
-    {
+    if ($remoteMachines) {
         # setup local (source) machine for best chance of success
         $winrmClientInfo = (winrm get winrm/config/client)
         $trustedHostsPattern = "TrustedHosts = (.*)"
         
-        if ([regex]::IsMatch($winrmClientInfo, $trustedHostsPattern))
-        {
+        if ([regex]::IsMatch($winrmClientInfo, $trustedHostsPattern)) {
             $trustedHosts = ([regex]::matches($winrmClientInfo , $trustedHostsPattern)).groups[1].value
         }
 
@@ -309,19 +308,16 @@ function main()
         # switch to arraylist
         $remoteMachines = new-object collections.arraylist(, $remoteMachines)
 
-        foreach ($machine in (new-object collections.arraylist(, $remoteMachines)))
-        {
+        foreach ($machine in (new-object collections.arraylist(, $remoteMachines))) {
             $adminPath = "\\$($machine)\admin$\temp"
 
-            if (!(Test-path $adminPath))
-            {
+            if (!(Test-path $adminPath)) {
                 Write-Warning "unable to connect to $($machine) to start diagnostics. skipping!"
                 $remoteMachines.Remove($machine)
                 continue
             }
 
-            if (!$noEventLogs)
-            {
+            if (!$noEventLogs -and !$wEvtUtilLogs) {
                 copy-item -path $eventScriptFile -Destination $adminPath -force
             }
 
@@ -334,16 +330,13 @@ function main()
                         $workDir = "$($parentWorkDir)\$($sfCollectInfoDir)$($machine)"
                         $scriptPath = "$($parentWorkDir)\$($scriptUrl -replace `".*/`",`"`")"
 
-                        if (!(test-path $scriptPath))
-                        {
-                            (new-object net.webclient).downloadfile($scriptUrl, $scriptPath)
+                        if (!(test-path $scriptPath)) {
+                            invoke-webRequest $scriptUrl -outFile $scriptPath
                         }
 
                         [text.stringbuilder]$sb = new-object text.stringbuilder
-                        foreach ($item in $allParams.GetEnumerator())
-                        {
-                            if ($item.key -imatch "quiet" -or $item.key -imatch "noadmin" -or $item.key -imatch "workdir")
-                            {
+                        foreach ($item in $allParams.GetEnumerator()) {
+                            if ($item.key -imatch "quiet" -or $item.key -imatch "noadmin" -or $item.key -imatch "workdir") {
                                 continue
                             }
 
@@ -359,13 +352,11 @@ function main()
 
         monitor-jobs
 
-        foreach ($machine in $remoteMachines)
-        {
+        foreach ($machine in $remoteMachines) {
             $adminPath = "\\$($machine)\admin$\temp"
             $foundZip = $false
 
-            if (!(Test-path $adminPath))
-            {
+            if (!(Test-path $adminPath)) {
                 Write-Warning "unable to connect to $($machine) to copy zip. skipping!"
                 continue
             }
@@ -376,18 +367,15 @@ function main()
             $sourcePathZip = "$($sourcePath).zip"
             $destPathZip = "$($destPath).zip"
 
-            if ((test-path $sourcePathZip))
-            {
+            if ((test-path $sourcePathZip)) {
                 write-host "copying file $($sourcePathZip) to $($destPathZip)" -ForegroundColor Magenta
                 Copy-Item $sourcePathZip $destPathZip -Force
                 remove-item $sourcePathZip -Force
                 $foundZip = $true
             }
             
-            if ((test-path $sourcePath))
-            {
-                if (!$foundZip)
-                {
+            if ((test-path $sourcePath)) {
+                if (!$foundZip) {
                     write-host "copying folder $($sourcePath) to $($destPath)" -ForegroundColor Magenta
                     Copy-Item $sourcePath $destPath -Force -Recurse
                     compress-file $destPath
@@ -396,62 +384,61 @@ function main()
 
                 remove-item $sourcePath -Recurse -Force
             }
-            else
-            {
+            else {
                 write-host "warning: unable to find diagnostic files in $($sourcePath)"
             }
         }
 
         $global:zipFile = compress-file $workDir
     }
-    else
-    {
+    else {
         process-machine
     }
 
-    if (!($quiet) -and (test-path "$($env:systemroot)\explorer.exe"))
-    {
+    if (!($quiet) -and (test-path "$($env:systemroot)\explorer.exe")) {
         start-process "explorer.exe" -ArgumentList $parentWorkDir
     }
 }
 
-function process-machine()
-{
+function process-machine() {
     write-host "processing machine"
     
-    if (!$noEventLogs)
-    {
+    if (!$noEventLogs) {
         add-job -jobName "event logs" -scriptBlock {
-            param($workdir = $args[0], $parentWorkdir = $args[1], $eventLogNames = $args[2], $startTime = $args[3], $endTime = $args[4], $eventScriptFile = $args[5])
-            $eventScriptFile = "$($parentWorkdir)\event-log-manager.ps1"
-            if (!(test-path $eventScriptFile))
-            {
-                (new-object net.webclient).downloadfile("http://aka.ms/event-log-manager.ps1", $eventScriptFile)
-            }
-
+            param($workdir = $args[0], $parentWorkdir = $args[1], $eventLogNames = $args[2], $startTime = $args[3], $endTime = $args[4], $eventScriptFile = $args[5], $wEvtUtilLogs = $args[6])
+            $eventScriptFile = "$parentWorkdir\$([io.path]::GetFileName($eventScriptFile))"
             $tempLocation = "$($workdir)\event-logs"
-            if (!(test-path $tempLocation))
-            {
+
+            if (!(test-path $tempLocation)) {
                 New-Item -ItemType Directory -Path $tempLocation    
             }
 
-            $argList = "-File $($parentWorkdir)\event-log-manager.ps1 -eventLogNamePattern `"$($eventlognames)`" -eventStartTime `"$($startTime)`" -eventStopTime `"$($endTime)`" -eventDetails -merge -uploadDir `"$($tempLocation)`" -nodynamicpath"
-            write-host "event logs: starting command powershell.exe $($argList)"
-            start-process -filepath "powershell.exe" -ArgumentList $argList -Wait -WindowStyle Hidden -WorkingDirectory $tempLocation
-        } -arguments @($workdir, $parentWorkdir, $eventLogNames, $startTime, $endTime, $eventScriptFile)
+            if (!(test-path $eventScriptFile) -and $wEvtUtilLogs) {
+                foreach ($file in $wEvtUtilLogs) {
+                    write-host "exporting file $($file.FullName)"
+                    write-host "wEvtUtil.exe export-log "$($file.FullName)" "$tempLocation\$([io.path]::GetFileName($file.FullName))" /logfile:true"
+                    wEvtUtil.exe export-log "$($file.FullName)" "$tempLocation\$([io.path]::GetFileName($file.FullName))" /logfile:true
+                }
+            }
+            elseif ((test-path $eventScriptFile)) {
+                $argList = "-File $($parentWorkdir)\event-log-manager.ps1 -eventLogNamePattern `"$($eventlognames)`" -eventStartTime `"$($startTime)`" -eventStopTime `"$($endTime)`" -eventDetails -merge -uploadDir `"$($tempLocation)`" -nodynamicpath"
+                write-host "event logs: starting command powershell.exe $($argList)"
+                start-process -filepath "powershell.exe" -ArgumentList $argList -Wait -WindowStyle Hidden -WorkingDirectory $tempLocation
+            }
+            else {
+                write-host "error:unable to collect event logs"    
+            }
+        } -arguments @($workdir, $parentWorkdir, $eventLogNames, $startTime, $endTime, $eventScriptFile, $wEvtUtilLogs)
     }
 
-    if (!$noOs)
-    {
-        if (!$legacy)
-        {
+    if (!$noOs) {
+        if (!$legacy) {
             add-job -jobName "windows update" -scriptBlock {
                 param($workdir = $args[0]) 
                 Get-WindowsUpdateLog -LogPath "$($workdir)\windowsupdate.log.txt"
             } -arguments $workdir
         }
-        else
-        {
+        else {
             copy-item "$env:systemroot\windowsupdate.log" "$($workdir)\windowsupdate.log.txt"
         }
 
@@ -467,8 +454,7 @@ function process-machine()
             $error.clear()
             (docker version)
             
-            if($error)
-            {
+            if ($error) {
                 $error.Clear()
                 write-host "docker not installed"
                 return
@@ -516,12 +502,10 @@ function process-machine()
         Invoke-Expression "reg.exe query HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall /s /v DisplayName > $($workDir)\installed-apps.reg.txt"
     
         write-host "features"
-        if ($workstation)
-        {
+        if ($workstation) {
             Invoke-Expression "dism /online /get-features | out-file $($workdir)\windows-features.txt"
         }
-        else
-        {
+        else {
             Get-WindowsFeature | Where-Object "InstallState" -eq "Installed" | out-file "$($workdir)\windows-features.txt"
         }
     
@@ -538,10 +522,8 @@ function process-machine()
         
         add-job -jobName "azure config files" -scriptBlock {
             param($workdir = $args[0])
-            function copy-files($sourceDir)
-            {
-                if (!(test-path $sourceDir))
-                {
+            function copy-files($sourceDir) {
+                if (!(test-path $sourceDir)) {
                     return
                 }
                 copy-item -path $sourceDir -Destination $workDir -Filter "*.json" -Recurse -ErrorAction SilentlyContinue
@@ -556,12 +538,10 @@ function process-machine()
         } -arguments @($workdir)
     }
 
-    if (!$noNet)
-    {
+    if (!$noNet) {
         add-job -jobName "network port tests" -scriptBlock {
             param($workdir = $args[0], $networkTestAddress = $args[1], $ports = $args[2])
-            foreach ($port in $ports)
-            {
+            foreach ($port in $ports) {
                 $ProgressPreference = "silentlycontinue"
                 test-netconnection -port $port -ComputerName $networkTestAddress -InformationLevel Detailed | out-file -Append "$($workdir)\network-port-test.txt"
             }
@@ -569,12 +549,10 @@ function process-machine()
 
         add-job -jobName "check external connection" -scriptBlock {
             param($workdir = $args[0], $externalUrl = $args[1], $useBasicParsing = $args[2])
-            if($useBasicParsing)
-            {
+            if ($useBasicParsing) {
                 [net.httpWebResponse](Invoke-WebRequest $externalUrl -UseBasicParsing).BaseResponse | out-file "$($workdir)\network-external-test.txt"
             }
-            else
-            {
+            else {
                 [net.httpWebResponse](Invoke-WebRequest $externalUrl).BaseResponse | out-file "$($workdir)\network-external-test.txt"
             }
 
@@ -595,8 +573,7 @@ function process-machine()
             Invoke-Expression "nslookup $($networkTestAddress) | out-file -Append $($workdir)\nslookup.txt"
         } -arguments @($workdir, $networkTestAddress, $externalUrl)
 
-        if ((test-path "C:\Windows\System32\LogFiles\HTTPERR"))
-        {
+        if ((test-path "C:\Windows\System32\LogFiles\HTTPERR")) {
             write-host "http log files"
             copy-item -path "C:\Windows\System32\LogFiles\HTTPERR\*" -Destination $workdir -Force -Filter "*.log"
         }
@@ -613,6 +590,16 @@ function process-machine()
             Get-NetTCPConnection | Where-Object RemotePort -eq 1026 | out-file "$($workdir)\connected-nodes.txt"
         } -arguments @($workdir)
 
+        add-job -jobName "get-netadapterchecksumoffload" -scriptBlock {
+            param($workdir = $args[0])
+            get-netadapterchecksumoffload | format-list * | out-file "$($workdir)\netadapterchecksumoffload.txt"
+        } -arguments @($workdir)
+
+        add-job -jobName "get-netnatstaticmapping" -scriptBlock {
+            param($workdir = $args[0])
+            get-netnatstaticmapping | format-list * | out-file "$($workdir)\netnatstaticmapping.txt"
+        } -arguments @($workdir)
+
         write-host "netstat ports"
         Invoke-Expression "netstat -bna > $($workdir)\netstat.txt"
 
@@ -625,27 +612,24 @@ function process-machine()
         Invoke-Expression "winrm get winrm/config/client > $($workdir)\winrm-config.txt" 
     }
 
-    if ($certInfo)
-    {
+    if ($certInfo) {
         write-host "certs (output scrubbed)"
-        [regex]::Replace((Get-ChildItem -Path cert: -Recurse | format-list * | out-string), "[0-9a-fA-F]{20}`r`n", "xxxxxxxxxxxxxxxxxxxx`r`n") | out-file "$($workdir)\certs.txt"
+        certutil -verifystore MY | out-file "$($workdir)\certs.txt"
+        [regex]::Replace((get-content -raw "$($workdir)\certs.txt"), "[0-9a-fA-F]{20}`r`n", "xxxxxxxxxxxxxxxxxxxx`r`n") | out-file "$($workdir)\certs.txt"
     }
     
     #
     # service fabric information
     #
-    if (!$noSF)
-    {
+    if (!$noSF) {
         write-host "service fabric reg"
         Invoke-Expression "reg.exe query `"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Service Fabric`" /s > $($workDir)\serviceFabric.reg.txt"
         Invoke-Expression "reg.exe query HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\ServiceFabricNodeBootStrapAgent /s > $($workDir)\serviceFabricNodeBootStrapAgent.reg.txt"
 
-        if ((test-path $serviceFabricInstallReg))
-        {
+        if ((test-path $serviceFabricInstallReg)) {
             enumerate-serviceFabric
         }
-        else
-        {
+        else {
             write-warning "service fabric is *not* installed on this machine!"
         }
     }
@@ -653,8 +637,7 @@ function process-machine()
     write-host "waiting for $($jobs.Count) jobs to complete"
     monitor-jobs
 
-    if ($perfmonMin -gt 0)
-    {
+    if ($perfmonMin -gt 0) {
         add-job -jobName "perfmon" -scriptBlock {
             param($workdir = $args[0], $perfmonMin = $args[1])
             $command = "Logman.exe create counter sfnodediag -o $($workdir)\PerfCounters.blg -f bincirc -v mmddhhmm -max 300 -c " `
@@ -677,8 +660,7 @@ function process-machine()
         } -arguments @($workdir, $perfmonMin)
     }
 
-    if ($netmonMin -gt 0)
-    {
+    if ($netmonMin -gt 0) {
         add-job -jobName "netmon" -scriptBlock {
             param($workdir = $args[0], $netmonMin = $args[1])
             Invoke-Expression "netsh trace start capture=yes overwrite=yes maxsize=1024 tracefile=$($workdir)\net.etl filemode=circular > $($workdir)\netmon.txt"
@@ -687,8 +669,7 @@ function process-machine()
         } -arguments @($workdir, $netmonMin)
     }
 
-    if ($runCommand)
-    {
+    if ($runCommand) {
         add-job -jobName "runCommand" -scriptBlock {
             param($workdir = $args[0], $runCommand = $args[1])
             Invoke-Expression "$($runCommand) > $($workdir)\runCommand.txt"
@@ -696,42 +677,58 @@ function process-machine()
     }
 
     write-host "formatting xml files"
-    foreach ($file in (get-childitem -filter *.xml -Path "$($workdir)" -Recurse))
-    {
+    foreach ($file in (get-childitem -filter *.xml -Path "$($workdir)" -Recurse)) {
         # format xml in output
         read-xml -xmlFile $file.FullName -format
     }
 
     monitor-jobs
 
+    write-host "cleaning empty directories in output"
+    $allDirectories = (Get-ChildItem $workdir -Recurse -Directory).FullName | sort -Descending
+
+    foreach ($dir in $allDirectories) {
+        $dirItem = [io.directoryinfo]::new($dir)
+        $error.Clear()
+
+        try {
+            if ($dirItem.GetFiles() + $dirItem.GetDirectories()) {
+                write-host "skipping output directory removal: $dir"
+                continue
+            }
+            else {
+                write-host "removing empty output directory: $dir"
+                remove-item $dir -Force
+            }
+        }
+        catch {
+            write-host "error during dir check $($error | out-string)"
+        }
+    }
+
     $global:zipFile = compress-file $workDir
 }
 
-function add-job($jobName, $scriptBlock, $arguments)
-{
+function add-job($jobName, $scriptBlock, $arguments) {
     write-host "adding job $($jobName)"
     [void]$jobs.Add((Start-Job -Name $jobName -ScriptBlock $scriptBlock -ArgumentList $arguments))
 }
 
-function compress-file($dir)
-{
+function compress-file($dir) {
     $zipFile = "$($dir).zip"
     write-host "creating zip $($zipFile)"
     write-debug "zip dir before: $(tree /a /f $dir | out-string)"
 
-    if ((test-path $zipFile ))
-    {
+    if ((test-path $zipFile )) {
         remove-item $zipFile -Force
     }
 
-    if (!$legacy)
-    {
+    if (!$legacy) {
         Stop-Transcript | out-null
         Compress-archive -path $dir -destinationPath $zipFile -Force
         Start-Transcript -Path $logFile -Force -Append | Out-Null
     }
-    else
-    {
+    else {
         Add-Type -Assembly System.IO.Compression.FileSystem
         $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
         [void][System.IO.Compression.ZipFile]::CreateFromDirectory($dir, $zipFile, $compressionLevel, $false)
@@ -742,13 +739,45 @@ function compress-file($dir)
     return $zipFile
 }
 
-function enumerate-serviceFabric()
-{
+function enumerate-serviceFabric() {
     $fabricDataRoot = (get-itemproperty -path $serviceFabricInstallReg).fabricdataroot
     write-host "fabric data root:$($fabricDataRoot)"
-    if (!$fabricDataRoot)
-    {
-        $fabricDataRoot = "d:\"
+    if (!$fabricDataRoot) {
+        $fabricDataRoot = $defaultFabricDataRoot
+    }
+
+    $fabricLogRoot = (get-itemproperty -path $serviceFabricInstallReg).fabricdataroot
+    write-host "fabric log root:$($fabricLogRoot)"
+    if (!$fabricLogRoot) {
+        $fabricLogRoot = $defaultFabricLogRoot
+    }
+
+    if ($logMin -and (test-path $fabricLogRoot)) {
+        add-job -jobName "fabric log files" -scriptBlock {
+            param($workdir = $args[0], $fabricLogRoot = $args[1], $logMin = $args[2])
+
+            foreach ($file in (Get-ChildItem -Path $fabricLogRoot -Recurse).FullName) {
+                try {
+                    if (![regex]::isMatch($file, ".+?(?:\.trace$|\.blg$|\.etl$|\.dtr$|\.zip$|\\sfcontainerlogs.+?\.(?:out|err)$)", [text.regularExpressions.regexOptions]::ignoreCase)) {
+                        write-host "skipping file $file"
+                        continue
+                    }
+                    $fileInfo = new-object io.fileInfo($file)
+                    if ($fileInfo.LastWriteTime -gt (get-date).AddMinutes(-$logMin)) {
+                        write-host "copying file $file $($fileInfo.LastWriteTime) to $workdir"
+                        copy-item -Path $file -Destination $workdir
+                    }
+                    else {
+                        write-host "skipping file $file $($fileInfo.LastWriteTime)"
+                    }
+                }
+                catch {
+                    write-host "error copying file $file to $workdir $error"
+                    $error.clear()
+                    continue
+                }
+            }
+        } -arguments @($workdir, $fabricLogRoot, $logMin)
     }
 
     add-job -jobName "fabric config files" -scriptBlock {
@@ -758,44 +787,45 @@ function enumerate-serviceFabric()
     } -arguments @($workdir, $fabricDataRoot)
 
     $clusterManifestFile = "$($fabricDataRoot)\clustermanifest.xml"
-    if ((test-path $clusterManifestFile))
-    {
+    if ((test-path $clusterManifestFile)) {
         write-host "reading $($clusterManifestFile)"    
         $xml = read-xml -xmlFile $clusterManifestFile
         $xml.clustermanifest
-        $seedNodes = $xml.ClusterManifest.Infrastructure.PaaS.Votes.Vote
-        write-host "seed nodes: $($seedNodes | format-list * | out-string)"
-        $nodeCount = $xml.ClusterManifest.Infrastructure.PaaS.Roles.Role.RoleNodeCount
-        write-host "node count:$($nodeCount)"
-        $clusterId = (($xml.ClusterManifest.FabricSettings.Section | Where-Object Name -eq "Paas").childnodes | where-object Name -eq "ClusterId").value
-        write-host "cluster id:$($clusterId)"
-        $upgradeServiceParams = ($xml.ClusterManifest.FabricSettings.Section | Where-Object Name -eq "UpgradeService").parameter
-        $sfrpUrl = ($upgradeServiceParams | Where-Object Name -eq "BaseUrl").Value
-        $sfrpUrl = "$($sfrpUrl)$($clusterId)"
-        write-host "sfrp url:$($sfrpUrl)"
-        out-file -InputObject $sfrpUrl "$($workdir)\sfrp-response.txt"
-        $ucert = ($upgradeServiceParams | Where-Object Name -eq "X509FindValue").Value
 
-        # todo determine if standalone
-        add-job -jobName "sfrp check" -scriptBlock {
-            param($workdir = $args[0], $sfrpUrl = $args[1], $ucert = $args[2], $useBasicParsing = $args[3])
-            if($useBasicParsing)
-            {
-                $sfrpResponse = Invoke-WebRequest $sfrpUrl -UseBasicParsing -Certificate (Get-ChildItem -Path Cert:\LocalMachine\My -Recurse | Where-Object Thumbprint -eq $ucert)
-            }
-            else
-            {
-                $sfrpResponse = Invoke-WebRequest $sfrpUrl -Certificate (Get-ChildItem -Path Cert:\LocalMachine\My -Recurse | Where-Object Thumbprint -eq $ucert)
-            }
+        try {
+            $seedNodes = $xml.ClusterManifest.Infrastructure.PaaS.Votes.Vote
+            write-host "azure service fabric cluster"
+            write-host "seed nodes: $($seedNodes | format-list * | out-string)"
 
-            write-host "sfrp response: $($sfrpresponse)"
-            out-file -Append -InputObject $sfrpResponse "$($workdir)\sfrp-response.txt"
-        } -arguments @($workdir, $sfrpUrl, $ucert, $useBasicParsing)
+            $nodeCount = $xml.ClusterManifest.Infrastructure.PaaS.Roles.Role.RoleNodeCount
+            write-host "node count:$($nodeCount)"
+            $clusterId = (($xml.ClusterManifest.FabricSettings.Section | Where-Object Name -eq "Paas").childnodes | where-object Name -eq "ClusterId").value
+            write-host "cluster id:$($clusterId)"
+            $upgradeServiceParams = ($xml.ClusterManifest.FabricSettings.Section | Where-Object Name -eq "UpgradeService").parameter
+            $sfrpUrl = ($upgradeServiceParams | Where-Object Name -eq "BaseUrl").Value
+            $sfrpUrl = "$($sfrpUrl)$($clusterId)"
+            write-host "sfrp url:$($sfrpUrl)"
+            out-file -InputObject $sfrpUrl "$($workdir)\sfrp-response.txt"
+            $ucert = ($upgradeServiceParams | Where-Object Name -eq "X509FindValue").Value
 
-        add-job -jobName "sfrp repair check" -scriptBlock {
-            param($workdir = $args[0])
-            Get-ServiceFabricRepairTask -State Active Azure | out-file "$($workdir)\sfrp-repair.txt"
-        } -arguments @($workdir)
+            add-job -jobName "sfrp check" -scriptBlock {
+                param($workdir = $args[0], $sfrpUrl = $args[1], $ucert = $args[2], $useBasicParsing = $args[3])
+                if ($useBasicParsing) {
+                    $sfrpResponse = Invoke-WebRequest $sfrpUrl -UseBasicParsing -Certificate (Get-ChildItem -Path Cert:\LocalMachine\My -Recurse | Where-Object Thumbprint -eq $ucert)
+                }
+                else {
+                    $sfrpResponse = Invoke-WebRequest $sfrpUrl -Certificate (Get-ChildItem -Path Cert:\LocalMachine\My -Recurse | Where-Object Thumbprint -eq $ucert)
+                }
+
+                write-host "sfrp response: $($sfrpresponse)"
+                out-file -Append -InputObject $sfrpResponse "$($workdir)\sfrp-response.txt"
+            } -arguments @($workdir, $sfrpUrl, $ucert, $useBasicParsing)
+        }
+        catch {
+            $seedNodes = $xml.ClusterManifest.Infrastructure.WindowsServer.NodeList.Node
+            write-host "seed nodes: $($seedNodes | format-list * | out-string)"
+            write-host "standalone service fabric cluster"
+        }
 
         $httpGwEpt = $xml.ClusterManifest.NodeTypes.FirstChild.Endpoints.HttpGatewayEndpoint
         $clusterCertThumb = $xml.ClusterManifest.NodeTypes.FirstChild.Certificates.ClientCertificate.X509FindValue
@@ -805,7 +835,18 @@ function enumerate-serviceFabric()
         # todo handle continuationtoken
         $gwEpt = "$($httpGwEpt.Protocol)://localhost:$($httpGwEpt.Port)"
         $urlArgs = "api-version=$($apiversion)&timeout=$($restTimeoutSec)&StartTimeUtc=$($startTime.ToString(`"yyyy-MM-ddTHH:mm:ssZ`"))&EndTimeUtc=$($endTime.ToString(`"yyyy-MM-ddTHH:mm:ssZ`"))"
-
+        
+        <#
+            1 - Created
+            2 - Claimed
+            4 - Preparing
+            8 - Approved
+            16 - Executing
+            32 - Restoring
+            64 - Completed
+        #>
+        $stateFilter = 1 -bor 2 -bor 4 -bor 8 -bor 16 -bor 32
+        rest-query -url "$($gwEpt)/$/GetRepairTaskList?api-version=$($apiversion)&timeout=$($restTimeoutSec)&StateFilter=$stateFilter" -cert $clusterCert | out-file "$($workdir)\repair-tasks.txt"
         rest-query -url "$($gwEpt)/ImageStore?$($urlArgs)" -cert $clusterCert | out-file "$($workdir)\rest-imageStore.txt" 
         rest-query -url "$($gwEpt)/Nodes?$($urlArgs)" -cert $clusterCert | out-file "$($workdir)\rest-nodes.txt"
         rest-query -url "$($gwEpt)/$/GetClusterHealth?$($urlArgs)" -cert $clusterCert | out-file "$($workdir)\rest-getClusterHealth.txt"
@@ -821,25 +862,20 @@ function enumerate-serviceFabric()
     Get-ChildItem $($fabricRoot) -Recurse | out-file "$($workDir)\dir-fabricroot.txt"
 }
 
-function monitor-jobs()
-{
+function monitor-jobs() {
     $incompletedCount = 0
 
-    while (@(get-job).Count -gt 0)
-    {
+    while (@(get-job).Count -gt 0) {
         $incompleteCount = @(get-job | Where-Object State -eq "Running").Count
         
-        if ($incompleteCount -eq 0 -or $incompletedCount -ne $incompleteCount)
-        {
+        if ($incompleteCount -eq 0 -or $incompletedCount -ne $incompleteCount) {
             write-host "`n$((get-date).ToString("HH:mm:sszz")) waiting on $($incompleteCount) jobs..." -ForegroundColor Yellow
             $incompletedCount = $incompleteCount
             
-            foreach ($job in get-job)
-            {
+            foreach ($job in get-job) {
                 write-host ("name:$($job.Name) state:$($job.State) output:$((Receive-Job -job $job | format-list * | out-string))") -ForegroundColor Cyan
     
-                if ($job.State -imatch "Failed|Completed")
-                {
+                if ($job.State -imatch "Failed|Completed") {
                     remove-job $job -Force
                 }
             }
@@ -850,8 +886,7 @@ function monitor-jobs()
         start-sleep -seconds 1
         write-host "." -NoNewline
 
-        if (((get-date) - $timer).TotalMinutes -ge $timeoutMinutes)
-        {
+        if (((get-date) - $timer).TotalMinutes -ge $timeoutMinutes) {
             write-error "script timed out waiting for jobs to complete totalMinutes: $($timeoutMinutes) minutes"
             get-job | receive-job
             get-job | remove-job -force
@@ -860,16 +895,13 @@ function monitor-jobs()
     }
 }
 
-function read-xml($xmlFile, [switch]$format)
-{
-    try
-    {
+function read-xml($xmlFile, [switch]$format) {
+    try {
         write-host "reading xml file $($xmlFile)"
         [Xml.XmlDocument] $xdoc = New-Object System.Xml.XmlDocument
         [void]$xdoc.Load($xmlFile)
 
-        if ($format)
-        {
+        if ($format) {
             [IO.StringWriter] $sw = new-object IO.StringWriter
             [Xml.XmlTextWriter] $xmlTextWriter = new-object Xml.XmlTextWriter ($sw)
             $xmlTextWriter.Formatting = [Xml.Formatting]::Indented
@@ -881,86 +913,74 @@ function read-xml($xmlFile, [switch]$format)
 
         return $xdoc
     }
-    catch
-    {
+    catch {
         return $null
     }
 }
 
-function rest-query($cert, $url)
-{
-    try
-    {
+function rest-query($cert, $url) {
+    $error.clear()
+    try {
         $result = $null
         write-host "rest query: $($url)" -foregroundcolor cyan
 
-        if($useBasicParsing)
-        {
+        if ($useBasicParsing) {
             $result = Invoke-RestMethod -Method Get -Certificate $cert -Uri $url -UseBasicParsing | format-list * | Out-String
         }
-        else
-        {
+        else {
             $result = Invoke-RestMethod -Method Get -Certificate $cert -Uri $url | format-list * | Out-String
         }
         
         write-host "rest result: `n$($result)"
         return $result
     }
-    catch
-    {
+    catch {
+        write-host "rest exception $($error | out-string)"
+        $error.clear()
         return $null
     }
 }
 
-try
-{
+try {
+    # process command line arguments on recursive call
     # arrays on command line easier to pass as strings
-    if (@($ports).count -le 1)
-    {
+    if (@($ports).count -le 1) {
         [object[]]$ports = $ports.Replace(" ", ",").Split(",")
     }
 
     # create argument list with all values including defaults
-    foreach ($param in $MyInvocation.MyCommand.Parameters.GetEnumerator())
-    {
+    foreach ($param in $MyInvocation.MyCommand.Parameters.GetEnumerator()) {
         $error.clear()
         Write-Debug "checking parameter $($param)"
         Write-Debug "checking parameter type $($param.value.ParameterType)"
         # remove remoteMachines
-        if ($param.key -imatch "remoteMachines")
-        {
+        if ($param.key -imatch "remoteMachines") {
             continue
         }
 
         $paramValue = get-variable -ValueOnly -Name $param.key -ErrorAction SilentlyContinue
-        if ($error)
-        {
+        if ($error) {
             write-debug "error $($error | out-string)"
             $error.Clear()
             continue
         }
 
         # remove switches unless true
-        if ($param.Value.ParameterType -imatch "switch" -and $paramValue.Ispresent -eq $false)
-        {
+        if ($param.Value.ParameterType -imatch "switch" -and $paramValue.Ispresent -eq $false) {
             continue
         }
-        elseif ($param.Value.ParameterType -imatch "switch")
-        {
+        elseif ($param.Value.ParameterType -imatch "switch") {
             $paramValue = $null
         }
 
         # remove empty strings for now
-        if ($param.Value.ParameterType -imatch "string" -and !$paramValue)
-        {
+        if ($param.Value.ParameterType -imatch "string" -and !$paramValue) {
             continue
         }
 
         # join arrays passed as string due to command line issues with arrays
-        if ($param.Value.ParameterType.IsArray -and $paramValue)
-        {
-            if ($paramValue.count -le 1)
-            {
+        if ($param.Value.ParameterType.IsArray -and $paramValue) {
+            if ($paramValue.count -le 1) {
                 [object[]]$paramValue = $paramValue.Replace(" ", ",").Split(",")
             }
 
@@ -968,12 +988,10 @@ try
             #$paramValue = "`'$($arr)`'"
         }
         
-        if($paramValue)
-        {
+        if ($paramValue) {
             $global:allparams.Add($param.key, "`"$($paramValue)`"")
         }
-        else
-        {
+        else {
             $global:allparams.Add($param.key, $paramValue)
         }
     }
@@ -982,20 +1000,16 @@ try
     write-host ($global:allparams | out-string)
     main
 }
-catch
-{
+catch {
     write-error "main exception: $($error | out-string)"
 }
-finally
-{
-    if ($winrmClientInfo)
-    {
+finally {
+    if ($winrmClientInfo) {
         # set local machine back
         winrm set winrm/config/client "@{TrustedHosts="$($trustedHosts)"}"
     }
 
-    if ($disableWarnOnZoneCrossing)
-    {
+    if ($disableWarnOnZoneCrossing) {
         New-ItemProperty -Path $warnonZoneCrossingReg -Name "WarnonZoneCrossing" -Value 0 -PropertyType DWORD -Force | Out-Null
     }
 
@@ -1003,13 +1017,11 @@ finally
     get-job | remove-job -Force
     write-debug "errors during script: $($error | out-string)"
 
-    if (!$legacy)
-    {
+    if (!$legacy) {
         Stop-Transcript
     }
     
-    if($global:zipFile)
-    {
+    if ($global:zipFile) {
         Set-Clipboard -Path $global:zipFile
         write-host "zip path added to clipboard:$($global:zipFile)" -ForegroundColor Cyan
         write-host "upload zip to workspace:$($global:zipFile)" -ForegroundColor Cyan

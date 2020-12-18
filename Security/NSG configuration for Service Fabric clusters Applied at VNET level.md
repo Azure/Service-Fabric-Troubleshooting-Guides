@@ -9,13 +9,14 @@ For FQDN firewall's its recommended you use Azure Firewall.
 -   **Inbound** 19080 required for Service Fabric Explorer Http management endpoint - management, status, and health report
 -   **Inbound** 3389 (**Windows**) or 22 (**Linux**) required for RDP/SSH access to the nodes
 -   **Inbound** VnetInbound (*) - node to node communication should never be blocked
-    - Specifically 
+    - Specifically (* these are the default ports used by SF, your configuration may be different)
 		- Federation/Lease Layer: 1025-1027
-		- Federation/Lease Layer: 19001 - 19010 
+		- Federation/Lease Layer: 19001 - 19010 (For Standalone SF clusters)
 		- Application Range: 20000-30000
 		- Ephemeral Range: 49152-65534
 		- SMB: 445 and 139
 -   **Inbound** 168.63.129.16 - <https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview>
+				<https://docs.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16>
 
 -   **Outbound** VnetOutbound (*) - node to node communication should never be blocked
 -   **Outbound** IP of the Regional Service Fabric Resource Provider (SFRP) endpoint(s) - see **SFRP endpoint** below
@@ -31,11 +32,11 @@ Reply from 23.15.148.186: bytes=32 time=1ms TTL=54
 To work-around this you can do either of the following:
 
 - temporarily disable the  Deny all outbound rule
-- Manually download the **Service Fabric Runtime** cab (e.g. MicrosoftAzureServiceFabric.6.3.162.9494.cab) and copy this file to the new node in c:\Windows\Temp folder.  The direct download links can be found by reading the **Full Release Notes**, which are announced on the [Service Fabric Team blog](https://blogs.msdn.microsoft.com/azureservicefabric/)
+- Manually download the **Service Fabric Runtime** cab (e.g. MicrosoftAzureServiceFabric.6.3.162.9494.cab) and copy this file to the new node in c:\Windows\Temp folder.  The direct download links can be found by reading the **Full Release Notes**, which are announced on the [Service Fabric Team blog](https://techcommunity.microsoft.com/t5/azure-service-fabric/bg-p/Service-Fabric)
 
-    - Example: https://blogs.msdn.microsoft.com/azureservicefabric/2018/07/16/service-fabric-6-3-release-and-service-fabric-mesh-preview/
+    - Example: https://techcommunity.microsoft.com/t5/azure-service-fabric/azure-service-fabric-7-0-fourth-refresh-release/ba-p/1205414
 
-        "And last but not least, the full release notes with a complete list of bug fixes and changes for the 6.3 runtime are available here: [Microsoft-Azure-Service-Fabric-Release-Notes-SDK-3.2-Runtime-6.3.](https://msdnshared.blob.core.windows.net/media/2018/07/Microsoft-Azure-Service-Fabric-Release-Notes-SDK-3.2-Runtime-6.3.pdf) "
+        "And last but not least, the full release notes with a complete list of bug fixes and changes for the 7.0 CU4 runtime are available here: [Microsoft Azure Service Fabric 7.0 Fourth Refresh Release Notes](https://github.com/Azure/service-fabric/blob/master/release_notes/Service-Fabric-70CU4-releasenotes.md)"
 
         Links can be found at bottom of the article.
 
@@ -75,6 +76,8 @@ To work-around this you can do either of the following:
     nslookup eastjapan.servicefabric.azure.com
     Name: eastjapan.servicefabric.azure.com
     Address: 104.41.187.29 
+
+- Alternatively, you can leverage **Service Tag** feature in Azure VNET. Ref. Article: https://docs.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags
 
 ## **Common related errors/symptoms**
 
