@@ -1,5 +1,7 @@
 # Why did my node Reboot?
 
+This article only covers node initiated restarts, not by Azure platform or Service Fabric.
+
 ## **Check Eventlogs**
 Event Viewer -> Windows Logs -> System -> select "Filter Current Logs" -> and include just 6013,1074
 
