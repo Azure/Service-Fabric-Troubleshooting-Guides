@@ -1,5 +1,5 @@
 # [UPDATE 10/05/2019] 
-Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher), if the cluster is secured with a self-signed certificate declared by thumbprint you can now follow this much simpler process.  For CA issued certificates follow the steps outlined below.
+Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher), if the cluster is secured with a self-signed certificate declared by thumbprint you can now optionally follow this much simpler process.  For CA issued certificates follow the steps outlined below.  
 
 * [Fix Expired Cluster Certificate](../Security/How%20to%20recover%20from%20an%20Expired%20Cluster%20Certificate.md)
 
