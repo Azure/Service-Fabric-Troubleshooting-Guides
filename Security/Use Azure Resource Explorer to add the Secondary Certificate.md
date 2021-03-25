@@ -1,3 +1,5 @@
+## Applies To: Azure clusters secured with x509 Thumbprint.  If you are trying to rollover a Common Name cert please refer to [this article](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-rollover-cert-cn)
+
 ## Use [https://resources.azure.com](https://resources.azure.com) to add and swap the Secondary Certificate
 
 Steps to add a secondary certificate to an existing Service Fabric cluster are located in [Add or remove certificates for a Service Fabric cluster in Azure](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure#add-a-secondary-certificate-and-swap-it-to-be-the-primary-using-resource-manager-powershell). Adding a secondary cluster certificate cannot currently be performed in the Azure portal. You have to use Azure powershell for that.
