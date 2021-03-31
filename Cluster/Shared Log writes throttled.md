@@ -20,13 +20,36 @@ This may occur due to any of the following:
 
 ## Mitigation
 
-The 'SharedLogWriteThrottled' platform event consists of the following information:<br>
-**SharedLogStream:** This field displays the guid of the shared log that is throttled.<br>
-**BlockingStreamInfo:** This field provides information about the **Partition**, **Replica** and the **Stream Id**.
+The 'SharedLogWriteThrottled' platform event consists of the following information:
+- **SharedLogStream:** This field displays the guid of the shared log that is throttled.
+- **BlockingStreamInfo:** This field provides information about the **Partition**, **Replica** and the **Stream Id**.
 
 If the shared log throttling is due to condition (1) above, usually, it should get unthrottled after some time and you should see the following event in the SFX:
 
 ![SharedLogWriteUnthrottled Event](../media/SharedLogWriteUnthrottled.png)
 
-However, if the problem persists for some time, then try to restart the replica identified by the **Replica** in the **BlockingStreamInfo**. If the replica is already closed, or restarting the replica doesn’t help then restarting the **Node** should mitigate the problem.
+However, if the problem persists for some time ( > 1 min), then try to restart the replica identified by the **Replica** in the **BlockingStreamInfo**.
+
+ ```powershell
+ Restart-ServiceFabricReplica -NodeName [NodeName] -PartitionId [PartitionId] -ReplicaOrInstanceId [ReplicaId]
+ ```
+for more details, refer [Restart-ServiceFabricReplica](https://docs.microsoft.com/en-us/powershell/module/servicefabric/restart-servicefabricreplica)
+___
+
+If the replica is already closed, or restarting the replica doesn’t help then perform the following steps:
+- Deactivate the node with intent restart  
+ 
+   ```powershell
+   Disable-ServiceFabricNode -NodeName [NodeName] -Intent Restart
+   ```
+   
+  for more details, refer [Disable-ServiceFabricNode](https://docs.microsoft.com/en-us/powershell/module/servicefabric/disable-servicefabricnode)
+  
+- Wait for the node to become disabled before restarting the node. Use the [Get-ServiceFabricNode](https://docs.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricnode) cmdlet to view the disabling status of the node.
+
+  ```powershell
+  Get-ServiceFabricNode -NodeName [NodeName]
+  ```
+  
+- Restart the VM/Node. This can be done from VMSS for SFRP clusters.
 
