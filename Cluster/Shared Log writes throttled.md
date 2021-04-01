@@ -45,11 +45,15 @@ If the replica is already closed, or restarting the replica doesn’t help then 
    
   for more details, refer [Disable-ServiceFabricNode](https://docs.microsoft.com/en-us/powershell/module/servicefabric/disable-servicefabricnode)
   
-- Wait for the node to become disabled before restarting the node. Use the [Get-ServiceFabricNode](https://docs.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricnode) cmdlet to view the disabling status of the node.
+- Wait for the node to become disabled before restarting the node. Use SFX or the powershell [Get-ServiceFabricNode](https://docs.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricnode) cmdlet to view the disabling status of the node.
 
   ```powershell
   Get-ServiceFabricNode -NodeName [NodeName]
   ```
   
 - Restart the VM/Node. This can be done from VMSS for SFRP clusters.
-
+- After the restart has been completed, enable the node using the powershell [Enable-ServiceFabricNode](https://docs.microsoft.com/en-us/powershell/module/servicefabric/enable-servicefabricnode) cmdlet.
+  
+  ```powershell
+  Enable-ServiceFabricNode -NodeName [NodeName]
+  ```
