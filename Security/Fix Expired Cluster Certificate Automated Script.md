@@ -110,7 +110,7 @@ Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher
 
 ![Click PUT](../media/resourcemgr7.png)
 
-1. **Wait** for the virtual machine scale set Updating the secondary certificate to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.  If the cluster is configured with Silver or higher Durability it's possible a repair task may block this operation.  If the status does not move into a "Succeeded" state in a timely manner please contact Support for assistance to confirm and unblock.
+6. **Wait** for the virtual machine scale set Updating the secondary certificate to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.  If the cluster is configured with Silver or higher Durability it's possible a repair task may block this operation.  If the status does not move into a "Succeeded" state in a timely manner please contact Support for assistance to confirm and unblock.
 
 ![GET](../media/resourcemgr2.png)
 
