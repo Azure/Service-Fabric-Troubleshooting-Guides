@@ -111,7 +111,7 @@ or if downloaded to local client machine run from rdp tsclient share
             -StoreName My
 ```
 
-* **Note**: Please give the cluster 5-10 minutes to reconfigure.  Generally speaking you will see Fabric.exe startup in the Task Manager and a few minutes later FabricGateway.exe will start when the nodes have finished reconfiguration.  At this point the cluster should be running again and the PowerShell endpoints should be accessible.  If you do not see this happening, review the Application event log and the Service Fabric Admin event logs to troubleshoot the reason.  
+* **Note**: Please give the cluster 5-10 minutes to reconfigure.  Generally speaking you will see Fabric.exe startup in the Task Manager and a few minutes later FabricGateway.exe will start when the nodes have finished reconfiguration.  At this point the cluster should be running again and the PowerShell endpoints should be accessible.  If you do not see this happening, review the Application event log and the Service Fabric Admin event logs to troubleshoot the reason.  If the cluster is configured with Silver or higher Durability it's possible a repair task is blocking, please contact Support for assistance to confirm and unblock.
 
 6. Once the cluster is back up and running, as verified using PowerShell connect-serviceFabricCluster command, follow this article to perform the certificate rollover: [Use Azure Resource Manager to manually rollover the cluster certificate](./Use%20Azure%20Resource%20Explorer%20to%20add%20the%20Secondary%20Certificate.md)
 
