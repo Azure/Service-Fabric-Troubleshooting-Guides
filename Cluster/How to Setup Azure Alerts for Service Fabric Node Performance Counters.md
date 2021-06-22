@@ -18,7 +18,7 @@ If cluster is deployed and maintained by using ARM template, edit template.json 
 
 If cluster was deployed from Azure portal and template was not saved, use https://resources.azure.com. Navigate to 'subscription', 'resourceGroups', {{ resource group }}, 'providers', 'Microsoft.Compute', 'virtualMachineScaleSets', {{ nodetype }}.  
 
-```
+```text
     subscriptions
     └───%subscription name%
         └───resourceGroups
@@ -174,7 +174,7 @@ index eb140d3..a249f60 100644
 
 ## Add sink
 
-Starting with Diagnostics extension version 1.5, 'sinks' has been added to implement a sink location to send diagnostic data. Using 'sink' and Custom Metrics, performance counter data can be uploaded and viewed in Azure Portal.
+Starting with Diagnostics extension version 1.5, 'sinks' has been added to implement a sink location to send diagnostic data. Using 'sink' and Custom Metrics, performance counter data can be uploaded and viewed in Azure Portal. 'SinksConfig' element provides a list of locations to send diagnostics data to. Examples are, 'AzureMonitorSink', 'ApplicationInsights', and 'EventHub'. In this example, 'AzureMonitor' is being used.
 
 ```diff
 diff --git a/template/template.json b/template/template.json
@@ -208,12 +208,12 @@ index a249f60..469dbf0 100644
 
 ## Updating deployment configuration
 
-If using a template to modify configuration, once .\template.json has been modified, run 'test-azResourceGroupDeployment' and 'new-azResourceGroupDeployment' to deploy new template. 
+If using a template to modify configuration, once .\template.json has been modified, run 'test-azResourceGroupDeployment' and 'new-azResourceGroupDeployment' to deploy new template.
 
 ```powershell
-PS C:\>test-azResourceGroupDeployment -ResourceGroupName servicefabriccluster -TemplateFile .\template.json -Verbose
+PS C:\>test-azResourceGroupDeployment -resourceGroupName servicefabriccluster -templateFile .\template.json -verbose
 VERBOSE: 17:58:51 - Template is valid.
-PS C:\>new-azResourceGroupDeployment -ResourceGroupName servicefabriccluster -TemplateFile .\template.json
+PS C:\>new-azResourceGroupDeployment -resourceGroupName servicefabriccluster -templateFile .\template.json -deploymentDebugLogLevel all -verbose
 ```
 
 If using https://resources.azure.com, in 'Edit' configuration, once all changes have been made, select 'PUT' to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com).
@@ -248,11 +248,11 @@ In 'Metric Namespace' dropdown, 'Virtual Machine Guest' option should now be ava
 
 ## Adding an Azure Alert
 
-Like Metrics, Alerts can be created and viewed from Azure Monitor, resource, and from resource group. From [Validating configuration](#validating-configuration) section above, a new alert can be added by selecting 'New alert rule'. Or a new alert can be created from 'Alerts' view.
+Like Metrics, Alerts can be created and viewed from Azure Monitor, resource, and from resource group. From [Validating configuration](#validating-configuration) section above, a new alert can be added by selecting 'New alert rule'. Or, a new alert can be created from 'Alerts' view. In the follow example, the 'Condition' trigger is configured to raise an error level event when disk space on drive D: is less than 5%. 
 
 ![create alert signal](../media/create-alert-signal.png)
 
-Add one or more actions to take when alert is triggered such as a notification. 
+Add one or more actions to take when alert is triggered such as a notification. A common action is to setup email / SMS notifications as shown below.
 
 ![create action group](../media/create-notification-action-group.png)
 
@@ -264,6 +264,11 @@ When complete, select 'Create alert rule'.
 ## Reference WadCfg with common counters
 
 ```json
+// add systemAssigned managed identity in scaleset resource
+//            "identity": {
+//                "type": "systemAssigned"
+//            },
+
 "WadCfg": {
     "DiagnosticMonitorConfiguration": {
         "overallQuotaInMB": "50000",
