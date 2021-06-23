@@ -12,7 +12,7 @@ For complete schema information, see [Windows Diagnostics Extension Schema](http
 
 ## Getting current WadCfg
 
-If cluster is deployed and maintained by using ARM template, edit template.json and navigate to section 'WadCfg' in nodetype extensions.  
+If cluster is deployed and maintained by using ARM template, edit template.json and navigate to section 'WadCfg' in scaleset extension.
 
 ![vscode wadcfg](../media/template-wadcfg.png)
 
@@ -142,6 +142,12 @@ Powershell can also be used to enumerate list of counters.
 
 ```powershell
 Get-Counter -ListSet * | Select-Object CounterSetName, Paths | Sort-Object CounterSetName
+
+CounterSetName                                  Paths
+--------------                                  -----
+.NET CLR Data                                   {\.NET CLR Data(*)\SqlClient: Current # pooled and nonpooled connections, \.NET CLR Data(*)\SqlClient: Current # pooled connections, \.NET CLR Data(*)\SqlClient: Current # …
+.NET CLR Exceptions                             {\.NET CLR Exceptions(*)\# of Exceps Thrown, \.NET CLR Exceptions(*)\# of Exceps Thrown / sec, \.NET CLR Exceptions(*)\# of Filters / sec, \.NET CLR Exceptions(*)\# of Fina…
+.NET CLR Interop                                {\.NET CLR Interop(*)\# of CCWs, \.NET CLR Interop(*)\# of Stubs, \.NET CLR Interop(*)\# of marshalling, \.NET CLR Interop(*)\# of TLB imports / sec…}
 ```
 
 Add / Modify [PerformanceCounters Element](https://docs.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-schema-windows#performancecounters-element)
@@ -178,7 +184,7 @@ index eb140d3..a249f60 100644
 
 ## Add sink
 
-Starting with Diagnostics extension version 1.5, 'sinks' has been added to implement a sink location to send diagnostic data. Using 'sink' and Custom Metrics, performance counter data can be uploaded and viewed in Azure Portal. 'SinksConfig' element provides a list of locations to send diagnostics data to. Examples are, 'AzureMonitorSink', 'ApplicationInsights', and 'EventHub'. In this example, 'AzureMonitor' is being used.
+Starting with Diagnostics extension version 1.5, 'sinks' has been added to implement a sink location to send diagnostic data. Using 'sink' and Custom Metrics, performance counter data can be uploaded and viewed in Azure Portal. 'SinksConfig' element provides a list of locations to send diagnostics data to. Examples are, 'AzureMonitorSink', 'ApplicationInsights', and 'EventHub'. In this example, 'AzureMonitor' is being used. Empty 'resourceId' is required.
 
 ```diff
 diff --git a/template/template.json b/template/template.json
@@ -213,7 +219,7 @@ index a249f60..469dbf0 100644
 
 ## Updating deployment configuration
 
-If using a template to modify configuration, once .\template.json has been modified, run 'test-azResourceGroupDeployment' and 'new-azResourceGroupDeployment' to deploy new template.
+If using a template to modify configuration, after .\template.json has been modified, run 'test-azResourceGroupDeployment' and 'new-azResourceGroupDeployment' to deploy new template.
 
 ```powershell
 PS C:\>test-azResourceGroupDeployment -resourceGroupName servicefabriccluster -templateFile .\template.json -verbose
@@ -221,7 +227,7 @@ VERBOSE: 17:58:51 - Template is valid.
 PS C:\>new-azResourceGroupDeployment -resourceGroupName servicefabriccluster -templateFile .\template.json -deploymentDebugLogLevel all -verbose
 ```
 
-If using https://resources.azure.com, in 'Edit' configuration, once all changes have been made, select 'PUT' to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com).
+If using https://resources.azure.com, in 'Edit' configuration, after all changes have been made, select 'PUT' to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com).
 
 ![Click PUT](../media/resourcemgr7.png)
 
@@ -391,6 +397,26 @@ When complete, select 'Create alert rule'.
 
 Errors in WadCfg may be logged in the extension status log. See [Azure Diagnostics Troubleshooting](https://docs.microsoft.com/en-us/azure/azure-monitor/agents/diagnostics-extension-troubleshooting)
 
+### Deployment failure / Provisioning state failed
+
+Error in extension log:
+C:\WindowsAzure\Logs\Plugins\Microsoft.Azure.Diagnostics.IaaSDiagnostics\1.18.0.5\CommandExecution.log
+
+```text
+Execution Error:
+DiagnosticsPlugin launch failed with exit code -106
+###### DiagnosticsPlugin Standard Error ###### 
+ System.NullReferenceException: Object reference not set to an instance of an object.
+   at System.Object.GetType()
+   at Microsoft.Cis.Monitoring.Wad.PublicConfigConverter.PublicConfigWadCfg.ValidateSinksConfig()
+   at Microsoft.Cis.Monitoring.Wad.PublicConfigConverter.PublicConfigWadCfg.ValidateAndComputeEffectiveSinks()
+   at Microsoft.Azure.Plugins.Plugin.WadParser.Parse()
+Failed to parse the WAD config file
+```
+
+Extension status:
+C:\\Packages\\Plugins\\Microsoft.Azure.Diagnostics.IaaSDiagnostics\\1.18.0.5\\Status\\##.status
+
 ```json
 [{
     "status": {
@@ -430,3 +456,5 @@ Errors in WadCfg may be logged in the extension status log. See [Azure Diagnosti
     "version": 1
 }]
 ```
+
+Cause: 'Sinks' configuration needs empty 'resourceId' placeholder to define sink as 'Azure Monitor'
