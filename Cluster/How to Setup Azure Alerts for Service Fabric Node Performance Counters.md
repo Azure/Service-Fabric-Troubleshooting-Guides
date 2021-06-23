@@ -128,40 +128,6 @@ index f11bcae..eb140d3 100644
                  "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
 ```
 
-Add the Managed Identity extension to scaleset if not already configured. [Configure managed identities for Azure resources](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/qs-configure-template-windows-vmss) describes this configuration in detail.
-
-```json
-{
-    "type": "Microsoft.Compute/virtualMachines/extensions",
-    "name": "VMSS-WAD-extension",
-    "properties": {
-        "publisher": "Microsoft.ManagedIdentity",
-        "type": "ManagedIdentityExtensionForWindows",
-        "typeHandlerVersion": "1.0",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-            "port": 50342
-        }
-    }
-},
-```
-
-```diff
-+{
-+    "type": "Microsoft.Compute/virtualMachines/extensions",
-+    "name": "VMSS-WAD-extension",
-+    "properties": {
-+        "publisher": "Microsoft.ManagedIdentity",
-+        "type": "ManagedIdentityExtensionForWindows",
-+        "typeHandlerVersion": "1.0",
-+        "autoUpgradeMinorVersion": true,
-+        "settings": {
-+            "port": 50342
-+        }
-+    }
-+},
-```
-
 ## Adding performance counters
 
 Add the performance counter(s) to be alerted on. Not all counters are able to be configured for alerting using Custom Metrics. Review links about 'Design limitations and considerations' for counters. To see a list of counters available and syntax, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to a node and start 'Performance Monitor' (perfmon.exe).
@@ -304,6 +270,9 @@ When complete, select 'Create alert rule'.
 
 ```json
 // this requires systemAssigned managed identity configuration in scaleset resource as mentioned above
+//            "identity": {
+//                "type": "systemAssigned"
+//            },
 
 "WadCfg": {
     "DiagnosticMonitorConfiguration": {
