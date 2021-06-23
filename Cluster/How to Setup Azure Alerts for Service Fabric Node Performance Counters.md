@@ -128,15 +128,55 @@ index f11bcae..eb140d3 100644
                  "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
 ```
 
+Add the Managed Identity extension to scaleset if not already configured. [Configure managed identities for Azure resources](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/qs-configure-template-windows-vmss) describes this configuration in detail.
+
+```json
+{
+    "type": "Microsoft.Compute/virtualMachines/extensions",
+    "name": "VMSS-WAD-extension",
+    "properties": {
+        "publisher": "Microsoft.ManagedIdentity",
+        "type": "ManagedIdentityExtensionForWindows",
+        "typeHandlerVersion": "1.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+            "port": 50342
+        }
+    }
+},
+```
+
+```diff
++{
++    "type": "Microsoft.Compute/virtualMachines/extensions",
++    "name": "VMSS-WAD-extension",
++    "properties": {
++        "publisher": "Microsoft.ManagedIdentity",
++        "type": "ManagedIdentityExtensionForWindows",
++        "typeHandlerVersion": "1.0",
++        "autoUpgradeMinorVersion": true,
++        "settings": {
++            "port": 50342
++        }
++    }
++},
+```
+
 ## Adding performance counters
 
-Add the performance counter(s) to be alerted on. Not all counters are able to be configured for alerting using Custom Metrics. Review links about 'Design limitations and considerations' for counters. To see a list of counters available and syntax, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to a node and start 'Performance Monitor' (perfmon.exe). 
+Add the performance counter(s) to be alerted on. Not all counters are able to be configured for alerting using Custom Metrics. Review links about 'Design limitations and considerations' for counters. To see a list of counters available and syntax, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to a node and start 'Performance Monitor' (perfmon.exe).
 
 ![perfmon view](../media/perfmon-view1.png)
 
-After adding the counters of interest to perfmon, select 'Properties' to see the counter names as they should be configured in WadCfg. In this example, 'Object' 'LogicalDisk' is selected with both 'C:' and 'D:' instances added. In 'Properties' view, 'LogicalDisk(C:)\% Free Space' and 'LogicalDisk(D:)\% Free Space' are shown.
+After adding the counters of interest to perfmon, select 'Properties' to see the counter names as they should be configured in WadCfg. In this example, 'Object' 'LogicalDisk' is selected with both 'C:' and 'D:' instances added. In 'Properties' view, '\LogicalDisk(C:)\% Free Space' and '\LogicalDisk(D:)\% Free Space' are shown.
 
 ![perfmon property view](../media/perfmon-view2.png)
+
+Powershell can also be used to enumerate list of counters.
+
+```powershell
+Get-Counter -ListSet * | Select-Object CounterSetName, Paths | Sort-Object CounterSetName
+```
 
 Add / Modify [PerformanceCounters Element](https://docs.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-schema-windows#performancecounters-element)
 
@@ -156,12 +196,10 @@ index eb140d3..a249f60 100644
 +                                                    "scheduledTransferPeriod": "PT1M",
 +                                                    "PerformanceCounterConfiguration": [
 +                                                        {
-+                                                            "annotation": [],
 +                                                            "counterSpecifier": "\\LogicalDisk(C:)\\% Free Space",
 +                                                            "sampleRate": "PT10S"
 +                                                        },
 +                                                        {
-+                                                            "annotation": [],
 +                                                            "counterSpecifier": "\\LogicalDisk(D:)\\% Free Space",
 +                                                            "sampleRate": "PT10S"
 +                                                        }
@@ -185,10 +223,9 @@ index a249f60..469dbf0 100644
                                                  "overallQuotaInMB": "50000",
                                                  "PerformanceCounters": {
                                                      "scheduledTransferPeriod": "PT1M",
-+                                                    "sinks": "AzMonSink",
++                                                    "sinks": "AzureMonitorSink",
                                                      "PerformanceCounterConfiguration": [
                                                          {
-                                                             "annotation": [],
 @@ -545,6 +546,14 @@
                                                          }
                                                      ]
@@ -197,8 +234,10 @@ index a249f60..469dbf0 100644
 +                                            "SinksConfig": {
 +                                                "Sink": [
 +                                                    {
-+                                                        "name": "AzMonSink",
-+                                                        "AzureMonitor": {}
++                                                        "name": "AzureMonitorSink",
++                                                        "AzureMonitor": {
++                                                            "resourceId": ""
++                                                        }
 +                                                    }
 +                                                ]
                                              }
@@ -248,7 +287,7 @@ In 'Metric Namespace' dropdown, 'Virtual Machine Guest' option should now be ava
 
 ## Adding an Azure Alert
 
-Like Metrics, Alerts can be created and viewed from Azure Monitor, resource, and from resource group. From [Validating configuration](#validating-configuration) section above, a new alert can be added by selecting 'New alert rule'. Or, a new alert can be created from 'Alerts' view. In the follow example, the 'Condition' trigger is configured to raise an error level event when disk space on drive D: is less than 5%. 
+Like Metrics, Alerts can be created and viewed from Azure Monitor, resource, and from resource group. From [Validating configuration](#validating-configuration) section above, a new alert can be added by selecting 'New alert rule'. Or, a new alert can be created from 'Alerts' view. In the follow example, the 'Condition' trigger is configured to raise an error level event when disk space on drive D: is less than 5%.
 
 ![create alert signal](../media/create-alert-signal.png)
 
@@ -264,26 +303,73 @@ When complete, select 'Create alert rule'.
 ## Reference WadCfg with common counters
 
 ```json
-// add systemAssigned managed identity in scaleset resource
-//            "identity": {
-//                "type": "systemAssigned"
-//            },
+// this requires systemAssigned managed identity configuration in scaleset resource as mentioned above
 
 "WadCfg": {
     "DiagnosticMonitorConfiguration": {
         "overallQuotaInMB": "50000",
         "PerformanceCounters": {
             "scheduledTransferPeriod": "PT1M",
-            "sinks": "AzMonSink",
+            "sinks": "AzureMonitorSink",
             "PerformanceCounterConfiguration": [
                 {
-                    "annotation": [],
                     "counterSpecifier": "\\LogicalDisk(C:)\\% Free Space",
                     "sampleRate": "PT10S"
                 },
                 {
-                    "annotation": [],
                     "counterSpecifier": "\\LogicalDisk(D:)\\% Free Space",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\Memory\\Available MBytes",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\Memory\\Pages/sec",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\Paging File(_Total)\\% Usage",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\PhysicalDisk(C:)\\Current Disk Queue Length",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\PhysicalDisk(D:)\\Current Disk Queue Length",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\Process(_Total)\\Handle Count",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\Process(_Total)\\Private Bytes",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\Process(_Total)\\Thread Count",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\Processor(_Total)\\% Processor Time",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\TCPv4\\Connections Established",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\TCPv4\\Segments Received/sec",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\TCPv4\\Segments Retransmitted/sec",
+                    "sampleRate": "PT10S"
+                },
+                {
+                    "counterSpecifier": "\\TCPv4\\Segments Sent/sec",
                     "sampleRate": "PT10S"
                 }
             ]
@@ -322,10 +408,56 @@ When complete, select 'Create alert rule'.
     "SinksConfig": {
         "Sink": [
             {
-                "name": "AzMonSink",
-                "AzureMonitor": {}
+                "name": "AzureMonitorSink",
+                "AzureMonitor": {
+                    "resourceId": ""
+                }
             }
         ]
     }
 },
+```
+
+## Troubleshooting
+
+Errors in WadCfg may be logged in the extension status log. See [Azure Diagnostics Troubleshooting](https://docs.microsoft.com/en-us/azure/azure-monitor/agents/diagnostics-extension-troubleshooting)
+
+```json
+[{
+    "status": {
+        "code": -108,
+        "configurationAppliedTime": "2021-06-22T16:43:36Z",
+        "formattedMessage": {
+            "lang": "en-US",
+            "message": "Object reference not set to an instance of an object. See the troubleshooting guide to diagnose the problem: https:\/\/go.microsoft.com\/fwlink\/?linkid=852271"
+        },
+        "name": "Microsoft.Azure.Diagnostics.IaaSDiagnostics",
+        "operation": "DiagnosticPluginLauncher",
+        "status": "error",
+        "substatus": [{
+            "code": -106,
+            "formattedMessage": {
+                "lang": "en-us",
+                "message": "Failed to parse the WAD config file"
+            },
+            "status": "error"
+        }, {
+            "code": -106,
+            "formattedMessage": {
+                "lang": "en-us",
+                "message": "DiagnosticsPlugin launch failed with exit code -106"
+            },
+            "status": "error"
+        }, {
+            "code": -106,
+            "formattedMessage": {
+                "lang": "en-us",
+                "message": "Error starting the diagnostics extension"
+            },
+            "status": "error"
+        }]
+    },
+    "timestampUTC": "2021-06-22T16:43:28.5474058Z",
+    "version": 1
+}]
 ```
