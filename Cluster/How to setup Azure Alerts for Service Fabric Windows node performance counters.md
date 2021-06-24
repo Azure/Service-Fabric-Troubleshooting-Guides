@@ -1,8 +1,8 @@
-# How to Setup Azure Alerts for Service Fabric Node Performance Counters
+# How to setup Azure Alerts for Service Fabric Windows node performance counters
 
 ## Overview
 
-This troubleshooting guide describes setting up Azure Alerts based on Service Fabric node performance counter using Windows Azure Diagnostics (WAD) and [Custom Metrics](https://docs.microsoft.com/azure/azure-monitor/essentials/metrics-custom-overview).  
+This troubleshooting guide describes setting up Azure Alerts based on Service Fabric Windows node performance counters using Windows Azure Diagnostics (WAD) and [Custom Metrics](https://docs.microsoft.com/azure/azure-monitor/essentials/metrics-custom-overview).  
 
 Custom Metrics are configured via WadCfg and require the use of System Managed Identity. See [Sending guest OS metrics using Azure Resource Manager](https://docs.microsoft.com/azure/azure-monitor/essentials/collect-custom-metrics-guestos-resource-manager-vmss). As noted in link above, there may be costs associated with setting up custom metrics. See 'Custom Metrics' in [Azure Monitor Pricing](https://azure.microsoft.com//pricing/details/monitor/).
 
@@ -184,7 +184,7 @@ index eb140d3..a249f60 100644
 
 ## Add sink
 
-Starting with Diagnostics extension version 1.5, 'sinks' has been added to implement a sink location to send diagnostic data. Using 'sink' and Custom Metrics, performance counter data can be uploaded and viewed in Azure Portal. 'SinksConfig' element provides a list of locations to send diagnostics data to. Examples are, 'AzureMonitorSink', 'ApplicationInsights', and 'EventHub'. In this example, 'AzureMonitor' is being used. Empty 'resourceId' is required.
+Starting with Diagnostics extension version 1.5, 'sinks' has been added to implement a sink location to send diagnostic data. Using 'sink' and Custom Metrics, performance counter data can be uploaded and viewed in Azure Portal. 'SinksConfig' element provides a list of locations to send diagnostics data to. Examples are, 'AzMonSink', 'ApplicationInsights', and 'EventHub'. In this example, 'AzureMonitor' is being used. Empty 'resourceId' is required.
 
 ```diff
 diff --git a/template/template.json b/template/template.json
@@ -195,7 +195,7 @@ index a249f60..469dbf0 100644
                                                  "overallQuotaInMB": "50000",
                                                  "PerformanceCounters": {
                                                      "scheduledTransferPeriod": "PT1M",
-+                                                    "sinks": "AzureMonitorSink",
++                                                    "sinks": "AzMonSink",
                                                      "PerformanceCounterConfiguration": [
                                                          {
 @@ -545,6 +546,14 @@
@@ -206,7 +206,7 @@ index a249f60..469dbf0 100644
 +                                            "SinksConfig": {
 +                                                "Sink": [
 +                                                    {
-+                                                        "name": "AzureMonitorSink",
++                                                        "name": "AzMonSink",
 +                                                        "AzureMonitor": {
 +                                                            "resourceId": ""
 +                                                        }
@@ -285,7 +285,7 @@ When complete, select 'Create alert rule'.
         "overallQuotaInMB": "50000",
         "PerformanceCounters": {
             "scheduledTransferPeriod": "PT1M",
-            "sinks": "AzureMonitorSink",
+            "sinks": "AzMonSink",
             "PerformanceCounterConfiguration": [
                 {
                     "counterSpecifier": "\\LogicalDisk(C:)\\% Free Space",
@@ -383,7 +383,7 @@ When complete, select 'Create alert rule'.
     "SinksConfig": {
         "Sink": [
             {
-                "name": "AzureMonitorSink",
+                "name": "AzMonSink",
                 "AzureMonitor": {
                     "resourceId": ""
                 }
