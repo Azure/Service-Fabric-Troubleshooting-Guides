@@ -43,7 +43,7 @@ sudo systemctl start telegraf >> $log_file
 echo "this has been written via cse $(date)" >> $log_file
 ```
 
-For use with CSE protectedSetting or setting 'script', the script above will need to be converted to base64 string as shown below.
+For use with CSE in 'protectedSettings' or 'settings', property 'script' value should be set to the script above converted to base64 string as shown below.
 
 ```powershell
   $inputString = @'
@@ -181,7 +181,7 @@ index 1d7e7be..5bede68 100644
          {
              "apiVersion": "[variables('vmssApiVersion')]",
              "type": "Microsoft.Compute/virtualMachineScaleSets",
-+                        "identity": {
++            "identity": {
 +                "type": "systemAssigned"
 +            },
              "name": "[parameters('vmNodeType0Name')]",
