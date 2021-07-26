@@ -9,8 +9,31 @@ invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubl
 
 optional download for event log conversion:
 invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/event-log-manager.ps1" -outFile "$pwd\event-log-manager.ps1";
-
 if working with microsoft support, upload to workspace the outputted sfgather* directory or zip file
+
+Microsoft Privacy Statement: https://privacy.microsoft.com/en-US/privacystatement
+
+MIT License
+
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE
 
 .DESCRIPTION
     To enable script execution, you may need to Set-ExecutionPolicy Bypass -Force
@@ -33,29 +56,14 @@ if working with microsoft support, upload to workspace the outputted sfgather* d
         - firewall
             - if firewall is preventing connectivity the following can be run to disable
             - Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-            
-    Copyright 2018 Microsoft Corporation
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-    
 .NOTES
     File Name  : sf-collect-node-info.ps1
     Author     : microsoft service fabric support
-    Version    : 210307 add tls settings and update event-log-manager url
+    Version    : 210620 add MIT oss license
     History    :
-                200721 add collection of blg and sfcontainer.out files
-                200719 add collection of log files default 60 min
-
+                210307 add tls settings and update event-log-manager url
+                
 .EXAMPLE
     .\sf-collect-node-info.ps1
     default command to collect event logs, process, service, os information for last 7 days.
