@@ -8,7 +8,7 @@ Custom Metrics are configured via WadCfg and require the use of System Managed I
 
 'Classic' metrics are another option for performance counter upload which is configured by adding 'metrics' section to WadCfg. Classic metrics do not require system managed identity, but do require resourceId and are not usable for Azure Alerts.  
 
-For complete schema information, see [Windows Diagnostics Extension Schema](https://docs.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-schema-windows) for complete schema information.
+For complete schema information, see [Windows Diagnostics Extension Schema](https://docs.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-schema-windows).
 
 ## Getting current WadCfg
 
@@ -219,23 +219,17 @@ index a249f60..469dbf0 100644
 
 ## Updating deployment configuration
 
-If using a template to modify configuration, after .\template.json has been modified, run 'test-azResourceGroupDeployment' and 'new-azResourceGroupDeployment' to deploy new template.
+If using a template to modify configuration, after .\template.json has been modified, run 'Test-AzResourceGroupDeployment' and 'New-AzResourceGroupDeployment' to deploy new template.
 
 ```powershell
-PS C:\>test-azResourceGroupDeployment -resourceGroupName servicefabriccluster -templateFile .\template.json -verbose
+PS C:\>Test-AzResourceGroupDeployment -ResourceGroupName servicefabriccluster -TemplateFile .\template.json -Verbose
 VERBOSE: 17:58:51 - Template is valid.
-PS C:\>new-azResourceGroupDeployment -resourceGroupName servicefabriccluster -templateFile .\template.json -deploymentDebugLogLevel all -verbose
+PS C:\>New-AzResourceGroupDeployment -ResourceGroupName servicefabriccluster -TemplateFile .\template.json -DeploymentDebugLogLevel all -Verbose
 ```
 
-If using https://resources.azure.com, in 'Edit' configuration, after all changes have been made, select 'PUT' to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com).
+If using https://resources.azure.com, in 'Edit' configuration, after all changes have been made, select 'PATCH' to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com).
 
-![Click PUT](../media/resourcemgr7.png)
-
-To troubleshoot errors while modifying a resource configuration, for example, an exclamation or warning icon is temporarily displayed, scroll to the bottom of the page and review the error:
-
-![resources.azure.com error icon](../media/resourcemgr12.png)
-
-![resources.azure.com error icon](../media/resourcemgr13.png)
+![Click PATCH](../media/resourcemgr7.png)
 
 ## Validating configuration
 
@@ -246,6 +240,8 @@ After successful deployment, within a few minutes, the new metrics should be ava
 In 'Metric Namespace' dropdown, 'Virtual Machine Guest' option should now be available.
 
 ![metric explorer](../media/metric-explorer-virtual-machine-guest1.png)
+
+In this example, to create an alert for disk free space, select 'Virtual Machine Guest', then 'LogicalDisk\% Free Space'.  
 
 ![metric explorer](../media/metric-explorer-virtual-machine-guest2.png)
 
@@ -458,3 +454,11 @@ C:\\Packages\\Plugins\\Microsoft.Azure.Diagnostics.IaaSDiagnostics\\1.18.0.5\\St
 ```
 
 Cause: 'Sinks' configuration needs empty 'resourceId' placeholder to define sink as 'Azure Monitor'
+
+### resources.azure.com
+
+To troubleshoot errors while modifying a resource configuration, for example, an exclamation or warning icon is temporarily displayed, scroll to the bottom of the page and review the error:
+
+![resources.azure.com error icon](../media/resourcemgr12.png)
+
+![resources.azure.com error icon](../media/resourcemgr13.png)
