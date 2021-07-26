@@ -83,12 +83,13 @@ We started to see disk space warning on our cluster.  After investigating where 
 * Is it possible to limit how much space a node can use for Logs and Traces?
 
 ## **Answer**
-Yes, you can configure the Disagnostics setting for MaxDiskQuotaInMB which controls Disk quota in MB for Windows Fabric log files
+Yes, you can configure the Disagnostics setting for MaxDiskQuotaInMB which controls Disk quota in MB for Fabric log files.
 
-e.g.
+MaxDiskQuotaInMB can be configured as part of an ARM template, with resources.azure.com ([instructions](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-config-upgrade-azure#customize-cluster-settings-using-resource-manager-templates)), or via PowerShell:
 ```code
 Set-AzureRmServiceFabricSetting -ResourceGroupName clusterResourceGroup -Name clusterName -Section "Diagnostics" -Parameter "MaxDiskQuotaInMB" -Value "25600" 
 ```
+
 
 ## **Question**
 Our D: (azure %temp% drive used for Service Fabric Data Root) drive is full. How can we see what folders at taking up the most space?
