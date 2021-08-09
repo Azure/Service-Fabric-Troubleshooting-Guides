@@ -23,9 +23,9 @@
 		<SecurityAccessPolicy ResourceRef="WebAdminCert" PrincipalRef="Service1" ResourceType="Certificate" />
 	</SecurityAccessPolicies>
 </Policies>
-	<Certificates>
-		<SecretsCertificate X509FindValue="[EncryptionThumbprint]" Name="EncryptionCert" />
-		<EndpointCertificate X509FindValue="[ApplicationClientThumbprint]" Name="WebAdminCert" />
-	</Certificates>
+<Certificates>
+	<SecretsCertificate X509FindValue="[EncryptionThumbprint]" Name="EncryptionCert" />
+	<EndpointCertificate X509FindValue="[ApplicationClientThumbprint]" Name="WebAdminCert" />
+</Certificates>
 </ApplicationManifest>
 ```
