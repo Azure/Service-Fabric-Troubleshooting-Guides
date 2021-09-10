@@ -52,7 +52,7 @@ Does removing a node violate reliability level ||| No
 
 **The following is the only safe mitigation**
 
-**NOTE:** Mitigation time will take at a minimum 60-90 minutes. Depending on the configuration of SF cluster upgrade settings it can take significantly longer.  Please [open a support ticket](https://ms.portal.azure.com/#create/Microsoft.Support/Parameters/%7B%22pesId%22:%22a730ab7a-33ae-c83a-bca5-4935433e38ff%22%7D) through the Azure Portal if you need assistance.
+**NOTE:** Mitigation time will take at a minimum 60-90 minutes. Depending on the configuration of SF cluster upgrade settings it can take significantly longer.  Please [open a support ticket](https://aka.ms/servicefabric/createsupportcase) through the Azure Portal if you need assistance.
 
 To unblock Node deletion operation initiated through VMSS and get the cluster back to the desired reliability level, following are the high level steps
 
