@@ -36,18 +36,18 @@ A warning will be displayed when certificate expiration time is below threshold.
 
 ## Mitigation
 
-If certificate is not expired, renew certificate before expiration.
-If certificate is near expiration and certificate cannot be renewed, depending on cluster configuration you may be able to allow continued access to cluster after expiration.  
-See
+If the certificate has not yet expired, [renew certificate](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-rollover-cert-cn) before expiration.
+
+If the certificate is self-signed and near expiration and due to health issues the certificate rollover cannot be completed, you may be able to enable the security setting [AcceptExpiredPinnedClusterCertificate](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Security/How%20to%20recover%20from%20an%20Expired%20Cluster%20Certificate.md) to allow continued access to cluster after expiration.  
 
 ## Resolution
 
 Renew certificate.
 If certificate is expired, see:
 
-[Fix Expired Cluster Certificate Automated Script](../Security/Fix Expired Cluster Certificate Automated Script.md)  
-[Fix Expired Cluster Certificate Manual Steps](../Security/Fix Expired Cluster Certificate Manual Steps.md)  
-[How to recover from an Expired Cluster Certificate](../Security/How to recover from an Expired Cluster Certificate.md)  
+  [Fix Expired Cluster Certificate Automated Script](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Security/Fix%20Expired%20Cluster%20Certificate%20Automated%20Script.md)  
+  [Fix Expired Cluster Certificate Manual Steps](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Security/Fix%20Expired%20Cluster%20Certificate%20Manual%20Steps.md)  
+  [How to recover from an Expired Cluster Certificate](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Security/How%20to%20recover%20from%20an%20Expired%20Cluster%20Certificate.md)  
 
 ## Reference
 
