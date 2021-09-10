@@ -1,12 +1,12 @@
-# VMMS operations are blocked node gets stuck in deletion and creation after deleting a VMSS
+# VMSS operations are blocked node gets stuck in deletion and creation after deleting a VMSS
 
 ## Problem
-- All VMSS operations are blocked on Silver or higher durability Scaleset after trying to delete a node from a VMMS 
-- The node being deleted (seed node) is stuck in Disabling state
+- All VMSS operations are blocked on [Silver or higher durability](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-capacity#durability-characteristics-of-the-cluster) Scaleset after trying to delete a node from a VMSS 
+- The node being deleted is a "seed node", which are nodes in the primary nodetype used by the Service Fabric cluster system services, is stuck in Disabling state
 
 ## Symptoms
 - One of the seed nodes is stuck disabling with Safety Check - **EnsureSeedNodeQuorum**
-- All operation started after the delete operation will be blocked until the deletion completes, including adding new VMs
+- All operation started after the delete operation will be blocked until the deletion completes, including scaling operations, cancellation tasks, auto os upgrades, and other operational jobs
 
     ![Node Deactivation Info](../media/NodeDeactivationInfo1.png)
 
@@ -23,32 +23,42 @@
 - The VMSS operation that resulted in the specific instance is being deleted / deallocated - Audit logs for VMSS in Portal should have the information  
 - Most common reasons  
   - Customer initiated delete / deallocation from portal or CLI
-    - normally to address some other issue and as a result put the cluster into worse state
-  - Auto scale settings where min is < number of nodes required for reliability level
-  - Some automation run by customer that is initiating the delete
+    - normally an addhoc troubleshooting step performed to try to address some other issue, and as a result put the cluster into worse state
+  - [Auto scale](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-scale-in-out) settings where min is < number of nodes required for [reliability level](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-capacity#the-reliability-characteristics-of-the-cluster)
+  - Some other automation run by customer that is initiating the delete or scale operation
 
-**NOTE:** Deallocate operations on instances in scaleset associated with SF is not supported.
+**NOTE:** Regardless of durability level, running a Deallocation operation on a virtual machine scale set will destroy the cluster.  Deallocate operations on instances in scaleset associated with SF are not supported.
 
-## Example ##
+## Examples ##
 
- . | .
-----------|----------
-Current Reliability Level | Silver
-Seed nodes required for current reliability level | 5
-Current number of nodes of Primary node type | 5
+Reliability Level | Silver | Gold | Platinum
+---------|----------|----------|----------
+**Seed nodes required for reliability level** | **5** | **7** | **9**
+Number of nodes in Primary node type | 5
 Does removing a node violate reliability level | Yes
+Number of nodes in Primary node type | 6
+Does removing a node violate reliability level | No
+Number of nodes in Primary node type || 7
+Does removing a node violate reliability level || Yes
+Number of nodes in Primary node type || 8
+Does removing a node violate reliability level || No
+Number of nodes in Primary node type ||| 9
+Does removing a node violate reliability level ||| Yes
+Number of nodes in Primary node type ||| 10
+Does removing a node violate reliability level ||| No
+
 
 ## Mitigation ##
 
 **The following is the only safe mitigation**
 
-**NOTE:** Mitigation time will take at a minimum 60-90 minutes. Depending on the configuration of SF cluster upgrade settings it can take significantly longer.  Please open a support ticket through the Azure Portal for assistance.
+**NOTE:** Mitigation time will take at a minimum 60-90 minutes. Depending on the configuration of SF cluster upgrade settings it can take significantly longer.  Please [open a support ticket](https://ms.portal.azure.com/#create/Microsoft.Support/Parameters/%7B%22pesId%22:%22a730ab7a-33ae-c83a-bca5-4935433e38ff%22%7D) through the Azure Portal if you need assistance.
 
 To unblock Node deletion operation initiated through VMSS and get the cluster back to the desired reliability level, following are the high level steps
 
-1. Temporarily reduce reliability level to match number of remaining seed nodes after removal of VM
-2. Scale out VMSS
-3. Set reliability level to the desired level for the cluster
+1. Temporarily [reduce reliability level](https://docs.microsoft.com/en-us/powershell/module/az.servicefabric/update-azservicefabricreliability?view=azps-6.4.0) to match number of remaining seed nodes after removal of VM
+2. [Scale out VMSS](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-cli#change-the-capacity-of-a-scale-set) to the correct number of nodes required by the desired reliability level
+3. Set reliability level back to the desired level for the cluster
 
 ## Prerequisites ##
 
