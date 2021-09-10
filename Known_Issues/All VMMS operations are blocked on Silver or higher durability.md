@@ -44,7 +44,7 @@ Number of nodes in Primary node type || 8
 Does removing a node violate reliability level || No
 Number of nodes in Primary node type ||| 9
 Does removing a node violate reliability level ||| Yes
-Number of nodes in Primary node type ||| 10
+Number of nodes in Primary node type ||| 10+
 Does removing a node violate reliability level ||| No
 
 
