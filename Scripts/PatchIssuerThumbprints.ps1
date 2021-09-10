@@ -68,7 +68,7 @@ If (!(Test-Path $clusterDataRootPath)) {
 
 $curValue = (get-item wsman:\localhost\Client\TrustedHosts).value
 
-$scriptBlock = { param($clusterDataRootPath, $oldThumbprint, $hard)
+$scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
     Write-Host "$env:computername : Running on $((Get-WmiObject win32_computersystem).DNSHostName)" -ForegroundColor Green
 
     function StopServiceFabricServices {
@@ -248,13 +248,13 @@ $scriptBlock = { param($clusterDataRootPath, $oldThumbprint, $hard)
     $serverSection = $settingsXml.Settings.Section.Get($settingsXml.Settings.Section.Name.IndexOf("Security/ServerX509Names")).Parameter
 
     $currentIssuerThumbprints = @($clusterSection.Value).Get(@($clusterSection.Name).IndexOf($commonname))
-    Write-Host ("$env:computername : Current issuer configuration is " + $currentIssuerThumbprints + " Target issuer configuration is " + $targetIssuerThumbprints) -ForegroundColor Green
+    Write-Host ("$env:computername : Current issuer configuration is " + $currentIssuerThumbprints + " Target issuer configuration is " + $newIssuerThumbprints) -ForegroundColor Green
 
 
-    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clusterSection, $commonname, $targetIssuerThumbprints
-    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $serverSection, $commonname, $targetIssuerThumbprints
-    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $adminClientSection, $commonname, $targetIssuerThumbprints
-    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clientSection, $commonname, $targetIssuerThumbprints
+    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clusterSection, $commonname, $newIssuerThumbprints
+    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $serverSection, $commonname, $newIssuerThumbprints
+    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $adminClientSection, $commonname, $newIssuerThumbprints
+    invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clientSection, $commonname, $newIssuerThumbprints
 
     $settingsXml.Save($settingsFile)
     # end settings xml patch
@@ -271,10 +271,10 @@ $scriptBlock = { param($clusterDataRootPath, $oldThumbprint, $hard)
         $adminClientSection = $manifestXml.ClusterManifest.FabricSettings.Section.Get($manifestXml.ClusterManifest.FabricSettings.Section.Name.IndexOf("Security/AdminClientX509Names")).Parameter
         $clientSection = $manifestXml.ClusterManifest.FabricSettings.Section.Get($manifestXml.ClusterManifest.FabricSettings.Section.Name.IndexOf("Security/ClientX509Names")).Parameter
 
-        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clusterSection, $commonname, $targetIssuerThumbprints
-        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $serverSection, $commonname, $targetIssuerThumbprints
-        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $adminClientSection, $commonname, $targetIssuerThumbprints
-        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clientSection, $commonname, $targetIssuerThumbprints
+        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clusterSection, $commonname, $newIssuerThumbprints
+        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $serverSection, $commonname, $newIssuerThumbprints
+        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $adminClientSection, $commonname, $newIssuerThumbprints
+        invoke-command -ScriptBlock $PatchCertCNEntry -ArgumentList $clientSection, $commonname, $newIssuerThumbprints
 
         $manifestXml.Save($manifestFile)
         # end manifest xml patch
