@@ -76,6 +76,7 @@ without explicit user consent.
 3. Download [FixExpiredCert-AEPCC.ps1](../Scripts/FixExpiredCert-AEPCC.ps1)
 
 ```PowerShell
+   [net.servicePointManager]::Expect100Continue = $true;[net.servicePointManager]::SecurityProtocol = [net.SecurityProtocolType]::Tls12;
    invoke-webRequest https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/FixExpiredCert-AEPCC.ps1 -out $pwd\FixExpiredCert-AEPCC.ps1;
 ```
 
