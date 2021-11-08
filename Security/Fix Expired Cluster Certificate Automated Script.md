@@ -200,7 +200,7 @@ Ensure the correct KeyVault for the new cert is listed, update the "sourceVault"
             }
 ```
 
-Update the "thumbprint" propert with the new certificate thumbprint
+Update the "thumbprint" property with the new certificate thumbprint
 
 ```json
             "extensionProfile": {
