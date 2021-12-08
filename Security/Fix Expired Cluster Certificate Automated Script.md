@@ -49,7 +49,7 @@ Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher
 
 4. Modify **"virtualMachineProfile / osProfile / secrets"**, to add (deploy) the new certificate to each of the nodes in the nodetype. Choose one of the options below:
 
-> a. If the new certificate is in the **same Key Vault** as the Primary, add **"certificateUrl"** and **"certificate"** store to existing array of **"vaultCertificates"** as shown below:
+> a. If the new certificate is in the **same Key Vault** as the Primary, add **"certificateUrl"** and **"certificateStore"**  to existing array of **"vaultCertificates"** as shown below:
 
 ```json
   "virtualMachineProfile": {
