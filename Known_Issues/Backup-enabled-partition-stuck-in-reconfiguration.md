@@ -1,13 +1,9 @@
 ---
-eng.ms.tsg.applicableTo: Public, MoonCake, BlackForest, FairFax, USNAT, USSEC, 
-eng.ms.tsg.requireJIT: Yes
-eng.ms.tsg.ProductionTarget: Service Fabric 
-eng.ms.tsg.owningTeam: Service Fabric - Service
 name: TSG Partition with BackupPolicy enabled; stuck at change role during reconfiguration causing availability loss
 ---
 # Partition with BackupPolicy enabled; stuck at change role during reconfiguration causing availability loss
 
-Clusters which have Backup Restore Service enabled and backup policies set for backing up data for stateful services, may encounter situation where partition reconfiguration is stuck. This occurs if a full backup is being taken for large data set while a reconfiguration also get triggered at the same time.
+Clusters which have Backup Restore Service enabled and backup policies set for backing up data for stateful services, **may** encounter situation where partition reconfiguration is stuck. This occurs if a full backup is being taken for large data set while a reconfiguration also get triggered at the same time. If reconfiguration gets stuck, the partition does not have read or write access and all client calls to the partition fail.
 
 ## Symptom
 
@@ -17,9 +13,9 @@ Clusters which have Backup Restore Service enabled and backup policies set for b
 
 ## Detection in SFX
 
-![Reconfiguration Stuck](/images/BRS/ReconfigStuck.png)
+![Reconfiguration Stuck](../media/BRS/ReconfigStuck.png)
 
-![Backup Callback Stuck health warning](/images/BRS/BackupCallbackStuck.png)
+![Backup Callback Stuck health warning](../media/BRS/BackupCallbackStuck.png)
 
 ## Detection with Powershell
 
