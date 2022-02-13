@@ -4,17 +4,19 @@
 
 There are different methods available to export current state of a Service Fabric Managed Cluster. The following describes processes for using Azure portal and PowerShell with 'Az' Azure module. These processes can be used for Disaster Recovery, Redeployment, or as a base cluster template for duplication.  
 
-Service Fabric Managed clusters creates a secondary resource group that contains virtual machine scale sets (vmss), load balancer, storage, and network resources. This secondary resource group naming convention is 'SFC_<cluster guid>'. This secondary resource group **does not** need to be exported. Exporting the main resource group containing the managed cluster is all that is required.
+Service Fabric Managed clusters creates a secondary resource group that contains virtual machine scale sets (vmss), load balancer, storage, and network resources. This secondary resource group naming convention is 'SFC_\<cluster guid>'. This secondary resource group **does not** need to be exported. Exporting the main resource group containing the managed cluster is all that is required.
 
 ## Export Service Fabric Managed Cluster from Azure portal
 
 1. Navigate to Azure portal https://portal.azure.com. 
 
-1. Select the resource group for the service fabric managed cluster.
+1. Select the resource group that contains the service fabric managed cluster resource.
 
 1. In left view panel under 'Automation', select 'Export Template'. Ensure 'Include Parameters' is checked, then select 'Download'.
 
     ![](../media/azure-export-template.png)
+
+1. Zip will contain a template.json and template.parameters.json that can be modified to create a new deployment or used as is to redeploy the current cluster.
 
 ## Export Service Fabric Managed Cluster from Azure PowerShell
 
@@ -36,7 +38,9 @@ Export-AzResourceGroup -ResourceGroupName $resourceGroupName `
 
 ## Import exported template
 
-Depending on scenario, make modifications to template if necessary in the parameters and / or template files. When ready to import, the following powershell command can be used. Modify variables as needed.
+Depending on scenario, make modifications to template if necessary in the template and / or optional parameter files. When ready to import, the following powershell command can be used. Modify variables as needed.
+
+### with parameter file
 
 ```powershell
 $resourceGroupName = ''
@@ -44,11 +48,34 @@ $deploymentName = $resourceGroupName + (get-date).ToString("yyMMddHHmmss")
 $templateFile = '.\template.json'
 $templateParameterFile = '.\template.parameters.json'
 
+# Install-Module Az -AllowClobber -Force
+Import-Module Az
+Connect-AzAccount
+
 New-AzResourceGroupDeployment -Name $deploymentName `
             -ResourceGroupName $resourceGroupName `
             -DeploymentDebugLogLevel All `
             -TemplateFile $templateFile `
-            -TemplateParameterObject $templateParameterFile `
+            -TemplateParameterFile $templateParameterFile `
+            -Verbose
+
+```
+
+### without parameter file
+
+```powershell
+$resourceGroupName = ''
+$deploymentName = $resourceGroupName + (get-date).ToString("yyMMddHHmmss")
+$templateFile = '.\template.json'
+
+# Install-Module Az -AllowClobber -Force
+Import-Module Az
+Connect-AzAccount
+
+New-AzResourceGroupDeployment -Name $deploymentName `
+            -ResourceGroupName $resourceGroupName `
+            -DeploymentDebugLogLevel All `
+            -TemplateFile $templateFile `
             -Verbose
 
 ```
