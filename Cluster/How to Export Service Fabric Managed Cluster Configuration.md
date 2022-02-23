@@ -2,7 +2,7 @@
 
 ## Overview
 
-There are different methods available to export current state of a Service Fabric Managed Cluster. The following describes processes for using Azure portal and PowerShell with 'Az' Azure module. These processes can be used for Disaster Recovery, Redeployment, or as a base cluster template for duplication.  
+There are different methods available to export current configuration of a Service Fabric Managed Cluster. The following describes processes for using Azure portal and PowerShell with 'Az' Azure module. These processes can be used for Disaster Recovery, Redeployment, or as a base cluster template for duplication. This process does not save / export application data. Service Fabric Backup and Restore API provides functionality to backup application data. See document [Periodic backup and restore](https://docs.microsoft.com/azure/service-fabric/service-fabric-backuprestoreservice-quickstart-azurecluster) for more information.
 
 Service Fabric Managed clusters creates a secondary resource group that contains virtual machine scale sets (vmss), load balancer, storage, and network resources. This secondary resource group naming convention is 'SFC_\<cluster guid>'. This secondary resource group **does not** need to be exported. Exporting the main resource group containing the managed cluster is all that is required.
 
