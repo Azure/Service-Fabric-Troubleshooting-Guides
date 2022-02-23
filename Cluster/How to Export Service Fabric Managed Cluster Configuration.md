@@ -10,13 +10,13 @@ Service Fabric Managed clusters creates a secondary resource group that contains
 
 1. Navigate to Azure portal https://portal.azure.com. 
 
-1. Select the resource group that contains the service fabric managed cluster resource.
+2. Select the resource group that contains the service fabric managed cluster resource.
 
-1. In left view panel under 'Automation', select 'Export Template'. Ensure 'Include Parameters' is checked, then select 'Download'.
+3. In left view panel under 'Automation', select 'Export Template'. Ensure 'Include Parameters' is checked, then select 'Download'.
 
     ![](../media/azure-export-template.png)
 
-1. Zip will contain a template.json and template.parameters.json that can be modified to create a new deployment or used as is to redeploy the current cluster.
+4. Zip will contain a template.json and template.parameters.json that can be modified to create a new deployment or used as is to redeploy the current cluster.
 
 ## Export Service Fabric Managed Cluster from Azure PowerShell
 
