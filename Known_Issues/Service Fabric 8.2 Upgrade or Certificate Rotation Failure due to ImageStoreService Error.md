@@ -1,11 +1,13 @@
-# Service Fabric 8.2 Upgrade or Certificate Rollover May Fail due to ImageStoreService Error
+# Service Fabric 8.2, Cluster certificate changes or Certificate Rollover May Fail due to ImageStoreService Error
+
+## Applies to 
+- Clusters on 8.2 CU2
 
 ## Symptoms
 
-- Cluster is being upgraded to Service Fabric 8.2 or cluster certificate is being modified and is stuck on Upgrade Domain (UD) 0.
-- 'fabric:/System/ImageStoreService' is in an 'Error' state.
+- Cluster security - Adding new secondary certificate or modify existing cluster certificate configuration may cause Upgrade to get stuck on Upgrade Domain (UD) 0.
+- 'fabric:/System/ImageStoreService' is in a 'Warning' or 'Error' state.
 - Some or all secondary replicas in ImageStoreService are down.
-- Upgrade stuck (depending on how many replicas are down)
 - Service Fabric Explorer (SFX) Warning Event: 00000000-0000-0000-0000-000000003000 SafetyCheck: EnsurePartitionQuorum
 - SFX Error Event: 00000000-0000-0000-0000-000000003000 Partition is in quorum loss  
 
