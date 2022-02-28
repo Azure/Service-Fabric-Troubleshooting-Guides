@@ -7,7 +7,8 @@
 - Some or all secondary replicas in ImageStoreService are down.
 - Upgrade stuck (depending on how many replicas are down)
 - Service Fabric Explorer (SFX) Warning Event: 00000000-0000-0000-0000-000000003000 SafetyCheck: EnsurePartitionQuorum
-- SFX Error Event: 00000000-0000-0000-0000-000000003000 Partition is in quorum loss
+- SFX Error Event: 00000000-0000-0000-0000-000000003000 Partition is in quorum loss  
+
   ![](../media/sfx-imagestore-quorum-loss.png)
 
 
@@ -19,9 +20,11 @@
 
 One of the following mitigation can be applied
 
-- Option 1 - more complexity less impactful - [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to nodes with 'Down' ImageStoreService partitions. Open TaskManager and right-click on FileStoreService.exe to terminate process.
+- Option 1 - more complexity less impactful - [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to nodes with 'Down' ImageStoreService partitions. Open TaskManager and right-click on FileStoreService.exe to terminate process.  
+
     ![](../media/task-manager-filestoreservice-terminate.png)
-- Option 2 - less complexity more impactful - From SFX, restart each node with a down partition *one at a time* ensuring prior node restart is complete.
+- Option 2 - less complexity more impactful - From SFX, restart each node with a down partition *one at a time* ensuring prior node restart is complete.  
+
     ![](../media/sfx-node-restart.png)
 
 
