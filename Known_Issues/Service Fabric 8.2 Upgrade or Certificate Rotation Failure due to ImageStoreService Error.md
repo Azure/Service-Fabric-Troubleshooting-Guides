@@ -4,10 +4,11 @@
 
 - Cluster is being upgraded to Service Fabric 8.2 or cluster certificate is being modified and is stuck on Upgrade Domain (UD) 0.
 - 'fabric:/System/ImageStoreService' is in an 'Error' state.
-- All partitions in ImageStoreService are down except primary
-- Service Fabric Explorer (SFX) Error Event:
-    00000000-0000-0000-0000-000000003000 Partition is in quorum loss
-    ![](../media/sfx-imagestore-quorum-loss.png)
+- Some or all secondary replicas in ImageStoreService are down.
+- Upgrade stuck (depending on how many replicas are down)
+- Service Fabric Explorer (SFX) Warning Event: 00000000-0000-0000-0000-000000003000 SafetyCheck: EnsurePartitionQuorum
+- SFX Error Event: 00000000-0000-0000-0000-000000003000 Partition is in quorum loss
+  ![](../media/sfx-imagestore-quorum-loss.png)
 
 
 ## Root Cause Analysis
