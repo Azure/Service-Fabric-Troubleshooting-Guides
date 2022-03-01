@@ -6,6 +6,7 @@
 ## Symptoms
 
 - Cluster security - Adding new secondary certificate or modify existing cluster certificate configuration may cause Upgrade to get stuck on Upgrade Domain (UD) 0.
+- Connection authentication failures with error: FABRIC_E_SERVER_AUTHENTICATION_FAILED: CertificateNotMatched
 - 'fabric:/System/ImageStoreService' is in a 'Warning' or 'Error' state.
 - Some or all secondary replicas in ImageStoreService are down.
 - Service Fabric Explorer (SFX) Warning Event: 00000000-0000-0000-0000-000000003000 SafetyCheck: EnsurePartitionQuorum
