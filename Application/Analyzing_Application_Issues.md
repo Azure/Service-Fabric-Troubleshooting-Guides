@@ -8,15 +8,15 @@ While SF CSS team can help with investigations, the final responsibility of anal
 
 1. Failing on startup
     1. [Diagnose common code package errors by using Service Fabric](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-diagnostics-code-package-errors)
-    2. Exhausting load on startup, for example loading configuration data from database or previous state
+    2. Loading data can delay opening, responsiveness, or might cause unforeseen exceptions and timeouts. 
     1. Exceeding hardware resources
-    1. Unhandled exceptions in code
+    1. Unhandled exceptions or dependencies in code
     1. Failing on external services, authorization, unhandled error codes, request timeouts
     1. Recent code changes through application deployments
 1. Failures with certificates 
     1. Certificate not available on machine
     1. Private key is missing
-    1. ACL not sufficient
+    1. Insufficient permissions to access certificates or their private keys. For example: [How to set ACL for a SF certificate](../Security/Set%20ACL%20for%20a%20SF%20certificate.md).
 1. Missing assembly dependencies
     1. Required .NET version not available
     1. Assemblies are missing in app package
@@ -60,7 +60,7 @@ Recommendations to help Application owner analyze application issues in distribu
 
 ### Types of application issues where SF CSS team may be able to provide good insights for helping Application team with investigation 
 
-Service Fabric logs collect information about service fabric cluster and very minimal information about the applications themselves. Service Fabric does not have insights into the internals of the application and hence does not have the ability to capture information about the application behavior. Service Fabric has knowledge about the following and can provide some insights to help with application but nor necessarily the exact cause.
+Service Fabric logs collect information about service fabric cluster and very minimal information about the applications themselves. Service Fabric does not have insights into the internals of the application and hence does not have the ability to capture information about the application behavior. Service Fabric has knowledge about the following and can provide some insights to help with application but not necessarily the exact cause.
 
 - Service lifecycle events i.e. startup, role change, shutdown and any abnormal behavior during these phases
 
@@ -70,6 +70,11 @@ Service Fabric has no knowledge into the following. In some cases, SF CSS team m
 
 - Performance
 - Crashes
+- Interaction between the application and the SF runtime (if it exists)
+- Set up of application resources by the SF runtime (accounts, certificates, endpoints)
+- Connection handshakes for apps built on the SF SDK
+
+Please note that, with a few exceptions, SF logs are diagnostic traces, and do not constitute an audit.
 
 ### Types of application issues where SF CSS team will not be able to help
 
