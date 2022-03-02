@@ -4,7 +4,7 @@ The Resource Orchestrator Service is an experimental feature that is currently i
 ## **Verify Resource Orchestrator Service Has Been Turned On**
 You can verify that the Resource Orchestrator Service is turned on in your cluster by looking at the health events in Service Fabric Explorer. There should be a health event that indicates the experimental feature "Resource Orchestrator Service" has been turned on. It should look similar to the image below.
 
-![ROSExperimentalFeature.jpg](../media/ROSExperimentalFeature.jpg)
+![ROSExperimentalFeature.png](../media/ROSExperimentalFeature.png)
 
 ## **Turn Off Resource Orchestrator Service**
 To turn off the Resource Orchestrator Service, the EnableResourceOrchestrator configuration in the FailoverManager section of the cluster's configuration needs to be set to False. 
