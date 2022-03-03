@@ -1,4 +1,6 @@
 ## **Experimental Feature - How To Turn Off Resource Orchestrator Service**
+This TSG only applies to Service Fabric Release 9.0.
+
 The Resource Orchestrator Service is an experimental feature that is currently in development. It is currently not meant for production use and is by default set to off. However, if your cluster finds itself it a situation where the Resource Orchestrator Service is turned on, this document describes how to turn it off.
 
 ## **Verify Resource Orchestrator Service Has Been Turned On**
