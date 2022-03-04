@@ -1,7 +1,7 @@
 # Service Fabric 8.2, Cluster certificate changes or Certificate Rollover May Fail due to ImageStoreService Error
 
 ## Applies to 
-- Clusters on 8.2 CU2
+- Clusters on [8.2 CU2](https://github.com/microsoft/service-fabric/blob/master/release_notes/Service_Fabric_ReleaseNotes_82CU2.md) (version 8.2.1486.9590)
 
 ## Symptoms
 
