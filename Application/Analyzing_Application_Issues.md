@@ -129,7 +129,6 @@ For reproducible behaviors on Azure hosted clusters provide timestamp of a isola
 - [Windows Performance Analyzer](https://docs.microsoft.com/en-us/windows-hardware/test/wpt/windows-performance-analyzer)
 - [PerfView](https://github.com/Microsoft/perfview)
 
-
 ## Support
 
 If you need more help at any point in this article, you can contact the Azure experts by following our [support options](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-support). Alternatively, you can also file an Azure support incident. Go to the [Azure Support site](https://azure.microsoft.com/support/options/) and click on 'Get Support'.
