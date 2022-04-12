@@ -14,11 +14,6 @@
 
   ![](../media/sfx-imagestore-quorum-loss.png)
 
-
-## Root Cause Analysis
-
-- Service Fabric Product Group has resolved issue.
-
 ## Possible Mitigations
 
 One of the following mitigation can be applied
