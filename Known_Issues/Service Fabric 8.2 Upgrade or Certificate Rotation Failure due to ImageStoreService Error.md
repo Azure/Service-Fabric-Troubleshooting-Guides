@@ -17,7 +17,7 @@
 
 ## Root Cause Analysis
 
-- Service Fabric Product Group is currently investigating issue.
+- Service Fabric Product Group has resolved issue.
 
 ## Possible Mitigations
 
@@ -33,4 +33,5 @@ One of the following mitigation can be applied
 
 ## Resolution
 
-- Issue to be resolved in future Service Fabric release.
+- Fix for issue released in in Service Fabric version 8.2 CU21 (8.2.1571) [Microsoft Azure Service Fabric 8.2 Cumulative Update 2.1 Release Notes](https://github.com/microsoft/service-fabric/blob/master/release_notes/Service_Fabric_ReleaseNotes_82CU21.md).
+- This version is now available in all Azure regions.
