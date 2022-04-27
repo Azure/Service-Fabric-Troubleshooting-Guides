@@ -14,11 +14,6 @@
 
   ![](../media/sfx-imagestore-quorum-loss.png)
 
-
-## Root Cause Analysis
-
-- Service Fabric Product Group is currently investigating issue.
-
 ## Possible Mitigations
 
 One of the following mitigation can be applied
@@ -33,4 +28,5 @@ One of the following mitigation can be applied
 
 ## Resolution
 
-- Issue is fixed in 8.2 CU2.1 (version 8.2.1571.9590).
+- Fix for issue released in in Service Fabric version 8.2 CU21 (8.2.1571) [Microsoft Azure Service Fabric 8.2 Cumulative Update 2.1 Release Notes](https://github.com/microsoft/service-fabric/blob/master/release_notes/Service_Fabric_ReleaseNotes_82CU21.md).
+- This version is now available in all Azure regions.
