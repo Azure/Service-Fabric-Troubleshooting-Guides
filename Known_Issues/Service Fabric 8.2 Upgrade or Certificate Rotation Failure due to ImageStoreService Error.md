@@ -33,4 +33,4 @@ One of the following mitigation can be applied
 
 ## Resolution
 
-- Issue to be resolved in future Service Fabric release.
+- Issue is fixed in 8.2 CU2.1 (version 8.2.1571.9590).
