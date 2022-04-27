@@ -63,8 +63,8 @@ Bug # 12561821 Commit: https://msazure.visualstudio.com/DefaultCollection/One/Se
 	No Instance(s) Available.	
  	If cmd reports no instance available, it means that those are older SIDs for those SF group accounts and those Sids can be deleted. Now add these new SF group accounts with permission listed above. Try uploading package again.	
 		
-	For CSS team, Please also note when was the last Windows update ran and check with the customer if the issue started arising after Windows Update. Please mail sfimagestore with details.	
+	For CSS team, Please also note when was the last Windows update ran and check with the customer if the issue started arising after Windows Update. Please mail ImageStore alias with details.	
 		
 4. If the above step doesn't work, check any healthy node and add any missing accounts to the problematic node.	
           Try upload again.	
- If none of the step mitigates the issue, please send a mail to sfimagestore with details of the above command along with Get-smbshare PS cmdlet.
+ If none of the step mitigates the issue, please send a mail to ImageStore alias with details of the above command along with Get-smbshare PS cmdlet.
