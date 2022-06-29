@@ -18,7 +18,7 @@ name: Cluster upgrades stuck
 	• Azure Service Fabric cluster	  
 	  [Visualize your cluster using Azure Service Fabric Explorer](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-visualizing-your-cluster#connect-to-a-service-fabric-cluster)<br><br> 
 	• Standalone Service Fabric cluster	  
-	  [Get-ServiceFabricClusterConfiguration (ServiceFabric) | Microsoft Docs](https://docs.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricclusterupgrade?view=azureservicefabricps)	
+	  [Get-ServiceFabricClusterConfiguration](https://docs.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricclusterupgrade?view=azureservicefabricps)	
 
 ## How to identify a cluster upgrade is stuck in Service Fabric
  Validate if your cluster runtime upgrade is stuck making any progress across upgrade domains by:<br>
