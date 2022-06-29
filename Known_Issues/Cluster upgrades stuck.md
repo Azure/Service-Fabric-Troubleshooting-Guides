@@ -21,19 +21,16 @@ name: Cluster upgrades stuck
 	  [Get-ServiceFabricClusterConfiguration (ServiceFabric) | Microsoft Docs](https://docs.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricclusterupgrade?view=azureservicefabricps)	
 
 ## How to identify a cluster upgrade is stuck in Service Fabric
- Validate if your cluster runtime upgrade is stuck making any progress across upgrade domains by:
-
-	1.	Service Fabric Explorer:
-		•	In the details tab at the cluster level check the Start Timestamp, Upgrade state and the Code Version to which the cluster is upgrading to. If the Start Timestamp is >24 hours and Upgrade state continues to not change from “Upgrade in Progress” then follow the mitigation steps listed under “Required Action from customer”.
-		
-	2.	PowerShell:
-
-		•	Connect to the Service Fabric cluster using the command
-		Connect-ServiceFabricCluster
-
-		•	Execute the below command to retrieve the current progress of the upgrade.
-		Get-ServiceFabricClusterUpgrade 
-		If the StartTimestampUtc is >24 hours and Upgrade state continues to not change from “Upgrade in Progress”. Please follow the mitigation steps listed under “Required Action from customer”
+ Validate if your cluster runtime upgrade is stuck making any progress across upgrade domains by:<br>
+	• Service Fabric Explorer:<br>
+	In the details tab at the cluster level check the Start Timestamp, Upgrade state and the Code Version to which the cluster is upgrading to. If the Start Timestamp is >24 hours and Upgrade state continues to not change from “Upgrade in Progress” then follow the mitigation steps listed under “Required Action from customer”.<br>	<br>	
+	• PowerShell:<br>
+	   1. Connect to the Service Fabric cluster using the command<br>
+	    Connect-ServiceFabricCluster
+	    
+	   2. Execute the below command to retrieve the current progress of the upgrade.
+	    Get-ServiceFabricClusterUpgrade 
+	If the StartTimestampUtc is >24 hours and Upgrade state continues to not change from “Upgrade in Progress”. Please follow the mitigation steps listed under     “Required Action from customer”
 
 
 ## Required Action from customer
