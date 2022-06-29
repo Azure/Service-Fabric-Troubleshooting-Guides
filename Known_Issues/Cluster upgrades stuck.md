@@ -4,42 +4,36 @@ name: Cluster upgrades stuck
 
 ## Problem Description/Impact
 
- Service Fabric clusters configured with automatic or manual runtime upgrades may get stuck in an upgrade domain without impacting customer workloads. Effected Service Fabric runtime versions include:
-	ï	8.2.1235.9590
-	ï	8.2.1363.9590
-	ï	8.2.1486.9590
-	ï	8.2.1571.9590
-	ï	8.2.1620.9590
-	ï	9.0.1017.9590
-	ï	9.0.1028.9590
+ Service Fabric clusters configured with automatic or manual runtime upgrades may get stuck in an upgrade domain without impacting customer workloads. Effected Service Fabric runtime versions include:<br>
+	‚Ä¢	8.2.1235.9590 <br>
+	‚Ä¢	8.2.1363.9590 <br>
+	‚Ä¢	8.2.1486.9590 <br>
+	‚Ä¢	8.2.1571.9590 <br>
+	‚Ä¢	8.2.1620.9590 <br>
+	‚Ä¢	9.0.1017.9590 <br>
+	‚Ä¢	9.0.1028.9590 <br>
 
-## How to identify Service Fabric runtime version
-
- The runtime version can be verified based on the type of Service Fabric cluster using the following:
-
-	ï	Azure Service Fabric cluster
-	Check the ìService Fabric Versionî under ìOverviewî by logging into Azure Portal   See Visualizing your cluster using Azure Service Fabric Explorer
-
-	ï	Standalone Service Fabric cluster
-	Get-ServiceFabricClusterConfiguration (ServiceFabric) | Microsoft Docs
-
+## How to identify Service Fabric runtime version<br>
+ The runtime version can be verified based on the type of Service Fabric cluster using the following:<br>
+	‚Ä¢ Azure Service Fabric cluster	  
+	  [Visualize your cluster using Azure Service Fabric Explorer](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-visualizing-your-cluster#connect-to-a-service-fabric-cluster)<br><br> 
+	‚Ä¢ Standalone Service Fabric cluster	  
+	  [Get-ServiceFabricClusterConfiguration (ServiceFabric) | Microsoft Docs](https://docs.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricclusterupgrade?view=azureservicefabricps)	
 
 ## How to identify a cluster upgrade is stuck in Service Fabric
-
  Validate if your cluster runtime upgrade is stuck making any progress across upgrade domains by:
 
 	1.	Service Fabric Explorer:
-
-		ï	In the details tab at the cluster level check the Start Timestamp, Upgrade state and the Code Version to which the cluster is upgrading to. If the Start Timestamp is >24 hours and Upgrade state continues to not change from ìUpgrade in Progressî then follow the mitigation steps listed under ìRequired Action from customerî.
-
+		‚Ä¢	In the details tab at the cluster level check the Start Timestamp, Upgrade state and the Code Version to which the cluster is upgrading to. If the Start Timestamp is >24 hours and Upgrade state continues to not change from ‚ÄúUpgrade in Progress‚Äù then follow the mitigation steps listed under ‚ÄúRequired Action from customer‚Äù.
+		
 	2.	PowerShell:
 
-		ï	Connect to the Service Fabric cluster using the command
+		‚Ä¢	Connect to the Service Fabric cluster using the command
 		Connect-ServiceFabricCluster
 
-		ï	Execute the below command to retrieve the current progress of the upgrade.
+		‚Ä¢	Execute the below command to retrieve the current progress of the upgrade.
 		Get-ServiceFabricClusterUpgrade 
-		If the StartTimestampUtc is >24 hours and Upgrade state continues to not change from ìUpgrade in Progressî. Please follow the mitigation steps listed under ìRequired Action from customerî
+		If the StartTimestampUtc is >24 hours and Upgrade state continues to not change from ‚ÄúUpgrade in Progress‚Äù. Please follow the mitigation steps listed under ‚ÄúRequired Action from customer‚Äù
 
 
 ## Required Action from customer
