@@ -16,7 +16,7 @@
 param(
     [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/7989338b-8ae9-4a5d-8425-020148016812/c26361fde7f706279265a505b4d1d93a/dotnet-runtime-6.0.6-win-x64.exe',
     [version]$version = '6.0.6',
-    [switch]$norestart,
+    [bool]$norestart = $true,
     [bool]$registerEvent = $true,
     [string]$registerEventSource = 'CustomScriptExtensionPS'
 )
@@ -27,20 +27,23 @@ $ErrorActionPreference = 'continue'
 [net.servicePointManager]::SecurityProtocol = [net.SecurityProtocolType]::Tls12;
 
 function main() {
+    $installLog = "$psscriptroot\install.log"
+    $transcriptLog = "$psscriptroot\transcript.log"
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
-    if ($registerEvent) {
-        if (!(get-eventlog -LogName 'Application' -Source $registerEventSource)) {
-            New-EventLog -LogName 'Application' -Source $registerEventSource
-        }
+    if(!$isAdmin){
+        Write-Warning "restart script as administrator"
+        return
     }
     
+    register-event
+
     $installedVersion = get-dotnetVersion
     if ($installedVersion -ge $version) {
         write-event "dotnet $installedVersion already installed"
         return
     }
 
-    $transcriptLog = "$psscriptroot/transcript.log"
     Start-Transcript -Path $transcriptLog
 
     $installFile = "$psscriptroot\$([io.path]::GetFileName($dotnetDownloadUrl))"
@@ -53,7 +56,6 @@ function main() {
         write-host "invoke-webrequest result:$($result | Format-List *)"
     }
 
-    $installLog = '$psscriptroot\install.log'
     $argumentList = "/q /log $installLog"
 
     if (!$norestart) {
@@ -73,16 +75,37 @@ function main() {
     write-host "install result:$($result | Format-List * | out-string)"
     Write-Host "installed dotnet version final:$(get-dotnetVersion)"
     write-host "install log:`r`n$(Get-Content -raw $installLog)"
+    
     Stop-Transcript
     write-event (get-content -raw $transcriptLog)
+
     return $result
+}
+
+function register-event() {
+    try {
+        if ($registerEvent) {
+            if (!(get-eventlog -LogName 'Application' -Source $registerEventSource -ErrorAction silentlycontinue)) {
+                New-EventLog -LogName 'Application' -Source $registerEventSource
+            }
+        }
+    }
+    catch {
+        write-host "exception:$($error | out-string)"
+        $error.clear()
+    }
 }
 
 function write-event($data) {
     write-host $data
 
-    if ($registerEvent) {
-        Write-EventLog -LogName 'Application' -Source $registerEventSource -Message $data -EventId 1000
+    try {
+        if ($registerEvent) {
+            Write-EventLog -LogName 'Application' -Source $registerEventSource -Message $data -EventId 1000
+        }
+    }
+    catch {
+        $error.Clear()
     }
 }
 
@@ -90,7 +113,7 @@ function get-dotnetVersion() {
     $dotnetExe = 'C:\Program Files\dotnet\dotnet.exe'
     if ((test-path $dotnetExe)) {
         $dotnetInfo = (. $dotnetExe --info)
-        $installedVersion = [version][regex]::match($dotnetInfo, 'Version: (.+?)\s').groups[1].value
+        $installedVersion = [version][regex]::match($dotnetInfo, 'Version:\s+?(\d.+?)\s').groups[1].value
     }
     else {
         $registryPath = "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
