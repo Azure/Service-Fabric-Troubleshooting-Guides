@@ -16,9 +16,9 @@
 param(
     [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/7989338b-8ae9-4a5d-8425-020148016812/c26361fde7f706279265a505b4d1d93a/dotnet-runtime-6.0.6-win-x64.exe',
     [version]$version = '6.0.6',
-    [bool]$norestart = $true,
     [bool]$registerEvent = $true,
-    [string]$registerEventSource = 'CustomScriptExtensionPS'
+    [string]$registerEventSource = 'CustomScriptExtensionPS',
+    [switch]$restart
 )
 
 $PSModuleAutoLoadingPreference = 2
@@ -58,7 +58,7 @@ function main() {
 
     $argumentList = "/q /log $installLog"
 
-    if (!$norestart) {
+    if (!$restart) {
         $argumentList += " /norestart"
     }
 
@@ -75,9 +75,14 @@ function main() {
     write-host "install result:$($result | Format-List * | out-string)"
     Write-Host "installed dotnet version final:$(get-dotnetVersion)"
     write-host "install log:`r`n$(Get-Content -raw $installLog)"
-    
+    write-host "restarting OS:$restart"
+
     Stop-Transcript
     write-event (get-content -raw $transcriptLog)
+
+    if($restart) {
+        Restart-Computer -Force
+    }
 
     return $result
 }
