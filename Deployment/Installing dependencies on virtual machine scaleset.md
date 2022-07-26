@@ -4,7 +4,7 @@
 [Installing dependencies after cluster deployment](#Installing-dependencies-after-cluster-deployment)  
 [Modify ARM Template to Add Custom Script Extension](#Modify-ARM-Template-to-Add-Custom-Script-Extension)  
 [Modify ARM Template to Add extension sequencing on Service Fabric Extension](#Modify-ARM-Template-to-Add-extension-sequencing-on-Service-Fabric-Extension)  
-[Reference](#Reference)
+[Installing .Net Framework](#Installing-Net-Framework)  
 
 ## Overview  
 
@@ -60,7 +60,7 @@ Add new 'CustomScriptExtension' extension to 'Microsoft.Compute/virtualMachineSc
 },
 ```
 
-### Modify ARM Template to Add extension sequencing on Service Fabric Extension
+### Modify ARM Template to add extension sequencing on Service Fabric Extension
 
 Add 'provisionAfterExtensions' array with 'CustomScriptExtension' in 'properties' section of 'ServiceFabric' extension. See [virtual-machine-scale-sets-extension-sequencing](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-extension-sequencing) for additional information.
 
@@ -70,10 +70,10 @@ Add 'provisionAfterExtensions' array with 'CustomScriptExtension' in 'properties
 ],
 ```
 
-## Reference
+## Installing .Net Framework
 
 Below are diffs from changes using template.json generated from portal after adding CustomScriptExecution and extension sequencing.
-The powershell script [../Scripts/install-dotnet-48.ps1](../Scripts/install-dotnet-48.ps1) is an example script that installs dotnet framework 4.8 dependency.
+Powershell scripts [../Scripts/install-dotnet-48.ps1](../Scripts/install-dotnet-48.ps1) and [../Scripts/install-dotnet-60.ps1](../Scripts/install-dotnet-60.ps1) are example scripts that installs specific dotnet framework versions.
 
 ### template.json
 
@@ -131,7 +131,7 @@ index f362926..ff080f0 100644
                                      "protectedSettings": {
 ```
 
-### parameters.json
+### .Net 4.8 parameters.json
 
 ```diff
 diff --git a/internal/template/parameters.json b/internal/template/parameters.json
@@ -146,7 +146,29 @@ index 289e771..e598691 100644
 +            "value": "install-dotnet-48.ps1 -restart"
 +        },
 +        "customScriptExtensionFileUri":{
-+            "value": "https://{{ %script storage uri% }}/Scripts/install-dotnet-48.ps1"
++            "value": "https://{{ %script storage uri% }}/install-dotnet-48.ps1"
++        },
+         "clusterName": {
+             "value": "sf-1nt-5n-cse"
+         },
+```
+
+### .Net 6.0 parameters.json
+
+```diff
+diff --git a/internal/template/parameters.json b/internal/template/parameters.json
+index 289e771..e598691 100644
+--- a/internal/template/parameters.json
++++ b/internal/template/parameters.json
+@@ -2,6 +2,12 @@
+     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+     "contentVersion": "1.0.0.0",
+     "parameters": {
++        "customScriptExtensionFile":{
++            "value": "install-dotnet-60.ps1"
++        },
++        "customScriptExtensionFileUri":{
++            "value": "https://{{ %script storage uri% }}/install-dotnet-60.ps1"
 +        },
          "clusterName": {
              "value": "sf-1nt-5n-cse"
