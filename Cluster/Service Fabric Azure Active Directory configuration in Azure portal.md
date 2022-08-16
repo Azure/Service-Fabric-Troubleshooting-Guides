@@ -228,8 +228,8 @@ Select '+ Add...'
 
 #### Properties
 
-- **Authentication type:** Select 'Azure Active Directory'
-- **TenantID:** Enter Tenant ID 
+- **Authentication type:** Select 'Azure Active Directory'.
+- **TenantID:** Enter Tenant ID.
 - **Cluster application:** Enter Azure App Registration 'Application (client)ID' for the 'Azure AD Cluster App Registration'. This is also known as the web application.
 - **Client application:** Enter Azure App Registration 'Application (client)ID' for the 'Azure AD Client App Registration'. This is also known as the native application.
 
@@ -288,81 +288,85 @@ Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint `
 ---
 
 ## Troubleshooting help in setting up Azure Active Directory
+
 Setting up Azure AD and using it can be challenging, so here are some pointers on what you can do to debug the issue.
 
 ### Service Fabric Explorer prompts you to select a certificate
+
 #### Problem
+
 After you sign in successfully to Azure AD in Service Fabric Explorer, the browser returns to the home page but a message prompts you to select a certificate.
 
-![SFX certificate dialog][sfx-select-certificate-dialog]
+![](../media/service-fabric-azure-active-directory-configuration-in-azure-portal/sfx-select-certificate-dialog.png)
 
 #### Reason
+
 The user is not assigned a role in the Azure AD cluster application. Thus, Azure AD authentication fails on Service Fabric cluster. Service Fabric Explorer falls back to certificate authentication.
 
 #### Solution
+
 Follow the instructions for setting up Azure AD, and assign user roles. Also, we recommend that you turn on "User assignment required to access app," as `SetupApplications.ps1` does.
 
 ### Connection with PowerShell fails with an error: "The specified credentials are invalid"
+
 #### Problem
+
 When you use PowerShell to connect to the cluster by using "AzureActiveDirectory" security mode, after you sign in successfully to Azure AD, the connection fails with an error: "The specified credentials are invalid."
 
 #### Solution
+
 This solution is the same as the preceding one.
 
 ### Service Fabric Explorer returns a failure when you sign in: "AADSTS50011"
+
 #### Problem
+
 When you try to sign in to Azure AD in Service Fabric Explorer, the page returns a failure: "AADSTS50011: The reply address &lt;url&gt; does not match the reply addresses configured for the application: &lt;guid&gt;."
 
-![SFX reply address does not match][sfx-reply-address-not-match]
+![](../media/service-fabric-azure-active-directory-configuration-in-azure-portal/sfx-reply-address-not-match.png)
 
 #### Reason
+
 The cluster (web) application that represents Service Fabric Explorer attempts to authenticate against Azure AD, and as part of the request it provides the redirect return URL. But the URL is not listed in the Azure AD application **REPLY URL** list.
 
 #### Solution
+
 On the Azure AD app registration page for your cluster, select **Authentication**, and under the **Redirect URIs** section, add the Service Fabric Explorer URL to the list. Save your change.
 
-![Web application reply URL][web-application-reply-url]
+![](../media/service-fabric-azure-active-directory-configuration-in-azure-portal/web-application-reply-url.png)
 
 ### Connecting to the cluster using Azure AD authentication via PowerShell gives an error when you sign in: "AADSTS50011"
+
 #### Problem
+
 When you try to connect to a Service Fabric cluster using Azure AD via PowerShell, the sign-in page returns a failure: "AADSTS50011: The reply url specified in the request does not match the reply urls configured for the application: &lt;guid&gt;."
 
 #### Reason
+
 Similar to the preceding issue, PowerShell attempts to authenticate against Azure AD, which provides a redirect URL that isn't listed in the Azure AD application **Reply URLs** list.  
 
 #### Solution
+
 Use the same process as in the preceding issue, but the URL must be set to `urn:ietf:wg:oauth:2.0:oob`, a special redirect for command-line authentication.
 
 ### Connect the cluster by using Azure AD authentication via PowerShell
+
 To connect the Service Fabric cluster, use the following PowerShell command example:
 
 ```powershell
 Connect-ServiceFabricCluster -ConnectionEndpoint <endpoint> -KeepAliveIntervalInSec 10 -AzureActiveDirectory -ServerCertThumbprint <thumbprint>
 ```
 
-To learn more, see [Connect-ServiceFabricCluster cmdlet](/powershell/module/servicefabric/connect-servicefabriccluster).
+To learn more, see [Connect-ServiceFabricCluster cmdlet](https://docs.microsoft.com/powershell/module/servicefabric/connect-servicefabriccluster?view=azureservicefabricps).
 
 ### Can I reuse the same Azure AD tenant in multiple clusters?
+
 Yes. But remember to add the URL of Service Fabric Explorer to your cluster (web) application. Otherwise, Service Fabric Explorer does not work.
 
 ### Why do I still need a server certificate while Azure AD is enabled?
-FabricClient and FabricGateway perform a mutual authentication. During Azure AD authentication, Azure AD integration provides a client identity to the server, and the server certificate is used by the client to verify the server's identity. For more information about Service Fabric certificates, see [X.509 certificates and Service Fabric][x509-certificates-and-service-fabric].
+
+FabricClient and FabricGateway perform a mutual authentication. During Azure AD authentication, Azure AD integration provides a client identity to the server, and the server certificate is used by the client to verify the server's identity. For more information about Service Fabric certificates, see [X.509 certificates and Service Fabric](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#x509-certificates-and-service-fabric).
 
 ## Next steps
-After setting up Azure Active Directory applications and setting roles for users, [configure and deploy a cluster](service-fabric-cluster-creation-via-arm.md).
 
-<!-- Links -->
-
-[azure-cli]: /cli/azure/get-started-with-azure-cli
-[azure-portal]: https://portal.azure.com/
-[service-fabric-cluster-security]: service-fabric-cluster-security.md
-[active-directory-howto-tenant]:../active-directory/develop/quickstart-create-new-tenant.md
-[service-fabric-visualizing-your-cluster]: service-fabric-visualizing-your-cluster.md
-[service-fabric-manage-application-in-visual-studio]: service-fabric-manage-application-in-visual-studio.md
-[sf-aad-ps-script-download]:http://servicefabricsdkstorage.blob.core.windows.net/publicrelease/MicrosoftAzureServiceFabric-AADHelpers.zip
-[x509-certificates-and-service-fabric]: service-fabric-cluster-security.md#x509-certificates-and-service-fabric
-
-<!-- Images -->
-[sfx-select-certificate-dialog]: ./../media/service-fabric-azure-active-directory-configuration-in-azure-portal/sfx-select-certificate-dialog.png
-[sfx-reply-address-not-match]: ./../media/service-fabric-azure-active-directory-configuration-in-azure-portal/sfx-reply-address-not-match.png
-[web-application-reply-url]: ./../media/service-fabric-azure-active-directory-configuration-in-azure-portal/web-application-reply-url.png
+After setting up Azure Active Directory applications and setting roles for users, [configure and deploy a cluster](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-via-arm).
