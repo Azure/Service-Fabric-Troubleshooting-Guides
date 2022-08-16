@@ -24,7 +24,7 @@ When the certificate is rolled over, the Service Fabric service connection will 
 ## Process
 
 - Verify [Requirements](#requirements).
-- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed clusteer.
+- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
 - [Test](#test) connection.
 
 
