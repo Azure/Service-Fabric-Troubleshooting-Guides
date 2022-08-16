@@ -12,14 +12,14 @@ When the certificate is rolled over, the Service Fabric service connection will 
 
 - Service Fabric managed cluster security with Azure Active Directory enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure) and [Service Fabric Azure Active Directory configuration in Azure portal](./Service%20Fabric%20Azure%20Active%20Directory%20configuration%20in%20Azure%20portal.md) for additional information.
 
-  ![](media/sfmc-enable-aad.png)
+  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-enable-aad.png)
 
 
 - Azure Devops user configured to use the 'Cluster' App Registration that is configured for the managed cluster.
 
 - Azure Devops build agent with 'Hosted' (not 'Self-Hosted') pool type. For hosted, 'Azure virtual machine scale set' is the pool type to be used.
 
-  ![](media/sfmc-ado-pool-type.png)
+  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-pool-type.png)
 
 ## Process
 
@@ -42,13 +42,13 @@ For maintenance free configuration, only 'Azure Active Directory credential' aut
 - **Server Common Name** Enter the managed cluster server certificate common name. The common name format is {{cluster guid id with no dashes}}.sfmc.azclient.ms. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
   - Example: d3cfe121611d4c178f75821596a37056.sfmc.azclient.ms
 
-    ![](media/sfmc-cluster-id.png)
+    ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-cluster-id.png)
 
 - **Username:** Enter an Azure AD user that has been added to the managed clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Azure AD user.
 - **Password:** Enter Azure AD users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Azure AD user.
 - **Service connection name:** Enter a descriptive name of connection.
 
-  ![](media/sfmc-ado-service-connection.png)
+  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-service-connection.png)
 
 ## Test
 
