@@ -14,7 +14,6 @@ When the certificate is rolled over, the Service Fabric service connection will 
 
   ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-enable-aad.png)
 
-
 - Azure Devops user configured to use the 'Cluster' App Registration that is configured for the managed cluster.
 
 - Azure Devops build agent with 'Hosted' (not 'Self-Hosted') pool type. For hosted, 'Azure virtual machine scale set' is the pool type to be used.
@@ -26,7 +25,6 @@ When the certificate is rolled over, the Service Fabric service connection will 
 - Verify [Requirements](#requirements).
 - In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
 - [Test](#test) connection.
-
 
 ### Service Fabric Service Connection
 
