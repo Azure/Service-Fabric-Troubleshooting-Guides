@@ -1,8 +1,33 @@
 <#
 .SYNOPSIS
-    example script to install dotnet on virtual machine scaleset using custom script extension
+    example script to install dotnet 6.0 on virtual machine scaleset using custom script extension
     use custom script extension in ARM template
     save file to url that vmss nodes have access to during provisioning
+
+Microsoft Privacy Statement: https://privacy.microsoft.com/en-US/privacystatement
+
+MIT License
+
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE
+
     
 .NOTES
     v 1.0
@@ -11,8 +36,8 @@
 .LINK
     [net.servicePointManager]::Expect100Continue = $true;[net.servicePointManager]::SecurityProtocol = [net.securityProtocolType]::Tls12;
     invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/install-dotnet-60.ps1" -outFile "$pwd\install-dotnet-60.ps1";
-
 #>
+
 param(
     [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/7989338b-8ae9-4a5d-8425-020148016812/c26361fde7f706279265a505b4d1d93a/dotnet-runtime-6.0.6-win-x64.exe',
     [version]$version = '6.0.6',
@@ -51,9 +76,9 @@ function main() {
 
     if (!(test-path $installFile)) {
         "Downloading [$url]`nSaving at [$installFile]" 
-        write-host "$result = Invoke-WebRequest -Uri $dotnetDownloadUrl -OutFile $installFile"
-        $result = Invoke-WebRequest -Uri $dotnetDownloadUrl -OutFile $installFile
-        write-host "invoke-webrequest result:$($result | Format-List *)"
+        write-host "$result = [net.webclient]::new().DownloadFile($dotnetDownloadUrl, $installFile)"
+        $result = [net.webclient]::new().DownloadFile($dotnetDownloadUrl, $installFile)
+        write-host "downloadFile result:$($result | Format-List *)"
     }
 
     $argumentList = "/q /log $installLog"
