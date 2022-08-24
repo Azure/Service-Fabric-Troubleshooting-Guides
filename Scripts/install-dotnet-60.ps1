@@ -42,7 +42,7 @@ param(
     [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/7989338b-8ae9-4a5d-8425-020148016812/c26361fde7f706279265a505b4d1d93a/dotnet-runtime-6.0.6-win-x64.exe',
     [version]$version = '6.0.6',
     [bool]$registerEvent = $true,
-    [string]$registerEventSource = 'CustomScriptExtensionPS',
+    [string]$registerEventSource = 'CustomScriptExtension',
     [switch]$restart
 )
 
