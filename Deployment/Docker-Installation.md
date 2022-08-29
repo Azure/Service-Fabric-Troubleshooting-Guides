@@ -14,7 +14,7 @@ The recommended way to add a virtual machine scale set extension on an Azure Ser
 
 The PowerShell script is prepared to check if Mirantis needs to be installed by downloading and executing the Mirantis installer, after successful installation the machine will be restarted.
 
-Please use a copy of [install-mirantis.ps1](https://github.com/jagilber/powershellScripts/blob/master/serviceFabric/install-mirantis.ps1) to install Mirantis Container Runtime on your Azure Service Fabric cluster.
+Please use a copy of [Install-Mirantis.ps1](https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/chrpap/dockermigration/Scripts/Mirantis-Install.ps1) to install Mirantis Container Runtime on your Azure Service Fabric cluster.
 
 > [!NOTE] It is highly recommended to save scripts somewhere in your own storage to be protected to changes from external sources. In this way your production environment will not face untested scenarios. Please use a copy of the scripts provided as any change should be tested first before going into production.
 
@@ -23,7 +23,7 @@ Please use a copy of [install-mirantis.ps1](https://github.com/jagilber/powershe
     "extensionProfile": {
         "extensions": [
             {
-                "name": "CustomScriptExtension",
+                "name": "CustomScriptExtension-Mirantis",
                 "properties": {
                     "publisher": "Microsoft.Compute",
                     "type": "CustomScriptExtension",
@@ -31,9 +31,9 @@ Please use a copy of [install-mirantis.ps1](https://github.com/jagilber/powershe
                     "autoUpgradeMinorVersion": true,
                     "settings": {
                         "fileUris": [
-                            "[parameters('customScriptExtensionFileUri')]"
+                            "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/chrpap/dockermigration/Scripts/Mirantis-Install.ps1"
                         ],
-                        "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File .\\', parameters('customScriptExtensionFile'))]"
+                        "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File .\\', 'Mirantis-Install.ps1')]"
                     }
                     }
                 }
@@ -46,10 +46,10 @@ The Custom Script VM Extension to install Mirantis must run before Service Fabri
 
 ```json
             {
-                "name": "[concat(parameters('vmNodeType0Name'),'_ServiceFabricNode')]",
+                "name": "ServiceFabricNodeTypeA",
                 "properties": {
                     "provisionAfterExtensions": [
-                        "CustomScriptExtension"
+                        "CustomScriptExtension-Mirantis"
                     ],
                     "type": "ServiceFabricNode",
 ```
