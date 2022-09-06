@@ -79,7 +79,7 @@ Steps
 a.	Example for the OS SKU name: Windows Server 2022 Datacenter
 2.	Re-deploy applications
 
-> [!NOTE] 
+> :exclamation:
 > Please consider the option to recreate the cluster by only removing the Azure Virtual Machine Scale Sets (VMSS) and the Azure Service Fabric cluster resource. Creating just these two instances works well when you don’t automate the whole deployment.
 
 Documentation:
@@ -125,7 +125,7 @@ Please take care of this pre-requisites before you start the process.
 5. All stateful services need to follow the guidance to have sufficient replica count in place. Minimum TargetReplicaSetSize = 5, MinReplicaSetSize = 3.
   [Stateful service replica set size configuration](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-best-practices-replica-set-size-configuration)
 
-> [!WARNING]
+> :warning:
 > The rare but potential risk with the in-place upgrade is that in case of something gets stuck during the upgrade then there is no rollback option. In this case Microsoft cannot support in unblocking this scenario. Please do not use this scenario if the rebuild of the cluster is not acceptable.
 
 #### What should be changed during the upgrade?
@@ -133,12 +133,12 @@ Please take care of this pre-requisites before you start the process.
 Only two parameters (sku, version) are allowed to be changed during the upgrade.
 ```json
 "storageProfile": {
-"imageReference": {
-      		"publisher": "[parameters('vmImagePublisher')]",
-             "offer": "[parameters('vmImageOffer')]",
-             "sku": "[parameters('vmImageSku')]",
-             "version": "[parameters('vmImageVersion')]"
-      },
+ "imageReference": {
+  "publisher": "[parameters('vmImagePublisher')]",
+  "offer": "[parameters('vmImageOffer')]",
+  "sku": "[parameters('vmImageSku')]",
+  "version": "[parameters('vmImageVersion')]"
+ },
 },
 ```
 
@@ -171,14 +171,14 @@ In general, the steps are as follows:
 1. Acquire licenses from Mirantis directly.
    [Mirantis Enterprise Support](https://www.mirantis.com/docker-engine-enterprise-support/ )
 2. Install MCR on new node type. There are three options to install the container runtime:
-    1. Custom Script VM Extension on a new node type with standard Azure OS image without container support. 
-    Please find the guidance to install MCR via Custom Script VM Extension in the respective scenario.
-    The Mirantis installer needs a machine restart to work during the post-deployment. This can potentially delay other operational processes, as scaling, node repair, reimage can take longer. The installer also checks if the latest version is installed, this can be disabled in the provided script.
-    2. Create a new node type with the Azure Marketplace OS image provided by Mirantis with pre-installed container runtime. This image will be released in September 2022.
-    3. Create a custom OS image to pre-install MCR. Please find guidance below in the documentation. VMSS also allows to use automatic OS image upgrade to install Windows patches on custom images.
-3.	Move workloads to new node type.
+   1. Custom Script VM Extension on a new node type with standard Azure OS image without container support. 
+   Please find the guidance to install MCR via Custom Script VM Extension in the respective scenario.
+   The Mirantis installer needs a machine restart to work during the post-deployment. This can potentially delay other operational processes, as scaling, node repair, reimage can take longer. The installer also checks if the latest version is installed, this can be disabled in the provided script.
+   2. Create a new node type with the Azure Marketplace OS image provided by Mirantis with pre-installed container runtime. This image will be released in September 2022.
+   3. Create a custom OS image to pre-install MCR. Please find guidance below in the documentation. VMSS also allows to use automatic OS image upgrade to install Windows patches on custom images.
+3. Move workloads to new node type.
 
-> [!NOTE]
+> :exclamation:
 > MCR is currently supported on Service Fabric 9.0 CU2 or later with Windows Server 2022.  
 
 ### Scenario 2/Option 1: Full rebuild of Azure Service Fabric cluster (9.0 CU2 or later) on a supported Windows 2022 OS SKU 
@@ -190,8 +190,7 @@ Steps
    Example for the OS SKU name: Windows Server 2022 Datacenter
 2. Re-deploy applications
 
-> [!NOTE]
-> Please consider the option to recreate the cluster by only removing the Azure Virtual Machine Scale Sets (VMSS) and the Azure Service Fabric cluster resource. Creating just these two instances works well when you don’t automate the whole deployment.
+:exclamation: Please consider the option to recreate the cluster by only removing the Azure Virtual Machine Scale Sets (VMSS) and the Azure Service Fabric cluster resource. Creating just these two instances works well when you don’t automate the whole deployment.
 
 Documentation:
 - [Quickstart: Create a Service Fabric cluster using ARM template](https://docs.microsoft.com/en-us/azure/service-fabric/quickstart-cluster-template)
