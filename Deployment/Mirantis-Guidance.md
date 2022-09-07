@@ -29,7 +29,7 @@ Customer is using Windows Server image 2019 with Containers
 This guide is designed to help you assess the effort and risk of each migration option. 
 Criteria for successfully running MCR to host container on Azure Service Fabric cluster.
 1. Acquire a Mirantis Container Runtime license.
-2. Service Fabric runtime needs to be on version 9.0 CU2 or greater.
+2. Service Fabric runtime needs to be on version [9.0 CU2 (9.0.1048.9590) or greater](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-versions).
 3. Azure Virtual Machine Scale Sets to host containers on MCR needs to run on Windows Server 2022. 
 4. MCR needs to be installed by Custom Script VM Extension or pre-installed as part of an OS image.
 
@@ -262,7 +262,7 @@ Documentation:
 
 ## Frequently Asked Questions
 
-For all further questions please reach out to your account team or create a Microsoft support case.
+For all further questions please reach out to your account team or [create a Microsoft support case](https://docs.microsoft.com/en-us/azure/azure-portal/supportability/how-to-create-azure-support-request).
 
 1. Is Mirantis Container Runtime the only container runtime supported by Service Fabric?
 
