@@ -2,10 +2,10 @@
 
 ## Abstract 
 
-This guidance is for customers using Azure Service Fabric Service with "with Container" VM images restricted to Windows containers on Windows. Service Fabric Product team is following up on the May 22 targeted deprecation communication detailing the phase out of “with container” VM image. The May 22 communication was a follow up of the September 2021 [announcement](https://techcommunity.microsoft.com/t5/containers/updates-to-the-windows-container-runtime-support/ba-p/2788799) on the end of support for Mirantis Container Runtime (MCR). 
+Post 22nd Sept, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The VM image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
 
-Post 22nd September, the “with container” VM images will not receive any updates or patches and SF team strongly recommends using these images for production workloads. We urge customers to consider one of the scenarios listed below and [reach out to support](https://docs.microsoft.com/en-us/azure/azure-portal/supportability/how-to-create-azure-support-request) for any questions or clarifications. Nonconformance to migration guidance and timelines increases the risk of service disruptions and outages. 
-
+This guide is for all SF customers using “with container” VM images (list of effected Azure OS images below) and the migration scenarios broadly categorizes customers’ use-cases into a) Running containerized workloads on SF b) Running non-containerized workloads on SF. 
+ 
 ## List of affected Azure OS images
 
 Customer is using Windows Server image 2016 with Containers
