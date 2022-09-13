@@ -179,7 +179,7 @@ In general, the steps are as follows:
 3. Move workloads to new node type.
 
 > :exclamation:
-> MCR is currently supported on Service Fabric 9.0 CU2 or later with Windows Server 2022.  
+> The above steps to provision MCR runtime were performed on Windows Server 2022 running Service Fabric 9.0 CU2   
 
 ### Scenario 2/Option 1: Full rebuild of Azure Service Fabric cluster (9.0 CU2 or later) on a supported Windows 2022 OS SKU 
 
