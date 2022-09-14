@@ -269,6 +269,3 @@ For all further questions please reach out to your account team or [create a Mic
    The Service Fabric product group is currently testing Moby. This will be supported soon. Please stay tuned for the official announcement.
    Moby is the open-source version of the container runtime, former DockerCE. It comes with community support only and is suitable for non-production environments.
 
-2. Why is Windows Server 2019 not supported to run Mirantis Container Runtime with Service Fabric?
-
-   The Service Fabric product group is currently testing Windows Server 2019. This will be supported soon. Please stay tuned for the official announcement.
