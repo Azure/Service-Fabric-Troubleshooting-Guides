@@ -2,11 +2,11 @@
 
 ## Overview
 
-Below describes the different monitoring agent configurations available as part of Azure Monitor for monitoring managed clusters. [Windows Azure Diagnostics (WAD)](#windows-azure-diagnostics-wad) is legacy and currently provides the most comprehensive level of monitoring. See [Azure Monitor Overview](https://docs.microsoft.com/azure/azure-monitor/overview) for detailed information about monitoring in Azure. Links to ARM templates for each configuration are provided under each agent configuration below.
+Below describes the different monitoring agent configurations available as part of Azure Monitor for monitoring managed clusters. [Windows Azure Diagnostics (WAD)](#windows-azure-diagnostics-wad) currently provides the most comprehensive level of monitoring. See [Azure Monitor Overview](https://docs.microsoft.com/azure/azure-monitor/overview) for detailed information about monitoring in Azure. Links to ARM templates for each configuration are provided under each agent configuration below. Each configuration has its own advantage depending on type of data being monitored and type of storage and potentially different costs.
 
 ## Azure Monitor Agent
 
-These templates deploy a Service Fabric managed cluster with Azure Monitor agent enabled. Azure Monitor agent is the new / current logging extension meant to replace other existing extensions. This agent does not currently provide full configuration options such as ETW.
+Azure Monitor agent is the new / current logging extension meant to replace other existing extensions. This agent does not currently provide full configuration options such as ETW but does provide a centralized configuration. These templates deploy a Service Fabric managed cluster with Azure Monitor agent enabled.
 
 [Standard SKU Service Fabric managed cluster, 1 node type with Azure Monitor enabled](https://github.com/Azure-Samples/service-fabric-cluster-templates/blob/master/SF-Managed-Standard-SKU-1-NT-AzureMonitor)
 
@@ -16,7 +16,7 @@ These templates deploy a Service Fabric managed cluster with Azure Monitor agent
 
 Configuration of Azure Monitor data collection is centralized and configurable via Azure Portal or PowerShell among other options. To configure using Azure Portal:
 
-**NOTE: This configuration does require the use of System-assigned Managed identity. [Enable system-assigned managed identity during creation of a virtual machine scale set](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/qs-configure-portal-windows-vmss#enable-system-assigned-managed-identity-on-an-existing-virtual-machine-scale-set) for enabling System-assign Managed identity in Azure portal.**
+**NOTE: This configuration does require the use of System-assigned Managed identity. [Enable system-assigned managed identity on an existing virtual machine scale set](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/qs-configure-portal-windows-vmss#enable-system-assigned-managed-identity-on-an-existing-virtual-machine-scale-set) for enabling System-assign Managed identity in Azure portal.**
 
 1. Navigate to 'Data Collection Rule' in 'Monitor' in Azure portal: https://ms.portal.azure.com/#blade/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade/dataCollectionRules
 
@@ -211,7 +211,7 @@ New-AzResourceGroupDeployment -Name $deploymentName `
 
 ## Resources
 
-For more info, see:
+For more information, see:
 
 - [Service Fabric managed cluster overview](https://docs.microsoft.com/azure/service-fabric/overview-managed-cluster) for details on managed clusters.
 
