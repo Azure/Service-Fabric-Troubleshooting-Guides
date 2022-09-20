@@ -9,10 +9,10 @@ graph TD;
     HostingContainerDecision -->|Yes| UpgradeRuntime[Upgrade SF Cluster runtime 9.0 CU2 or later] --> PickReplacementOption{Choose a replacement image}
     HostingContainerDecision -->|No| NodeTypeDecision2{Which NodeType is affected}
     PickReplacementOption --> CustomOSImage[Custom OS Image]    
-    PickReplacementOption --> ManualInstallImage[Install MCR manually]
+    PickReplacementOption --> ManualInstallImage[Install Container Runtime manually]
     PickReplacementOption --> MirantisGalleryImage[MCR Image from Azure Gallery]
     CustomOSImage --> PrepNewImageStep1[Get started: Prep Windows for containers] --> NewImageIsPrepped1[Automatic OS image upgrade for custom images]
-    ManualInstallImage --> ManualInstallStep1[Install Mirantis on Azure Service Fabric via Custom Script VM Extension] --> NewImageIsPrepped2[Sequence extension provisioning in virtual machine scale sets]
+    ManualInstallImage --> ManualInstallStep1[Install Container Runtime via Custom Script VM Extension] --> NewImageIsPrepped2[Sequence extension provisioning in virtual machine scale sets]
     MirantisGalleryImage --> NewImageIsPrepped3[Find and use Azure Marketplace VM images with Azure PowerShell]
     NewImageIsPrepped1 --> NodeTypeDecision1{Which NodeType is affected}
     NewImageIsPrepped2 --> NodeTypeDecision1{Which NodeType is affected}
