@@ -1,3 +1,7 @@
+#  Decision Graph companion to Mirantis Container Guidance
+
+[Mirantis Container Guidance](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Mirantis-Guidance.md)
+
 ```mermaid
 graph TD;
     A[Start Here] --> Decision1[VMSS running on deprecated image] 
