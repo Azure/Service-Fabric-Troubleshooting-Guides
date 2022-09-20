@@ -2,9 +2,9 @@
 
 ## Abstract 
 
-Post 22nd Sept, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The VM image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
+Post 22nd Sept, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The unavailability of VM image will lead to failures of VM lifecycle management operations such as scale out, re-image, or service healing for Azure Service Fabric (SF) node types based on these VM images. 
 
-This guide is for all SF customers using “with container” VM images (list of effected Azure OS images below) and the migration scenarios broadly categorizes customers’ use-cases into a) Running containerized workloads on SF b) Running non-containerized workloads on SF. 
+This guide is meant for all SF customers using “-with-Containers” VM OS images (list of effected Azure OS images below) and shows the paths available for migrating existing SF clusters to other OS images; the migration scenarios are broadly categorized based on the customers' usage of the container runtime built into the OS image, into: a) Running containerized workloads on SF, and b) Running non-containerized workloads on SF. 
  
 ## List of affected Azure OS images
 
@@ -26,16 +26,24 @@ Customer is using Windows Server image 2019 with Containers
 
 ## Migration risk decision guide
 
+The possible options for the migration are combinations of the following controls:
+   - OS SKU selection
+   - container runtime selection (MCR, Moby, other or none)
+   - container runtime installation mechanism 
+   - cluster nodes update mechanism (in place, new node types or recreating the cluster)
+
 This guide is designed to help you assess the effort and risk of each migration option. 
-Criteria for successfully running MCR to host container on Azure Service Fabric cluster.
+<!-- Criteria for successfully running MCR to host container on Azure Service Fabric cluster.
 1. Acquire a Mirantis Container Runtime license.
 2. Service Fabric runtime needs to be on version [9.0 CU2 (9.0.1048.9590) or greater](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-versions).
 3. Azure Virtual Machine Scale Sets to host containers on MCR needs to run on Windows Server 2022. 
-4. MCR needs to be installed by Custom Script VM Extension or pre-installed as part of an OS image.
+4. MCR needs to be installed by Custom Script VM Extension or pre-installed as part of an OS image. -->
 
 In-place SKU upgrades are in general not supported on Service Fabric cluster nodes, as such operations potentially involve data and availability loss. The safest, most reliable, and recommended method for scaling up a Service Fabric node type is to add a new node type and move the workload over.
 
-In this document we are describing an approach to do an in-place OS SKU upgrade with less effort but the potential risk of ending up in a non-recoverable state. This approach should be only considered for Service Fabric Node Types without container workloads. Please read the described risks for each scenario carefully.
+<!-- In this document we are describing an approach to do an in-place OS SKU upgrade with less effort but the potential risk of ending up in a non-recoverable state. This approach should be only considered for Service Fabric Node Types without container workloads. Please read the described risks for each scenario carefully. -->
+
+The following table captures the risk and effort evaluation of the various migration options.
 
 | Scenario | Effort | Risk | Node Types without container workloads | Node Types with container workloads |
 | --- | --- | --- | --- | --- |
@@ -48,25 +56,29 @@ In this document we are describing an approach to do an in-place OS SKU upgrade 
 
 ## Key questions
 
-1.	Which Service Fabric Node Types are running container workloads?
+1.	Does the SF cluster host containerized workloads? 
 
-    In case the Node Type is not running any container workload, then migrating to different Windows Server OS image will be sufficient. When safety is prioritized, then creating a new node type, and move the workload. For less safety, consider the in-place upgrade by only changing the OS SKU. 
-
-    For container workloads, the mitigation is to move the workloads to a new node type with MCR. Mirantis can be installed by Custom Script VM Extension on the VMSS or pre-installed on OS image. Creating and maintaining a custom OS image is effort. Patching Windows and the container runtime must be considered. 
-
-    Mirantis announced to publish an OS image in the Azure Marketplace with pre-installed MCR in September 2022. This OS image will get regular updates for Windows and MCR.
+   If yes, proceed to step 2. 
+   If not, then migrating to different Windows Server OS image will be sufficient. If availability and safety are important, the recommendation is to create a new node type with the desired OS image, and move the workload; this operation must be executed for each existing node type which needs to be migrated. If some degree of risk in availability and/or safety can be tolerated (for instance, stateless services), consider the in-place upgrade option by changing only the OS SKU. 
 
 
-2.	Are the running services on the Service Fabric Node Type allow downtime?
+2. Which Service Fabric Node Types are running container workloads?
 
-    Upgrading a VMSS with another OS image or moving workloads doesn’t involve any downtime as long as the design of the applications allow movements to another nodes and scale sets. The VMSS follows the concept of upgrade domains and Service Fabric controls going domain by domain as long as the durability level silver or higher is configured.
+    The mitigation in this case is to create a new node type with the desired OS image including the selected container runtime. The container runtime (Docker CE or Mirantis) can be installed by a Custom Script VM Extension on the VMSS, or pre-installed on OS image. Creating and maintaining a custom OS image requires effort - both the OS and the container runtime will require updates, which require validation and eventually re-publishing the image. This maintenance cost must be considered in advance. 
+
+    Mirantis announced their intention to publish an OS image in the Azure Marketplace with pre-installed MCR in September 2022. This OS image will be maintained by Mirantis, and will purportedly get regular updates for Windows and MCR.
+
+
+3.	Is downtime allowed for the services running on the Service Fabric Node Type?
+
+    Upgrading a VMSS with another OS image or moving workloads doesn’t involve any downtime as long as the design of the applications allow movements to another nodes and scale sets. VMSS updates follow the concept of upgrade domains and Service Fabric controls the progression of updates of nodes, domain by domain - as long as the cluster durability level is set to silver or higher.
 
     The node type must be Silver or Gold durability level, because:
-    - Bronze does not give you any guarantees about saving state information.
-    - Silver and Gold durability trap any changes to the scale set.
-    - Gold also gives you control over the Azure updates underneath scale set.
+    - Bronze does not confer any guarantees about saving state information.
+    - Silver and Gold durability intercept any changes to the underlying scale set.
+    - Gold offers control over the Azure updates underneath the scale set.
 
-    In case one node type is serving as public endpoint, to reduce downtime a DNS switch by redirecting the traffic to a new Azure Public IP (PIP) address with Azure Traffic Manager or to another region is needed to keep downtime at minimum. Multiple zone scenarios are covered safely by the configuration sfZonalUpgradeMode:Hierarchical. In this way, only one zone goes through the upgrade at a time and the traffic is routed through one Azure Load Balancer on Standard SKU to all zones.
+    In case one of the node types is serving as a public endpoint, a DNS switch by redirecting the traffic to a new Azure Public IP (PIP) address with Azure Traffic Manager or to another region is needed to keep downtime at minimum. Multiple zone scenarios are covered safely by the configuration sfZonalUpgradeMode:Hierarchical. In this way, only one zone goes through the upgrade at a time and the traffic is routed through one Azure Load Balancer on Standard SKU to all zones.
 
 ## Scenario 1: Customer is hosting Azure Service Fabric Node Type using deprecated Windows Server images with-Containers, but does NOT host containers in Docker as part of their overall applications
 
