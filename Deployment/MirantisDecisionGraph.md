@@ -6,7 +6,7 @@
 graph TD;
     A[Start Here] --> Decision1[VMSS running on deprecated image] 
     Decision1 --> HostingContainerDecision{Hosting Containerized Applications}    
-    HostingContainerDecision -->|Yes| PickReplacementOption{Choose a replacement image}
+    HostingContainerDecision -->|Yes| UpgradeRuntime[Upgrade SF Cluster runtime 9.0 CU2 or later] --> PickReplacementOption{Choose a replacement image}
     HostingContainerDecision -->|No| NodeTypeDecision2{Which NodeType is affected}
     PickReplacementOption --> CustomOSImage[Custom OS Image]    
     PickReplacementOption --> ManualInstallImage[Install MCR manually]
