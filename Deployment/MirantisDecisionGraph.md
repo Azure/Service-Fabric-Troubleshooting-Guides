@@ -7,10 +7,12 @@ graph TD;
     PickReplacementOption --> CustomOSImage[Custom OS Image]    
     PickReplacementOption --> ManualInstallImage[Install MCR manually]
     PickReplacementOption --> MirantisGalleryImage[MCR Image from Azure Gallery]
-    CustomOSImage --> PrepNewImageStep1[Get started: Prep Windows for containers] --> NewImageIsPrepped[Automatic OS image upgrade for custom images]
-    ManualInstallImage --> ManualInstallStep1[Install Mirantis on Azure Service Fabric via Custom Script VM Extension] --> NewImageIsPrepped[Sequence extension provisioning in virtual machine scale sets]
-    MirantisGalleryImage --> NewImageIsPrepped[Find and use Azure Marketplace VM images with Azure PowerShell]
-    NewImageIsPrepped --> NodeTypeDecision1{Which NodeType is affected}
+    CustomOSImage --> PrepNewImageStep1[Get started: Prep Windows for containers] --> NewImageIsPrepped1[Automatic OS image upgrade for custom images]
+    ManualInstallImage --> ManualInstallStep1[Install Mirantis on Azure Service Fabric via Custom Script VM Extension] --> NewImageIsPrepped2[Sequence extension provisioning in virtual machine scale sets]
+    MirantisGalleryImage --> NewImageIsPrepped3[Find and use Azure Marketplace VM images with Azure PowerShell]
+    NewImageIsPrepped1 --> NodeTypeDecision1{Which NodeType is affected}
+    NewImageIsPrepped2 --> NodeTypeDecision1{Which NodeType is affected}
+    NewImageIsPrepped3 --> NodeTypeDecision1{Which NodeType is affected}
     NodeTypeDecision1 --> YesHostingContainersPrimary[Primary Node Type]
     NodeTypeDecision1 --> YesHostingContainersSecondary[Secondary Node Type]
     NodeTypeDecision2 --> NoHostingContainersPrimary[Primary Node Type]
