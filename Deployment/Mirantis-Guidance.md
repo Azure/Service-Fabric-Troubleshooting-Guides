@@ -2,7 +2,7 @@
 
 ## Abstract 
 
-Post 22nd Sept, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The VM image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
+Post 3rd Oct, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The VM image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
 
 This guide is for all SF customers using “with container” VM images (list of effected Azure OS images below) and the migration scenarios broadly categorizes customers’ use-cases into a) Running containerized workloads on SF b) Running non-containerized workloads on SF. 
  
