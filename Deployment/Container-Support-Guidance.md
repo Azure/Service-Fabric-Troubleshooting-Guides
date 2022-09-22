@@ -2,8 +2,7 @@
 
 ## Abstract 
 
-This guide is for all SF customers using “with container” OS images (list of effected Azure OS images below) from the Azure image gallery on their Azure Virtual Machine Scale Sets. 
-After final deprecation the OS image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these OS images. 
+Post 3rd Oct, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The VM image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
 
 Microsoft validated Service Fabric 9.0 CU1 or later with Mirantis Container Runtime v20.10.13 and Moby v20.10.18 on Windows Server 2019/2022. Please make yourself familiar with the support options of these container runtimes.
  
