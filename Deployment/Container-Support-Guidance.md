@@ -2,7 +2,7 @@
 
 ## Abstract 
 
-Post 3rd Oct, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The VM image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
+Post 3rd Oct, 2022 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The unavailability of the OS image will lead to the failures of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
 
 Microsoft validated Service Fabric 9.0 CU1 or later with Mirantis Container Runtime v20.10.13 and Moby v20.10.18 on Windows Server 2019/2022. Please make yourself familiar with the support options of these container runtimes.
  
@@ -30,6 +30,13 @@ Customer is using Windows Server image 2019 with Containers
 
 This guide is designed to help you assess the effort and risk of each migration option. 
 Criteria for successfully running container runtime to host container on Azure Service Fabric cluster.
+
+The possible options for the migration are combinations of the following controls:
+- OS SKU selection
+- container runtime selection (MCR, Moby, other or none)
+- container runtime installation mechanism 
+- cluster nodes update mechanism (in place, new node types or recreating the cluster)
+
 1. Choose a container runtime.
 2. Service Fabric runtime needs to be on version [9.0 CU2 (9.0.1048.9590) or greater](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-versions).
 3. Azure Virtual Machine Scale Sets to host containers on container runtime needs to run on Windows Server 2019/2022. 
@@ -38,6 +45,8 @@ Criteria for successfully running container runtime to host container on Azure S
 In-place SKU upgrades are in general not supported on Service Fabric cluster nodes, as such operations potentially involve data and availability loss. The safest, most reliable, and recommended method for scaling up a Service Fabric node type is to add a new node type and move the workload over.
 
 In this document we are describing an approach to do an in-place OS SKU upgrade with less effort but the potential risk of ending up in a non-recoverable state. This approach should be only considered for Service Fabric Node Types without container workloads. Please read the described risks for each scenario carefully.
+
+The following table captures the risk and effort evaluation of the various migration options.
 
 | Scenario | Effort | Risk | Node Types without container workloads | Node Types with container workloads |
 | --- | --- | --- | --- | --- |
@@ -86,7 +95,7 @@ a.	Example for the OS SKU name: Windows Server 2022 Datacenter
 
 Documentation:
 - [Quickstart: Create a Service Fabric cluster using ARM template](https://docs.microsoft.com/en-us/azure/service-fabric/quickstart-cluster-template)
-- [How To: Rebuild Azure Service Fabric cluster (minimal version)](#)
+- [How To: Rebuild Azure Service Fabric cluster (minimal version)](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Minimal-Cluster-Rebuild.md)
 
 ### Scenario 1/Option 2: Mitigate via OS SKU upgrade
 
@@ -105,7 +114,7 @@ Add new secondary Node Types with supported OS SKU without container support by 
         
 Documentation: 
 - [Scale a Service Fabric cluster out by adding a virtual machine scale set](https://docs.microsoft.com/en-us/azure/service-fabric/virtual-machine-scale-set-scale-node-type-scale-out)
-- [Scale up a Service Fabric cluster secondary node type](#)
+- [Scale up a Service Fabric cluster secondary node type](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-scale-up-non-primary-node-type)
 
 ### Scenario 1/Option 3: Mitigate via OS SKU in-place upgrade
 
@@ -195,7 +204,7 @@ Steps
 
 Documentation:
 - [Quickstart: Create a Service Fabric cluster using ARM template](https://docs.microsoft.com/en-us/azure/service-fabric/quickstart-cluster-template)
-- [How To: Rebuild Azure Service Fabric cluster (minimal version)](#)
+- [How To: Rebuild Azure Service Fabric cluster (minimal version)](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Minimal-Cluster-Rebuild.md)
 - [Install Mirantis on Azure Service Fabric via Custom Script VM Extension](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Mirantis-Installation.md)
 
 ### Scenario 2/Option 2: Mitigate Node Types via OS SKU upgrade
