@@ -269,7 +269,7 @@ For all further questions please reach out to your account team or [create a Mic
 
 1. Which container runtimes are supported by Service Fabric?
 
-   Microsoft validated Service Fabric 9.0 CU1 or later with Mirantis Container Runtime v20.10.13 and Moby v20.10.18 on Windows Server 2019/2022. Please make yourself familiar with the support options of these container runtimes.
-   - Moby is an open-source container runtime, former DockerCE. 
+   Microsoft validated Service Fabric 9.0 CU1 or later with Mirantis Container Runtime v20.10.13 and Moby v20.10.18 on Windows Server 2019/2022. Please make yourself familiar with the support options for these container runtimes.
+   - Moby is an open framework to assemble specialized container systems, former DockerCE. 
    - Mirantis Container Runtime, former DockerEE. 
 
