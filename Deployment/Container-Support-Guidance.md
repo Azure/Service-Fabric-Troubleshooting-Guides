@@ -2,10 +2,12 @@
 
 ## Abstract 
 
-Post 30 April 2023 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The VM image unavailability would lead to the failure of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
+Post 30 April 2023 Service Fabric customers using “with containers” VM images may face service disruptions as Microsoft will remove the “with container” VM images from the Azure image gallery. The unavailability of the OS image will lead to the failures of VM lifecycle management operations such as scale out, re-image, and service healing for Azure Service Fabric (SF) node types based on these VM images. 
 
-This guide is for all SF customers using “with container” VM images (list of effected Azure OS images below) and the migration scenarios broadly categorizes customers’ use-cases into a) Running containerized workloads on SF b) Running non-containerized workloads on SF. 
+Microsoft validated Service Fabric 9.0 CU1 or later with Mirantis Container Runtime v20.10.13 and Moby v20.10.18 on Windows Server 2019/2022. Please make yourself familiar with the support options of these container runtimes.
  
+Please use our decision graph to get an overview: [Container Support Decision Graph](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Container-Support-Decision-Graph.md)
+
 ## List of affected Azure OS images
 
 Customer is using Windows Server image 2016 with Containers
@@ -27,23 +29,26 @@ Customer is using Windows Server image 2019 with Containers
 ## Migration risk decision guide
 
 This guide is designed to help you assess the effort and risk of each migration option. 
-Criteria for successfully running MCR to host container on Azure Service Fabric cluster.
-1. Acquire a Mirantis Container Runtime license.
-2. Service Fabric runtime needs to be on version [9.0 CU2 (9.0.1048.9590) or greater](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-versions).
-3. Azure Virtual Machine Scale Sets to host containers on MCR needs to run on Windows Server 2022. 
-4. MCR needs to be installed by Custom Script VM Extension or pre-installed as part of an OS image.
+
+The possible options for the migration are combinations of the following controls:
+- OS SKU selection
+- Container runtime selection (MCR, Moby, other or none)
+- Container runtime installation mechanism 
+- Cluster nodes update mechanism (in place, new node types or recreating the cluster)
 
 In-place SKU upgrades are in general not supported on Service Fabric cluster nodes, as such operations potentially involve data and availability loss. The safest, most reliable, and recommended method for scaling up a Service Fabric node type is to add a new node type and move the workload over.
 
 In this document we are describing an approach to do an in-place OS SKU upgrade with less effort but the potential risk of ending up in a non-recoverable state. This approach should be only considered for Service Fabric Node Types without container workloads. Please read the described risks for each scenario carefully.
 
+The following table captures the risk and effort evaluation of the various migration options.
+
 | Scenario | Effort | Risk | Node Types without container workloads | Node Types with container workloads |
 | --- | --- | --- | --- | --- |
 | In-place OS SKU upgrade | Low | High | Yes | No | 
 | Mitigate by adding new node type with OS image without container support | Medium | Low | Yes | No |
-| Mitigate by adding new node type with VM extension to install MCR | High | Low | Yes | Yes |
-| Mitigate by adding new node type with OS image by MCR | Medium | Low | Yes | Yes |
-| Mitigate by adding new primary node type with custom OS image with MCR pre-installed | High | Low | Yes | Yes |
+| Mitigate by adding new node type with VM extension to install container runtime | High | Low | Yes | Yes |
+| Mitigate by adding new node type with OS image by container runtime | Medium | Low | Yes | Yes |
+| Mitigate by adding new primary node type with custom OS image with container runtime pre-installed | High | Low | Yes | Yes |
 | Recreate the cluster resource | High | Low | Yes | Yes |
 
 ## Key questions
@@ -52,9 +57,9 @@ In this document we are describing an approach to do an in-place OS SKU upgrade 
 
     In case the Node Type is not running any container workload, then migrating to different Windows Server OS image will be sufficient. When safety is prioritized, then creating a new node type, and move the workload. For less safety, consider the in-place upgrade by only changing the OS SKU. 
 
-    For container workloads, the mitigation is to move the workloads to a new node type with MCR. Mirantis can be installed by Custom Script VM Extension on the VMSS or pre-installed on OS image. Creating and maintaining a custom OS image is effort. Patching Windows and the container runtime must be considered. 
+    For container workloads, the mitigation is to move the workloads to a new node type with new container runtime. The container runtime can be installed by Custom Script VM Extension on the VMSS or pre-installed on OS image. Creating and maintaining a custom OS image is effort. Patching Windows and the container runtime must be considered. 
 
-    Mirantis announced to publish an OS image in the Azure Marketplace with pre-installed MCR in September 2022. This OS image will get regular updates for Windows and MCR.
+    Mirantis published an OS image in the Azure Marketplace with pre-installed Mirantis Container Runtime. 
 
 
 2.	Are the running services on the Service Fabric Node Type allow downtime?
@@ -84,7 +89,7 @@ a.	Example for the OS SKU name: Windows Server 2022 Datacenter
 
 Documentation:
 - [Quickstart: Create a Service Fabric cluster using ARM template](https://docs.microsoft.com/en-us/azure/service-fabric/quickstart-cluster-template)
-- [How To: Rebuild Azure Service Fabric cluster (minimal version)](#)
+- [How To: Rebuild Azure Service Fabric cluster (minimal version)](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Minimal-Cluster-Rebuild.md)
 
 ### Scenario 1/Option 2: Mitigate via OS SKU upgrade
 
@@ -103,7 +108,7 @@ Add new secondary Node Types with supported OS SKU without container support by 
         
 Documentation: 
 - [Scale a Service Fabric cluster out by adding a virtual machine scale set](https://docs.microsoft.com/en-us/azure/service-fabric/virtual-machine-scale-set-scale-node-type-scale-out)
-- [Scale up a Service Fabric cluster secondary node type](#)
+- [Scale up a Service Fabric cluster secondary node type](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-scale-up-non-primary-node-type)
 
 ### Scenario 1/Option 3: Mitigate via OS SKU in-place upgrade
 
@@ -168,18 +173,17 @@ Documentation:
 ## Scenario 2: Customer is hosting Azure Service Fabric Node Type using deprecated Windows Server images with-Containers, and does host containers in Docker as part of their applications
 
 In general, the steps are as follows:
-1. Acquire licenses from Mirantis directly.
-   [Mirantis Enterprise Support](https://www.mirantis.com/docker-engine-enterprise-support/ )
-2. Install MCR on new node type. There are three options to install the container runtime:
+1. Choose container runtime. 
+2. Install container runtime on new node type. There are three options to install the container runtime:
    1. Custom Script VM Extension on a new node type with standard Azure OS image without container support. 
-   Please find the guidance to install MCR via Custom Script VM Extension in the respective scenario.
-   The Mirantis installer needs a machine restart to work during the post-deployment. This can potentially delay other operational processes, as scaling, node repair, reimage can take longer. The installer also checks if the latest version is installed, this can be disabled in the provided script.
-   2. Create a new node type with the Azure Marketplace OS image provided by Mirantis with pre-installed container runtime. This image will be released in September 2022.
-   3. Create a custom OS image to pre-install MCR. Please find guidance below in the documentation. VMSS also allows to use automatic OS image upgrade to install Windows patches on custom images.
+   Please find the guidance to install container runtime via Custom Script VM Extension in the respective scenario.
+   The container runtime installer needs a machine restart to work during the post-deployment. This can potentially delay other operational processes, as scaling, node repair, reimage can take longer. The installer also checks if the latest version is installed, this can be disabled in the provided script.
+   2. Create a new node type with the Azure Marketplace OS image provided by with pre-installed container runtime. 
+   3. Create a custom OS image to pre-install container runtime. Please find guidance below in the documentation. VMSS also allows to use automatic OS image upgrade to install Windows patches on custom images.
 3. Move workloads to new node type.
 
 > :exclamation:
-> The above steps to provision MCR runtime were performed on Windows Server 2022 running Service Fabric 9.0 CU2   
+> The above steps to provision container runtime runtime were performed on Windows Server 2022 running Service Fabric 9.0 CU2   
 
 ### Scenario 2/Option 1: Full rebuild of Azure Service Fabric cluster (9.0 CU2 or later) on a supported Windows 2022 OS SKU 
 
@@ -194,7 +198,7 @@ Steps
 
 Documentation:
 - [Quickstart: Create a Service Fabric cluster using ARM template](https://docs.microsoft.com/en-us/azure/service-fabric/quickstart-cluster-template)
-- [How To: Rebuild Azure Service Fabric cluster (minimal version)](#)
+- [How To: Rebuild Azure Service Fabric cluster (minimal version)](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Minimal-Cluster-Rebuild.md)
 - [Install Mirantis on Azure Service Fabric via Custom Script VM Extension](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Mirantis-Installation.md)
 
 ### Scenario 2/Option 2: Mitigate Node Types via OS SKU upgrade
@@ -211,15 +215,18 @@ Adding a new node type safely in Azure Service Fabric cluster.
 - [Scale up a Service Fabric cluster primary node type](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-scale-up-primary-node-type)
 - [Scale a Service Fabric cluster out by adding a virtual machine scale set](https://docs.microsoft.com/en-us/azure/service-fabric/virtual-machine-scale-set-scale-node-type-scale-out)
 
-Install Mirantis Container Runtime during post-deployment with Custom Script VM Extension on VMSS.
+Install container runtime during post-deployment with Custom Script VM Extension on VMSS.
 
 - [Install Mirantis on Azure Service Fabric via Custom Script VM Extension](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Mirantis-Installation.md)
+- [Install MCR on Windows Servers](https://docs.mirantis.com/mcr/20.10/install/mcr-windows.html)
+- [Install Docker CE/Moby on Windows Server](https://learn.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-1)
 - [Sequence extension provisioning in virtual machine scale sets](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-extension-sequencing)
 - [Custom Script Extension for Windows](https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows)
 
-Find OS image with pre-installed MCR provided by Mirantis in Azure Marketplace (September 2022).
+Find OS image with pre-installed container runtime provided in Azure Marketplace (September 2022).
 
 - [Find and use Azure Marketplace VM images with Azure PowerShell](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/cli-ps-findimage)
+- [Azure Marketplace - Windows Server 2019 Datacenter with Containers (Mirantis Container Runtime)](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/mirantis.windows_with_mirantis_container_runtime_2019)
 
 Create a custom OS image to build a new node type with it.
 
@@ -237,12 +244,8 @@ After successful migration, the unused Node Type should be removed.
 
 Additional guidance related to container runtimes
 - Modifications to the Docker data root (C:\ProgramData\docker) must be tested before doing the migration.
-- Other container runtimes like for example containerd or DockerEE should not be installed side-by-side with Mirantis Container Runtime.
-
-Additional information about the Mirantis OS image in Azure Marketplace
-
-This image will have MCR preinstalled and will receive regular updates for container runtime and Windows. Mirantis will make this VM image publicly available in early September 2022 for customers to switch any workloads to. The cost of this marketplace image will include the cost of support and license for the runtime.
-Service Fabric customers must follow the official scale-up process to create a new node type and move over the container workloads.
+- Other container runtimes like for example containerd or DockerEE should not be installed side-by-side with other container runtimes.
+- Container images must recreated when changing the Windows Server major version. This is not relevant for Windows containers using the [Hyper-V isolation mode](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-containers-overview#service-fabric-support-for-containers).
 
 ## Scenario 3: Customer has Azure Service Fabric Managed Cluster using deprecated Windows Server images with-Containers, and does NOT host containers in Docker as part of their applications
 
@@ -264,8 +267,9 @@ Documentation:
 
 For all further questions please reach out to your account team or [create a Microsoft support case](https://docs.microsoft.com/en-us/azure/azure-portal/supportability/how-to-create-azure-support-request).
 
-1. Is Mirantis Container Runtime the only container runtime supported by Service Fabric?
+1. Which container runtimes are supported by Service Fabric?
 
-   The Service Fabric product group is currently testing Moby. This will be supported soon. Please stay tuned for the official announcement.
-   Moby is the open-source version of the container runtime, former DockerCE. It comes with community support only and is suitable for non-production environments.
+   Microsoft validated Service Fabric 9.0 CU1 or later with Mirantis Container Runtime v20.10.13 and Moby v20.10.18 on Windows Server 2019/2022. Please make yourself familiar with the support options for these container runtimes.
+   - Moby is an open framework to assemble specialized container systems, former DockerCE. 
+   - Mirantis Container Runtime, former DockerEE. 
 
