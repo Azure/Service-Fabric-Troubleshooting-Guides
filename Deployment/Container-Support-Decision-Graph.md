@@ -1,6 +1,6 @@
 #  Decision Graph companion to Container Support Guidance
 
-[Container Support Guidance](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Container-Support-Guidance.md)
+[Container Support Guidance](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Deployment/Mirantis-Guidance.md)
 
 ```mermaid
 graph TD;
