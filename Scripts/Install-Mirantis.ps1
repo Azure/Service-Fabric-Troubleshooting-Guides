@@ -334,16 +334,15 @@ function Test-IsDockerRunning() {
 
 # Register Windows event source 
 function Register-Event() {
-    try {
-        if ($registerEvent) {
-            if (!(Get-EventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue)) {
-                New-EventLog -LogName $eventLogName -Source $registerEventSource
-            }
+    if ($registerEvent) {
+        $error.clear()
+        New-EventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue
+        if($error -and ($error -inotmatch 'source is already registered')) {
+            $registerEvent = $false
         }
-    }
-    catch {
-        Write-Host "Exception:$($error | Out-String)"
-        $error.Clear()
+        else {
+            $error.clear()
+        }
     }
 }
 
