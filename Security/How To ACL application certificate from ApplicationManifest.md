@@ -67,4 +67,3 @@ In '&lt;Certificates&gt;' section, add a &lt;Certificate&gt; element for each ce
 - [Service Fabric application and service security](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-and-service-security)
 - [Manage certificates in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificate-management)
 - [Grant NETWORK SERVICE access to the certificate's private key](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-dotnet-app-enable-https-endpoint#grant-network-service-access-to-the-certificates-private-key)
-- [Manage encrypted secrets in Service Fabric applications](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-secret-management)
