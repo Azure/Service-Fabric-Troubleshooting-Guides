@@ -1,10 +1,7 @@
 # How to ACL application certificate from ApplicationManifest.xml
 
-Applications using a certificate for secure communication over https need to have Acess Control List (ACL) configured with Full permissions for the user context being used for the application process. By default in Service Fabric, the 'Network Service' user account is used, but this however can be modified. 
-
-There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates. Service Fabric will only automatically ACL the cluster certificate. 
-
-If a certificate is deployed to a Service Fabric cluster, but the application cannot access the Private Key (returns null) then it's possible the Private Key is not ACL'd correctly. By default, Service Fabric runs under NetworkService account, so you must ensure the private key is configured to allow this account to access it.
+Applications using a certificate for secure communication over https need to have Acess Control List (ACL) configured with Full permissions for the user context being used for the application process. By default in Service Fabric, the 'Network Service' user account is used, but this however can be modified.
+There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates. Service Fabric will only automatically ACL the cluster certificate. If a certificate is deployed to a Service Fabric cluster, but the application cannot access the Private Key (returns null) then it's possible the Private Key is not ACL'd correctly. By default, Service Fabric runs application using the 'NetworkService' account, so the private key has to be ACL'd to allow this account to access it.
 
 The following example configures the Principle and sets the ACL using SecurityAccessPolicies using ApplicationManifest.xml. Two different certs are updated, an EndpointCertificate and a simple SecretsCertificate. These settings could also be placed in the ServiceManifest.xml. See [Manage encrypted secrets in Service Fabric applications](https://docs.microsoft.com/azure/service-fabric/service-fabric-application-secret-management) for additional information.
 
