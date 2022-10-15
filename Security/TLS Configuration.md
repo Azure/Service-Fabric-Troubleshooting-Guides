@@ -146,6 +146,56 @@ index 289e771..e598691 100644
         Value: Tls12
     ```
 
+## Verification
+
+- After configuration has been applied and node has been restarted, verify cluster and application functionality. Once cluster and applications have been verified, to verify TLS configuration, there are multiple tools available to check configuration. [Nmap](https://nmap.org) and [IISCrypto](https://www.nartac.com/Products/IISCrypto/) are examples of utilities that can be used.
+
+### Nmap
+
+- To verify configuration with NMAP, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to node, download [Nmap](https://nmap.org/download), and install.
+- From command line, execute command for verification. Example command: nmap --script ssl-enum-ciphers -p 1026 -Pn 10.0.0.4
+- Verify configuration is as expected. If there are warnings, review and modify TLS configuration as needed.
+
+#### Nmap example command
+
+```text
+PS C:\Program Files (x86)\Nmap> nmap --script ssl-enum-ciphers -p 1026 -Pn 10.0.0.4
+Starting Nmap 7.93 ( https://nmap.org ) at 2022-10-15 19:09 Coordinated Universal Time
+NSOCK ERROR [0.0720s] ssl_init_helper(): OpenSSL legacy provider failed to load.
+
+Nmap scan report for nt0000000.internal.cloudapp.net (10.0.0.4)
+Host is up (0.0010s latency).
+
+PORT     STATE SERVICE
+1026/tcp open  LSA-or-nterm
+| ssl-enum-ciphers:
+|   TLSv1.2:
+|     ciphers:
+|       TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 (secp384r1) - A
+|       TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (secp384r1) - A
+|       TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 (dh 2048) - A
+|       TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 (dh 2048) - A
+|       TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384 (secp384r1) - A
+|       TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 (secp384r1) - A
+|       TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA (secp384r1) - A
+|       TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA (secp384r1) - A
+|       TLS_DHE_RSA_WITH_AES_256_CBC_SHA (dh 2048) - A
+|       TLS_DHE_RSA_WITH_AES_128_CBC_SHA (dh 2048) - A
+|       TLS_RSA_WITH_AES_256_GCM_SHA384 (rsa 2048) - A
+|       TLS_RSA_WITH_AES_128_GCM_SHA256 (rsa 2048) - A
+|       TLS_RSA_WITH_AES_256_CBC_SHA256 (rsa 2048) - A
+|       TLS_RSA_WITH_AES_128_CBC_SHA256 (rsa 2048) - A
+|       TLS_RSA_WITH_AES_256_CBC_SHA (rsa 2048) - A
+|       TLS_RSA_WITH_AES_128_CBC_SHA (rsa 2048) - A
+|     compressors:
+|       NULL
+|     cipher preference: server
+|_  least strength: A
+
+Nmap done: 1 IP address (1 host up) scanned in 0.87 seconds
+PS C:\Program Files (x86)\Nmap>
+```
+
 ## Linux Clusters
 
 Update the cluster settings in Security section - EnforceLinuxMinTlsVersion and TLS1_2_CipherList as needed
