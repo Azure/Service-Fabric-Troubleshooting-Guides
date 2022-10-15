@@ -1,6 +1,8 @@
-# TLS Configuration
+# How to configure Service Fabric or Applications to use a specific TLS version
 
-## Option 1 - Machine wide configuration - How to configure Service Fabric or Applications to use a specific TLS version
+Below list some of the options available for configuring TLS and cipher suites. These steps are not specific to Service Fabric and may need to be modified depending on environment and applications being used.
+
+## Option 1 - Machine wide configuration in registry
 
 - This configuration is machine wide restricting OS and applications enforcing TLS 1.2 and secure ciphers. This option uses Custom Script Extension with extension sequencing and Powershell script. [../Scripts/vmss-cse-tls.ps1](../Scripts/vmss-cse-tls.ps1) should be saved to a storage location that is accessible from the Service Fabric nodes during deployment. This script is based off of [Troubleshooting applications that don't support TLS 1.2](https://learn.microsoft.com/en-us/azure/cloud-services/applications-dont-support-tls-1-2) and has been modified to only enable TLS 1.2. Additionally, RC4 and 3DES ciphers have been disabled.
 
