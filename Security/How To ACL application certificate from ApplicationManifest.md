@@ -49,6 +49,7 @@ In '&lt;Certificates&gt;' section, add a &lt;Certificate&gt; element for each ce
 - To verify ACL permissions on a certificate, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node running application and view certificate in Microsoft Management Console (mmc.exe). Open certlm.msc (mmc local machine certificates shortcut), right click on certificate being used, and select 'Manage Private Keys...'. The 'User name' for the process in 'Task Manager' needs to have 'Full control' ACL permissions on certificate Private Key being used.
 
   ![](../media/certlm-manage-private-keys.png)
+
   ![](../media/certlm-certificate-acl.png)
 
 - If unable to determing issue, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node running application, open 'Event Viewer' (eventvwr.exe) 'Application' and 'Microsoft-Service Fabric/Admin' logs and review for errors.
