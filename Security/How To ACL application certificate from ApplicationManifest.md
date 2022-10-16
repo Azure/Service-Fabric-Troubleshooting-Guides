@@ -1,24 +1,22 @@
 # How to ACL application certificate private key using ApplicationManifest.xml
 
-Applications using a certificate for secure communication over https need to have the Access Control List (ACL) configured with Full permissions for the user context being used for the application process. There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates. Service Fabric will only automatically ACL the cluster certificate. If a certificate is deployed to a Service Fabric cluster, and the application cannot access the private key (returns null), it is possible the private key is not ACL'd correctly. By default, Service Fabric (fabrichost.exe) starts applications using the 'NetworkService' account, so the private key has to be ACL'd to allow this account to access it.
+Applications using a certificate for secure communication over https need to have the Access Control List (ACL) configured with Full permissions for the user context being used for the application process. There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates as Service Fabric will only automatically ACL the cluster certificate. If a certificate is deployed to a Service Fabric cluster, and the application cannot access the private key (returns null), it is possible the private key is not ACL'd correctly. By default, Service Fabric (fabrichost.exe) starts applications using the 'Network Service' account, so the private key has to be ACL'd to allow this account to access it. Using configuration below, Service Fabric will ACL the certificate private key automatically.
 
-The following example configures the Principle and sets the ACL using SecurityAccessPolicies using ApplicationManifest.xml. Two different certs are updated, an EndpointCertificate and a simple SecretsCertificate. These settings could also be placed in the ServiceManifest.xml. See [Manage encrypted secrets in Service Fabric applications](https://docs.microsoft.com/azure/service-fabric/service-fabric-application-secret-management) for additional information.
+The following example configures the Principal and sets the private key ACL using SecurityAccessPolicies in ApplicationManifest.xml. Two different certs are updated, an EndpointCertificate and a simple SecretsCertificate. See [Assign a security access policy for HTTP and HTTPS endpoints](https://learn.microsoft.com/azure/service-fabric/service-fabric-assign-policy-to-endpoint) and [Manage encrypted secrets in Service Fabric applications](https://docs.microsoft.com/azure/service-fabric/service-fabric-application-secret-management)
+ for additional information.
 
 ## ApplicationManifest.xml Configuration
 
-In '&lt;Principals&gt;&lt;Users&gt;' section, add '&lt;User&gt;' element for the user account executing application. By default the 'AccountType' is 'NetworkService'.  
-In '&lt;Policies&gt;&lt;SecurityAccessPolicies&gt;' section, add '&lt;SecurityAccessPolicy&gt;' for each certificate needing to be ACL'd.  
-In '&lt;Certificates&gt;' section, add a &lt;Certificate&gt; element for each certificate.
+- **'&lt;Principals&gt;&lt;Users&gt;'** section - Add **'&lt;User&gt;'** element for the user account executing application. By default the 'AccountType' is 'NetworkService' for user 'Network Service'. See [AccountType](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#accounttype) for list of all account types.
+- **'&lt;Policies&gt;&lt;SecurityAccessPolicies&gt;'** section - Add **'&lt;SecurityAccessPolicy&gt;'** for each certificate needing to be ACL'd.  
+- **'&lt;Certificates&gt;'** section - Add **'&lt;EndpointCertificate&gt;'** element for the endpoint certificate and if using an encryption certificate, add the **'&lt;SecretsCertificate&gt;'**.
 
 ## Example ApplicationManifest.xml with SecurityAccessPolicies
 
 ```xml
 <ApplicationManifest>
  …
- …
- …
- …
-<Principals>
+ <Principals>
 	<Users>
 		<User Name="Service1" AccountType="NetworkService" />
 	</Users>
@@ -55,11 +53,11 @@ In '&lt;Certificates&gt;' section, add a &lt;Certificate&gt; element for each ce
 ## Reference
 
 - [Service Fabric application and service manifests](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-and-service-manifests)
-- [SecurityAccessPolicies element](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#securityaccesspolicies-element)
 - [SecurityAccessPolicy element](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#securityaccesspolicy-element)
-- [Principals element](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#principals-element)
+- [User element](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#user-element)
+- [Run a service startup script as a local user or system account](https://learn.microsoft.com/azure/service-fabric/service-fabric-run-script-at-service-startup)
 
-- [Assign a security access policy for HTTP and HTTPS endpoints](https://learn.microsoft.com/azure/service-fabric/service-fabric-assign-policy-to-endpoint)
 - [Service Fabric application and service security](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-and-service-security)
 - [Manage certificates in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificate-management)
 - [Grant NETWORK SERVICE access to the certificate's private key](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-dotnet-app-enable-https-endpoint#grant-network-service-access-to-the-certificates-private-key)
+- [Specify resources in a service manifest](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-manifest-resources)
