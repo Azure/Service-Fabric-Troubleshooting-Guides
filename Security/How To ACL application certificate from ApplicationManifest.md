@@ -1,6 +1,6 @@
 # How to ACL application certificate private key using ApplicationManifest.xml
 
-Applications using a certificate for secure communication over https need to have the Access Control List (ACL) configured with Full permissions for the user context being used for the application process. Service Fabric will automatically attempt to ACL the application certificate only if the certificate information is configured in ApplicationManifest.xml as shown below. Other options are available as well for example running a setup script as documented in [Tutorial: Add an HTTPS endpoint to an ASP.NET Core Web API front-end service using Kestrel](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-tutorial-dotnet-app-enable-https-endpoint).
+Applications using a certificate for secure communication over https need to have the Access Control List (ACL) configured with Full permissions for the user context being used for the application process. Service Fabric will automatically attempt to ACL the application certificate only if the certificate information is configured in ApplicationManifest.xml as shown below. Other options are available as well for example running a setup script as documented in [Tutorial: Add an HTTPS endpoint to an ASP.NET Core Web API front-end service using Kestrel](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-dotnet-app-enable-https-endpoint).
 
 By default, Service Fabric fabrichost.exe starts applications using the 'NT Authority/Network Service' account based on the user account fabric.exe is configured for. The certificates private key has to be ACL'd to allow this account access to the key. If the application is using a non-default credential, for example with the '&lt;RunAsPolicy&gt;' element, Service Fabric will ACL the certificate private key automatically as well. 
 
@@ -94,7 +94,7 @@ Event Xml:
 ## Reference
 
 - [Service Fabric application and service manifests](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-and-service-manifests)
-- [SecurityAccessPolicy element](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#securityaccesspolicy-element)
+- [EndpointCertificate element](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#endpointcertificate)
 - [User element](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#user-element)
 - [Run a service startup script as a local user or system account](https://learn.microsoft.com/azure/service-fabric/service-fabric-run-script-at-service-startup)
 
