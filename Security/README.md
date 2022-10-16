@@ -15,7 +15,7 @@ This contains the Security related TSG's surfaced in the Azure Portal during sup
 
 ### **Private Key Permissions**
 * [Failed to get the Certificates private key](./Failed%20to%20get%20the%20Certificates%20private%20key.md)
-* [ACL_Application_Cert_from_ApplicationManifest](./ACL_Application_Cert_from_ApplicationManifest.md)
+* [How to ACL application certificate private key using ApplicationManifest.xml](./How%20to%20ACL%20application%20certificate%20from%20ApplicationManifest.md)
 * [How to set ACL for a SF certificate](./Set%20ACL%20for%20a%20SF%20certificate.md)
 
 ### **Certificate Configuration**
