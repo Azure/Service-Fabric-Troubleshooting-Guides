@@ -1,7 +1,6 @@
-# How to ACL application certificate from ApplicationManifest.xml
+# How to ACL application certificate private key using ApplicationManifest.xml
 
-Applications using a certificate for secure communication over https need to have Acess Control List (ACL) configured with Full permissions for the user context being used for the application process. By default in Service Fabric, the 'Network Service' user account is used, but this however can be modified.
-There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates. Service Fabric will only automatically ACL the cluster certificate. If a certificate is deployed to a Service Fabric cluster, but the application cannot access the Private Key (returns null) then it's possible the Private Key is not ACL'd correctly. By default, Service Fabric runs application using the 'NetworkService' account, so the private key has to be ACL'd to allow this account to access it.
+Applications using a certificate for secure communication over https need to have the Access Control List (ACL) configured with Full permissions for the user context being used for the application process. There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates. Service Fabric will only automatically ACL the cluster certificate. If a certificate is deployed to a Service Fabric cluster, and the application cannot access the private key (returns null), it is possible the private key is not ACL'd correctly. By default, Service Fabric (fabrichost.exe) starts applications using the 'NetworkService' account, so the private key has to be ACL'd to allow this account to access it.
 
 The following example configures the Principle and sets the ACL using SecurityAccessPolicies using ApplicationManifest.xml. Two different certs are updated, an EndpointCertificate and a simple SecretsCertificate. These settings could also be placed in the ServiceManifest.xml. See [Manage encrypted secrets in Service Fabric applications](https://docs.microsoft.com/azure/service-fabric/service-fabric-application-secret-management) for additional information.
 
@@ -43,7 +42,7 @@ In '&lt;Certificates&gt;' section, add a &lt;Certificate&gt; element for each ce
 
   ![](../media/task-manager-user-context.png)
 
-- To verify ACL permissions on a certificate, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node running application and view certificate in Microsoft Management Console (mmc.exe). Open certlm.msc (mmc local machine certificates shortcut), right click on certificate being used, and select 'Manage Private Keys...'. The 'User name' for the process in 'Task Manager' needs to have 'Full control' ACL permissions on certificate Private Key being used.
+- To verify ACL permissions on a certificate, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node running application and view certificate in Microsoft Management Console (mmc.exe). Open certlm.msc (mmc local machine certificates shortcut), right click on certificate being used, and select 'Manage private keys...'. The 'User name' for the process in 'Task Manager' needs to have 'Full control' ACL permissions on certificate private key being used.
 
   ![](../media/certlm-manage-private-keys.png)
 
