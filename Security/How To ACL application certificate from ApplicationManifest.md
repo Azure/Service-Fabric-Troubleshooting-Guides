@@ -1,6 +1,6 @@
 # How to ACL application certificate private key using ApplicationManifest.xml
 
-Applications using a certificate for secure communication over https need to have the Access Control List (ACL) configured with Full permissions for the user context being used for the application process. There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates as Service Fabric will only automatically ACL the cluster certificate. If a certificate is deployed to a Service Fabric cluster, and the application cannot access the private key (returns null), it is possible the private key is not ACL'd correctly. By default, Service Fabric (fabrichost.exe) starts applications using the 'Network Service' account, so the private key has to be ACL'd to allow this account to access it. Using configuration below, Service Fabric will ACL the certificate private key automatically.
+Applications using a certificate for secure communication over https need to have the Access Control List (ACL) configured with Full permissions for the user context being used for the application process. There is currently no process or extension including Key vault virtual machine ([KVVM](https://learn.microsoft.com/azure/virtual-machines/extensionskey-vault-windows)) that performs this ACL automatically for application certificates as Service Fabric will only automatically ACL the cluster certificate. If a certificate is deployed to a Service Fabric cluster, and the application cannot access the private key (returns null), it is possible the private key is not ACL'd correctly. By default, Service Fabric fabrichost.exe starts applications using the 'Network Service' based on the user account fabric.exe is configured for, so the private key has to be ACL'd to allow this account to access it. Using configuration below, Service Fabric will ACL the certificate private key automatically.
 
 The following example configures the Principal and sets the private key ACL using SecurityAccessPolicies in ApplicationManifest.xml. Two different certs are updated, an EndpointCertificate and a simple SecretsCertificate. See [Assign a security access policy for HTTP and HTTPS endpoints](https://learn.microsoft.com/azure/service-fabric/service-fabric-assign-policy-to-endpoint) and [Manage encrypted secrets in Service Fabric applications](https://docs.microsoft.com/azure/service-fabric/service-fabric-application-secret-management)
  for additional information.
@@ -36,7 +36,7 @@ The following example configures the Principal and sets the private key ACL usin
 
 ## Troubleshooting
 
-- To verify which user context is being used, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node running application and view the process in Task Manager 'Details' tab.
+- To verify which user context is being used, [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node running application and view the process in Task Manager 'Details' tab. If application process is not available, find 'fabric.exe' to identify the user context that will be used.
 
   ![](../media/task-manager-user-context.png)
 
