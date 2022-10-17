@@ -113,16 +113,15 @@ function main() {
 }
 
 function register-event() {
-    try {
-        if ($registerEvent) {
-            if (!(get-eventlog -LogName 'Application' -Source $registerEventSource -ErrorAction silentlycontinue)) {
-                New-EventLog -LogName 'Application' -Source $registerEventSource
-            }
-        }
-    }
-    catch {
-        write-host "exception:$($error | out-string)"
+    if ($registerEvent) {
         $error.clear()
+        New-EventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue
+        if($error -and ($error -inotmatch 'source is already registered')) {
+            $registerEvent = $false
+        }
+        else {
+            $error.clear()
+        }
     }
 }
 
