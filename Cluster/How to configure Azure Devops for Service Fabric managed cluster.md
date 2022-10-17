@@ -10,7 +10,7 @@ When the certificate is rolled over, the Service Fabric service connection will 
 
 ## Requirements
 
-- Service Fabric managed cluster security with Azure Active Directory enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure) and [Service Fabric Azure Active Directory configuration in Azure portal](./Service%20Fabric%20Azure%20Active%20Directory%20configuration%20in%20Azure%20portal.md) for additional information.
+- Service Fabric managed cluster security with Azure Active Directory enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure) and [Service Fabric Azure Active Directory configuration in Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for additional information.
 
   ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-enable-aad.png)
 
