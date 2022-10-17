@@ -14,7 +14,7 @@ The recommended way to add a virtual machine scale set extension on an Azure Ser
 
 The PowerShell script is prepared to check if Mirantis needs to be installed by downloading and executing the Mirantis installer, after successful installation the machine will be restarted.
 
-Please use a copy of [Install-Mirantis.ps1](https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/chrpap/dockermigration/Scripts/Mirantis-Install.ps1) to install Mirantis Container Runtime on your Azure Service Fabric cluster.
+Please use a copy of [Install-Mirantis.ps1](https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/Install-Mirantis.ps1) to install Mirantis Container Runtime on your Azure Service Fabric cluster.
 
 > [!NOTE] It is highly recommended to save scripts somewhere in your own storage to be protected to changes from external sources. In this way your production environment will not face untested scenarios. Please use a copy of the scripts provided as any change should be tested first before going into production.
 
