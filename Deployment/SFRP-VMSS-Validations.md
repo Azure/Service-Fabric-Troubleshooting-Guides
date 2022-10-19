@@ -53,4 +53,4 @@ Coming soon ...
 
 1. I received a notification saying that my cluster was violating one of these validators, however, the cluster doesn't seem to currently exist?
 
-> This would indicate that you at one point had a cluster that was violating one of these validators. Please review your templates and ensure you are following the best practices with an SFRP VMSSS
+> This would indicate that you at one point had a cluster that was violating one of these validators. Please review your templates and ensure you are following best practices for a SFRP VMSS
