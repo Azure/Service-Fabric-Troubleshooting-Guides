@@ -21,10 +21,8 @@ To mitigate, we need to update the existing policy after upgrading to runtime 8.
 
 **Steps**:
 
-1. Check if there were some existing backup policies applied on any application/service/partition before upgrading to 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590
-2. Check if periodic backups are stopped post upgrading and above error is appearing in logs.
-above errors are appearing
-3. Update the backup policy with same old values by calling UpdateBackupPolicy API. Below is one sample -
+1. As per section "Identifying the issue" above, check wether issue is being hit in cluster. If issue is confirmed, follow next steps.
+2. Update the backup policy with same old values by calling UpdateBackupPolicy API. Below is one sample -
 
     ```powershell
      $BackupPolicy=@{
@@ -53,5 +51,5 @@ above errors are appearing
       # User should update the name of backup policy [DailyAzureBackupPolicy being used here and other possible values accordingly].
     ```
 
-4. Wait for 1-2 mins and policy should get updated across all entities.
-5. Periodic backups will start happening as per backup policy.
+3. Wait for 1-2 mins and policy should get updated across all entities.
+4. Periodic backups will start happening as per backup policy.
