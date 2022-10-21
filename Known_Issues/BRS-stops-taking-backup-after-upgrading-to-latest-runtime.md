@@ -17,7 +17,7 @@ There are two ways to identifying and confirming the issue
 
 **Mitigation:**
 
-To mitigate, we need to update the existing policy after upgrading to runtime 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590. User can call [UpdateBackupPolicy] (https://learn.microsoft.com/en-us/rest/api/servicefabric/sfclient-api-updatebackuppolicy) with existing policy values. It will update the policy model inside BRS with new data model and BRS will start taking periodic backups again.
+To mitigate, we need to update the existing policy after upgrading to runtime 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590. User can call [UpdateBackupPolicy](https://learn.microsoft.com/en-us/rest/api/servicefabric/sfclient-api-updatebackuppolicy) with existing policy values. It will update the policy model inside BRS with new data model and BRS will start taking periodic backups again.
 
 **Steps**:
 
