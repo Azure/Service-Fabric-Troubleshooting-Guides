@@ -163,7 +163,7 @@ Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher
   .\FixExpiredCert.ps1 -localOnly
 ```
 
-    * If you do not specify -localOnly it will prompt for the RDP credentials and then attempt to remotely execute all the necessary mitigation steps for each node listed in the nodeIpArray using Remote PowerShell, however this remote PS capability is often disabled on nodes by default and will result in HTTP 502 error and a PSRemotingTransportException.  If you see this it means you will need to RDP into each node and run the script using the -localOnly switch as shown above  
+   * If you do not specify -localOnly it will prompt for the RDP credentials and then attempt to remotely execute all the necessary mitigation steps for each node listed in the nodeIpArray using Remote PowerShell, however this remote PS capability is often disabled on nodes by default and will result in HTTP 502 error and a PSRemotingTransportException.  If you see this it means you will need to RDP into each node and run the script using the -localOnly switch as shown above  
 
         Note: If there are any errors or issues when running the script you can attempt to fix\correct these and just rerun the script, changes made by the script are idempotent.  In some cases if there are many nodes and you know the mitigation was already successful on some nodes before the script failed then you can remove those from the nodeIpArray to speed things up, but there is no harm if the mitigation is run multiple times on the same node.
  
