@@ -1,13 +1,15 @@
 # BackupRestoreService(BRS) stops taking periodic backup after upgrade to latest runtime
 
-**Issue**: Periodic backups stop for configured backup policies
+## Issue
+Periodic backups stop for configured backup policies
 
-**Cluster versions impacted:** Clusters upgraded to 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590 which have existing backup policies enabled on any stateful partition/service/app.
+## Cluster versions impacted
+Clusters upgraded to 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590 which have existing backup policies enabled on any stateful partition/service/app.
 
-**Impact**: If SF cluster is upgraded to 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590 which has existing backup policies, post upgrade BRS fails deserialize old metadata with changes in new release. It will stop taking backup and restore on the partition/service/app in question, though cluster and BRS remains healthy.
+## Impact
+If SF cluster is upgraded to 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590 which has existing backup policies, post upgrade BRS fails deserialize old metadata with changes in new release. It will stop taking backup and restore on the partition/service/app in question, though cluster and BRS remains healthy.
 
-**Identifying the issue:**
-
+## Symptoms
 There are two ways to identifying and confirming the issue
 
 1. If periodic backups were happening on any partition, it should be visible on SFX under Cluster->Application->Service->Partition->Backup. Here list of all backups being taken with creation time is available. Using this info and upgrade time, customer can identify wether backup policy was enabled, backups were happening before upgrade and whether backups are happening post upgrade.
@@ -15,7 +17,7 @@ There are two ways to identifying and confirming the issue
 2. Another way of checking and enumerating backups is calling this API [Get partition backup list](https://learn.microsoft.com/en-us/rest/api/servicefabric/sfclient-api-getpartitionbackuplist).
 
 
-**Mitigation:**
+## Mitigation
 
 To mitigate, we need to update the existing policy after upgrading to runtime 8.2.1686.9590 / 9.0.1107.9590 / 9.1.1387.9590. User can call [UpdateBackupPolicy](https://learn.microsoft.com/en-us/rest/api/servicefabric/sfclient-api-updatebackuppolicy) with existing policy values. It will update the policy model inside BRS with new data model and BRS will start taking periodic backups again.
 
