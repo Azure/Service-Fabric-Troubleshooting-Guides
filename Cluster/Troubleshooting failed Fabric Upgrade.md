@@ -17,6 +17,10 @@ We refer Service Fabric Cluster Upgrade as the Fabric Upgrade. Fabric Upgrade fa
 
 8.  Cluster upgrade stuck due to Fabric Installer crash or hang issues. For example, you disabled the windows upgrade or didn\'t configure POA (Patch Orchestration Application) correctly, FabricInstallerSvc is missing the C/C++ runtime package.
 
+9.  Cluster upgrade failed due to fabric:/System/InfrastructureService/{nodetype} was in Quorum loss, where {nodetype} had been previously removed or scaled to 0 nodes. 
+  - See suggested mitigation for this here - https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-how-to-remove-node-type
+
+
 In order to get root cause analysis (RCA), you can open a support ticket with Microsoft or self help first by quickly checking Fabric Upgrade details from either PowerShell - Get-ServiceFabricClusterUpgrade or from Service Fabric Explorer (SFX).
 
 ## **Troubleshooting steps**
