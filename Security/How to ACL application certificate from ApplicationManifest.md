@@ -11,6 +11,12 @@ Configuration of the application certificate in the ApplicationManifest only per
 The following example configures the Principal and sets the private key ACL using '&lt;Principals&gt;' and '&lt;Certificates&gt;' elements in ApplicationManifest.xml. See [Assign a security access policy for HTTP and HTTPS endpoints](https://learn.microsoft.com/azure/service-fabric/service-fabric-assign-policy-to-endpoint) and [Manage encrypted secrets in Service Fabric applications](https://docs.microsoft.com/azure/service-fabric/service-fabric-application-secret-management)
  for additional configuration information.
 
+## Prerequisites
+
+- An existing application certificate added to key vault.
+- Key vault has Virtual Machine and ARM template deployment resource access enabled.
+- KVVM or VMSS configuration for provisioning of certificate onto node as documented above.
+
 ## ApplicationManifest.xml Configuration
 
 - **'&lt;Principals&gt;&lt;Users&gt;'** section - Add **'&lt;User&gt;'** element for the user account executing application. For 'AccountType', enter 'NetworkService' for user 'Network Service'. See [AccountType](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#accounttype) for list of all account types.
