@@ -6,8 +6,16 @@ By default, Service Fabric fabrichost.exe starts applications using the 'NT Auth
 
 If a certificate is deployed to a Service Fabric cluster, and the application cannot access the private key, the application will fail to listen on the tcp port. In this scenario there are multiple causes, however, it is possible the private key is not ACL'd correctly or not configured in ApplicationManifest.xml. See [Example SCHANNEL Error](#example-schannel-error).
 
+Configuration of the application certificate in the ApplicationManifest only performs the ACLing of an existing certificate. This process does not create or add the certificate on the nodes in the virtual machine scale set (VMSS). Existing certificates can be added using the [Key Vault Virtual Machine Extension](https://learn.microsoft.com/azure/virtual-machines/extensions/key-vault-windows) (KVVM) or VMSS resource the same way the Service Fabric cluster certificates. See [Add an application certificate to a Service Fabric cluster](https://learn.microsoft.com/azure/service-fabric/scripts/service-fabric-powershell-add-application-certificate).
+
 The following example configures the Principal and sets the private key ACL using '&lt;Principals&gt;' and '&lt;Certificates&gt;' elements in ApplicationManifest.xml. See [Assign a security access policy for HTTP and HTTPS endpoints](https://learn.microsoft.com/azure/service-fabric/service-fabric-assign-policy-to-endpoint) and [Manage encrypted secrets in Service Fabric applications](https://docs.microsoft.com/azure/service-fabric/service-fabric-application-secret-management)
  for additional configuration information.
+
+## Prerequisites
+
+- An existing application certificate added to key vault.
+- Key vault has Virtual Machine and ARM template deployment resource access enabled.
+- KVVM or VMSS configuration for provisioning of certificate onto node as documented above.
 
 ## ApplicationManifest.xml Configuration
 
