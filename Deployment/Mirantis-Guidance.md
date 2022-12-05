@@ -55,6 +55,8 @@ The following table captures the risk and effort evaluation of the various migra
 
 1.	Which Service Fabric Node Types are running container workloads?
 
+    Please see [How do I know if I am using containers](#how-do-i-know-if-i-am-using-containers-in-my-sf-service)
+    
     In case the Node Type is not running any container workload, then migrating to different Windows Server OS image will be sufficient. When safety is prioritized, then creating a new node type, and move the workload. For less safety, consider the in-place upgrade by only changing the OS SKU. 
 
     For container workloads, the mitigation is to move the workloads to a new node type with new container runtime. The container runtime can be installed by Custom Script VM Extension on the VMSS or pre-installed on OS image. Creating and maintaining a custom OS image is effort. Patching Windows and the container runtime must be considered. 
@@ -267,9 +269,67 @@ Documentation:
 
 For all further questions please reach out to your account team or [create a Microsoft support case](https://docs.microsoft.com/en-us/azure/azure-portal/supportability/how-to-create-azure-support-request).
 
-1. Which container runtimes are supported by Service Fabric?
+### Which container runtimes are supported by Service Fabric?
 
    Microsoft validated Service Fabric 9.0 CU1 or later with Mirantis Container Runtime v20.10.13 and Moby v20.10.18 on Windows Server 2019/2022. Please make yourself familiar with the support options for these container runtimes.
    - Moby is an open framework to assemble specialized container systems, former DockerCE. 
    - Mirantis Container Runtime, former DockerEE. 
 
+### How do I know if I am using Containers in my SF service?
+
+You would need to look at all of the ServiceManifest.xml files for your applications. Note that you might have multiple application manifests. One application manifest can reference multiple service manifests. One service manifest can contain multiple code packages. Please take a look at `<CodePackage>`. If you are using Docker/container based services, your service manifest would look like below:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<ServiceManifest Name="MISampleConsolePkg"
+                 Version="1.0.0"
+                 xmlns="http://schemas.microsoft.com/2011/01/fabric"
+                 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+  <!-- Code package is your service executable. -->
+  <CodePackage Name="Code" Version="1.0.0">
+    <EntryPoint>
+      <!-- Follow this link for more information about deploying Windows containers to Service Fabric: https://aka.ms/sfguestcontainers -->
+      <ContainerHost>
+        <ImageName>mycr.azurecr.io/folder/image:latest</ImageName>
+      </ContainerHost>
+    </EntryPoint>
+    <EnvironmentVariables>
+      <EnvironmentVariable Name="sfmi_observed_vault" Value="" />
+      <EnvironmentVariable Name="sfmi_poll_interval" Value="" />
+    </EnvironmentVariables>
+  </CodePackage>
+  ...
+</ServiceManifest>
+```
+
+By contrast, if you are using Process based services, your service manifest would look like below:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<ServiceManifest Name="MISampleWebPkg"
+                 Version="1.0.0"
+                 xmlns="http://schemas.microsoft.com/2011/01/fabric"
+                 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+  <!-- Code package is your service executable. -->
+  <CodePackage Name="Code" Version="1.0.0">
+    <EntryPoint>
+      <ExeHost>
+        <Program>MISampleWeb.exe</Program>
+        <WorkingFolder>CodePackage</WorkingFolder>
+      </ExeHost>
+    </EntryPoint>
+    <EnvironmentVariables>
+      <EnvironmentVariable Name="sfmi_observed_vault" Value="" />
+      <EnvironmentVariable Name="sfmi_observed_secret" Value="" />
+      <EnvironmentVariable Name="sfmi_verbose_logging" Value="" />
+      <EnvironmentVariable Name="sfmi_poll_interval" Value="" />
+      <EnvironmentVariable Name="ASPNETCORE_ENVIRONMENT" Value=""/>
+    </EnvironmentVariables>
+  </CodePackage>
+  ...
+</ServiceManifest>
+```
