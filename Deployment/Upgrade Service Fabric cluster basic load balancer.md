@@ -14,6 +14,18 @@ This documents the overall process of upgrading a basic load balancer sku to sta
 - Upgrades virtual machine scale set backend pool members to use the standard load balancer.
 - Creates and associates a new network security group (NSG) for connectivity to virtual machine scale set if one is not configured in the scale set network configuration. Standard load balancers require this due to default deny policy. Name will be 'NSG-\<scale set name\>'
 
+## Before migration
+
+Perform the following before starting migration to standard load balancer.
+
+- Verify current cluster configuration is documented. If deploying / recovering cluster via ARM template verify template is current. If ARM template is not available, a non-deployable template with current configuration can be exported from Azure portal in the clusters resource group view by selecting 'Export template'.
+
+- Verify current cluster application configuration is documented. If deploying cluster applications via ARM template verify template is current. Application port settings are normally configured in the applications' manifest file.
+
+- In Service Fabric Explorer (SFX), verify cluster is in a green state and currently healthy.
+
+- If possible, perform migration process on a non-production cluster to familiarize the process and downtime.
+
 ### Upgrade Powershell commands
 
 Below are basic powershell commands assuming Azure 'Az' modules are already installed. See link above for additional configurations are that are available. [Example log output](#example-log).
@@ -36,234 +48,299 @@ After upgrade completes, update template information used for cluster deployment
 
 ### Default 5 node silver reliability template diff
 
-#### **Public IP addresses changes**
-
 ```diff
-   "resources": [
-     {
-       "type": "Microsoft.Network/publicIPAddresses",
-       "apiVersion": "2022-05-01",
-       "name": "[parameters('publicIPAddresses_PublicIP_LB_FE_0_name')]",
-       "comments": "Generalized from resource: '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Network/publicIPAddresses/PublicIP-LB-FE-0'.",
-       "location": "eastus",
-       "tags": {
-         "resourceType": "Service Fabric",
-         "clusterName": "sfcluster"
-       },
-       "sku": {
--        "name": "Basic",
-+        "name": "Standard",
-         "tier": "Regional"
-       },
-       "properties": {
-         "ipAddress": "xxx.xxx.xxx.xxx",
-         "publicIPAddressVersion": "IPv4",
--        "publicIPAllocationMethod": "Dynamic",
-+        "publicIPAllocationMethod": "Static",
-         "idleTimeoutInMinutes": 4,
-         "dnsSettings": {
-           "domainNameLabel": "sfcluster",
-           "fqdn": "sfcluster.eastus.cloudapp.azure.com"
+diff --git a/c:/configs/arm/sf-1nt-5n-1lb.json b/c:/configs/arm/sf-1nt-5n-1slb.json
+index 0cd7316..8a54ba2 100644
+--- a/c:/configs/arm/sf-1nt-5n-1lb.json
++++ b/c:/configs/arm/sf-1nt-5n-1slb.json
+@@ -92,10 +92,17 @@
          },
--        "ipTags": []
-+        "ipTags": [],
-+        "ddosSettings": {
-+          "protectionMode": "VirtualNetworkInherited"
-+        }
-       }
-     },
-```
-
-#### **Virtual machine scale set changes**
-
-```diff
-   "resources": [
-     {
-      "type": "Microsoft.Compute/virtualMachineScaleSets",
-      "apiVersion": "2022-08-01",
-      "name": "[parameters('virtualMachineScaleSets_nt0_name')]",
-      "comments": "Generalized from resource: '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0'.",
-      "location": "eastus",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks/', parameters('virtualNetworks_VNet_name'))]",
-        "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name'))]"
-      ],
-      "tags": {
-        "resourceType": "Service Fabric",
-        "clusterName": "sfcluster"
-      },
-      "sku": {
-        "name": "Standard_D2_v2",
-        "tier": "Standard",
-        "capacity": 5
-      },
-      "properties": {
-        "singlePlacementGroup": true,
-        "orchestrationMode": "Uniform",
-        "upgradePolicy": {
-          "mode": "Automatic"
-        },
-        "virtualMachineProfile": {
-...
-        "networkProfile": {
-             "networkInterfaceConfigurations": [
-               {
-                 "name": "NIC-0",
-                 "properties": {
-                   "primary": true,
-                   "enableAcceleratedNetworking": false,
-                   "disableTcpStateTracking": false,
-+                  "networkSecurityGroup": {
-+                    "id": "[parameters('networkSecurityGroups_NSG_nt0_externalid')]"
-+                  },
-```
-
-#### **Load balancer changes**
-
-```diff
-   "resources": [
-     {
-       "type": "Microsoft.Network/loadBalancers",
-       "apiVersion": "2022-05-01",
-       "name": "[parameters('loadBalancers_LB_sfcluster_nt0_name')]",
-       "comments": "Generalized from resource: '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Network/loadBalancers/LB-sfcluster-nt0'.",
-       "location": "eastus",
-       "dependsOn": [
-         "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_PublicIP_LB_FE_0_name'))]"
-       ],
--      "tags": {
--        "resourceType": "Service Fabric",
--        "clusterName": "sfcluster"
--      },
-       "sku": {
--        "name": "Basic",
-+        "name": "Standard",
-         "tier": "Regional"
-       },
-       "properties": {
-         "frontendIPConfigurations": [
-           {
-             "name": "LoadBalancerIPConfig",
-             "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/frontendIPConfigurations/LoadBalancerIPConfig')]",
+         "lbIPName": {
+             "type": "string",
+             "defaultValue": "PublicIP-LB-FE"
+         },
++        "networkSecurityGroupName": {
++            "type": "string",
++            "defaultValue": "NSG"
++        },
++        "networkSecurityGroupRules": {
++            "type": "array"
++        },
+         "nicName": {
+             "type": "string",
+             "defaultValue": "NIC"
+         },
+         "nt0applicationEndPort": {
+@@ -261,22 +268,27 @@
+         {
+             "apiVersion": "[variables('vNetApiVersion')]",
+             "type": "Microsoft.Network/virtualNetworks",
+             "name": "[parameters('virtualNetworkName')]",
+             "location": "[parameters('computeLocation')]",
+-            "dependsOn": [],
++            "dependsOn": [
++                "[concat('Microsoft.Network/networkSecurityGroups/',parameters('networkSecurityGroupName'))]"
++            ],
              "properties": {
-               "privateIPAllocationMethod": "Dynamic",
-               "publicIPAddress": {
-                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_PublicIP_LB_FE_0_name'))]"
-               }
+                 "addressSpace": {
+                     "addressPrefixes": [
+                         "[parameters('addressPrefix')]"
+                     ]
+                 },
+                 "subnets": [
+                     {
+                         "name": "[parameters('subnet0Name')]",
+                         "properties": {
+-                            "addressPrefix": "[parameters('subnet0Prefix')]"
++                            "addressPrefix": "[parameters('subnet0Prefix')]",
++                            "networkSecurityGroup": {
++                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups',parameters('networkSecurityGroupName'))]"
++                            }
+                         }
+                     }
+                 ]
+             },
+             "tags": {
+@@ -287,26 +299,147 @@
+         {
+             "apiVersion": "[variables('publicIPApiVersion')]",
+             "type": "Microsoft.Network/publicIPAddresses",
+             "name": "[concat(parameters('lbIPName'),'-','0')]",
+             "location": "[parameters('computeLocation')]",
++            "sku": {
++                "name": "Standard"
++            },
+             "properties": {
+                 "dnsSettings": {
+                     "domainNameLabel": "[parameters('dnsName')]"
+                 },
+-                "publicIPAllocationMethod": "Dynamic"
++                "publicIPAllocationMethod": "Static"
+             },
+             "tags": {
+                 "resourceType": "Service Fabric",
+                 "clusterName": "[parameters('clusterName')]"
              }
-           }
-         ],
-         "backendAddressPools": [
-           {
-             "name": "LoadBalancerBEAddressPool",
-             "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_sfcluster_nt0_name'), 'LoadBalancerBEAddressPool')]",
--            "properties": {}
+         },
++        {
++            "name": "[parameters('networkSecurityGroupName')]",
++            "type": "Microsoft.Network/networkSecurityGroups",
++            "apiVersion": "2019-02-01",
++            "location": "[parameters('computelocation')]",
 +            "properties": {
-+              "loadBalancerBackendAddresses": [
-+                {
-+                  "name": "sfcluster_nt0_virtualMachines_0_networkInterfaces_NIC-0NIC-0",
-+                  "properties": {}
-+                },
-+                {
-+                  "name": "sfcluster_nt0_virtualMachines_1_networkInterfaces_NIC-0NIC-0",
-+                  "properties": {}
-+                },
-+                {
-+                  "name": "sfcluster_nt0_virtualMachines_2_networkInterfaces_NIC-0NIC-0",
-+                  "properties": {}
-+                },
-+                {
-+                  "name": "sfcluster_nt0_virtualMachines_3_networkInterfaces_NIC-0NIC-0",
-+                  "properties": {}
-+                },
-+                {
-+                  "name": "sfcluster_nt0_virtualMachines_4_networkInterfaces_NIC-0NIC-0",
-+                  "properties": {}
-+                }
-+              ]
++                //"securityRules": "[parameters('networkSecurityGroupRules')]"
++                "securityRules": [
++                    {
++                        "name": "SF_AllowServiceFabricGatewayToSFRP",
++                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
++                        "properties": {
++                            "provisioningState": "Succeeded",
++                            "description": "This is required rule to allow SFRP to connect to the cluster. This rule cannot be overridden.",
++                            "protocol": "TCP",
++                            "sourcePortRange": "*",
++                            "sourceAddressPrefix": "ServiceFabric",
++                            "destinationAddressPrefix": "VirtualNetwork",
++                            "access": "Allow",
++                            "priority": 500,
++                            "direction": "Inbound",
++                            "sourcePortRanges": [],
++                            "destinationPortRanges": [
++                                "19000",
++                                "19080"
++                            ],
++                            "sourceAddressPrefixes": [],
++                            "destinationAddressPrefixes": []
++                        }
++                    },
++                    {
++                        "name": "SF_AllowServiceFabricGatewayToLB",
++                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
++                        "properties": {
++                            "provisioningState": "Succeeded",
++                            "description": "This is required rule to allow SFRP to connect to the cluster. This rule cannot be overridden.",
++                            "protocol": "*",
++                            "sourcePortRange": "*",
++                            "destinationPortRange": "*",
++                            "sourceAddressPrefix": "AzureLoadBalancer",
++                            "destinationAddressPrefix": "VirtualNetwork",
++                            "access": "Allow",
++                            "priority": 501,
++                            "direction": "Inbound",
++                            "sourcePortRanges": [],
++                            "destinationPortRanges": [],
++                            "sourceAddressPrefixes": [],
++                            "destinationAddressPrefixes": []
++                        }
++                    },
++                    {
++                        "name": "SF_AllowServiceFabricGatewayPorts",
++                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
++                        "properties": {
++                            "provisioningState": "Succeeded",
++                            "description": "Optional rule to open SF cluster gateway ports. To override add a custom NSG rule for gateway ports in priority range 1000-3000.",
++                            "protocol": "tcp",
++                            "sourcePortRange": "*",
++                            "sourceAddressPrefix": "*",
++                            "destinationAddressPrefix": "VirtualNetwork",
++                            "access": "Allow",
++                            "priority": 3002,
++                            "direction": "Inbound",
++                            "sourcePortRanges": [],
++                            "destinationPortRanges": [
++                                "19000",
++                                "19080"
++                            ],
++                            "sourceAddressPrefixes": [],
++                            "destinationAddressPrefixes": []
++                        }
++                    },
++                    {
++                        "name": "SF_AllowRdpPort",
++                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
++                        "properties": {
++                            "provisioningState": "Succeeded",
++                            "description": "Optional rule to open RDP ports. To override add a custom NSG rule for RDP port in priority range 1000-3000.",
++                            "protocol": "tcp",
++                            "sourcePortRange": "*",
++                            "destinationPortRange": "3389",
++                            "sourceAddressPrefix": "*",
++                            "destinationAddressPrefix": "VirtualNetwork",
++                            "access": "Allow",
++                            "priority": 3003,
++                            "direction": "Inbound",
++                            "sourcePortRanges": [],
++                            "destinationPortRanges": [],
++                            "sourceAddressPrefixes": [],
++                            "destinationAddressPrefixes": []
++                        }
++                    },
++                    {
++                        "name": "SF_AllowSFExtensionToDLC",
++                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
++                        "properties": {
++                            "provisioningState": "Succeeded",
++                            "description": "This is required rule to allow SF Extension to connect to download center to download the cab. This rule cannot be overridden.",
++                            "protocol": "*",
++                            "sourcePortRange": "*",
++                            "destinationPortRange": "*",
++                            "sourceAddressPrefix": "*",
++                            "destinationAddressPrefix": "AzureFrontDoor.FirstParty",
++                            "access": "Allow",
++                            "priority": 502,
++                            "direction": "Outbound",
++                            "sourcePortRanges": [],
++                            "destinationPortRanges": [],
++                            "sourceAddressPrefixes": [],
++                            "destinationAddressPrefixes": []
++                        }
++                    }
++                ]
 +            }
-           }
-         ],
-         "loadBalancingRules": [
-           {
-             "name": "LBRule",
-             "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/loadBalancingRules/LBRule')]",
++        },
+         {
+             "apiVersion": "[variables('lbApiVersion')]",
+             "type": "Microsoft.Network/loadBalancers",
+             "name": "[concat('LB','-', parameters('clusterName'),'-',parameters('vmNodeType0Name'))]",
+             "location": "[parameters('computeLocation')]",
++            "sku": {
++                "name": "Standard"
++            },
+             "dependsOn": [
+                 "[concat('Microsoft.Network/publicIPAddresses/',concat(parameters('lbIPName'),'-','0'))]"
+             ],
              "properties": {
-               "frontendIPConfiguration": {
-                 "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/frontendIPConfigurations/LoadBalancerIPConfig')]"
-               },
-               "frontendPort": 19000,
-               "backendPort": 19000,
-               "enableFloatingIP": false,
-               "idleTimeoutInMinutes": 5,
-               "protocol": "Tcp",
-               "enableTcpReset": false,
-               "loadDistribution": "Default",
-+              "disableOutboundSnat": true,
-               "backendAddressPool": {
-                 "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_sfcluster_nt0_name'), 'LoadBalancerBEAddressPool')]"
-               },
-               "backendAddressPools": [
-                 {
-                   "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_sfcluster_nt0_name'), 'LoadBalancerBEAddressPool')]"
-                 }
-               ],
-               "probe": {
-                 "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/probes/FabricGatewayProbe')]"
-               }
-             }
-           },
-           {
-             "name": "LBHttpRule",
-             "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/loadBalancingRules/LBHttpRule')]",
-             "properties": {
-               "frontendIPConfiguration": {
-                 "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/frontendIPConfigurations/LoadBalancerIPConfig')]"
-               },
-               "frontendPort": 19080,
-               "backendPort": 19080,
-               "enableFloatingIP": false,
-               "idleTimeoutInMinutes": 5,
-               "protocol": "Tcp",
-               "enableTcpReset": false,
-               "loadDistribution": "Default",
-+              "disableOutboundSnat": true,
-               "backendAddressPool": {
-                 "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_sfcluster_nt0_name'), 'LoadBalancerBEAddressPool')]"
-               },
-               "backendAddressPools": [
-                 {
-                   "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_sfcluster_nt0_name'), 'LoadBalancerBEAddressPool')]"
-                 }
-               ],
-               "probe": {
-                 "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/probes/FabricHttpGatewayProbe')]"
-               }
-             }
-           }
-         ],
-...
-+        "outboundRules": [
-+          {
-+            "name": "LoadBalancerBEAddressPool",
-+            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/outboundRules/LoadBalancerBEAddressPool')]",
-+            "properties": {
-+              "allocatedOutboundPorts": 0,
-+              "protocol": "All",
-+              "enableTcpReset": true,
-+              "idleTimeoutInMinutes": 4,
-+              "backendAddressPool": {
-+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_LB_sfcluster_nt0_name'), 'LoadBalancerBEAddressPool')]"
-+              },
-+              "frontendIPConfigurations": [
-+                {
-+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_LB_sfcluster_nt0_name')), '/frontendIPConfigurations/LoadBalancerIPConfig')]"
-+                }
-+              ]
-+            }
-+          }
-+        ],
+                 "frontendIPConfigurations": [
+@@ -327,10 +460,11 @@
+                 ],
+                 "loadBalancingRules": [
+                     {
+                         "name": "LBRule",
+                         "properties": {
++                            "disableOutboundSnat": true,
+                             "backendAddressPool": {
+                                 "id": "[variables('lbPoolID0')]"
+                             },
+                             "backendPort": "[parameters('nt0fabricTcpGatewayPort')]",
+                             "enableFloatingIP": "false",
+@@ -346,10 +480,11 @@
+                         }
+                     },
+                     {
+                         "name": "LBHttpRule",
+                         "properties": {
++                            "disableOutboundSnat": true,
+                             "backendAddressPool": {
+                                 "id": "[variables('lbPoolID0')]"
+                             },
+                             "backendPort": "[parameters('nt0fabricHttpGatewayPort')]",
+                             "enableFloatingIP": "false",
+@@ -383,10 +518,29 @@
+                             "port": "[parameters('nt0fabricHttpGatewayPort')]",
+                             "protocol": "tcp"
+                         }
+                     }
+                 ],
++                "outboundRules": [
++                    {
++                        "name": "DefaultIPv4",
++                        "properties": {
++                            "allocatedOutboundPorts": 0,
++                            "protocol": "All",
++                            "enableTcpReset": true,
++                            "idleTimeoutInMinutes": 4,
++                            "backendAddressPool": {
++                                "id": "[variables('lbPoolID0')]"
++                            },
++                            "frontendIPConfigurations": [
++                                {
++                                    "id": "[variables('lbIPConfig0')]"
++                                }
++                            ]
++                        }
++                    }
++                ],
+                 "inboundNatPools": [
+                     {
+                         "name": "LoadBalancerBEAddressNatPool",
+                         "properties": {
+                             "backendPort": "3389",
 ```
+
+## Verification
+
+After migration to standard load balancer is complete, verify functionality and connectivity.
+
+### Check connectivity
+
+For public load balancers, from an external device / admin machine, open powershell and run the following commands to Service Fabric port connectivity. If there are connectivity issues, verify the NSG security rules. Depending on configuration, there may be multiple NSG's configured for cluster if migration script does not detect an existing NSG.
+
+```powershell
+$managementEndpoint = 'sfcluster.eastus.cloudapp.azure.com'
+test-netConnection -ComputerName $managementEndpoint -Port 19000 # default gateway address
+test-netConnection -ComputerName $managementEndpoint -Port 19080 # default http address
+test-netConnection -ComputerName $managementEndpoint -Port 19081 # default reverse proxy address if enabled
+test-netConnection -ComputerName $managementEndpoint -Port 3389 # default RDP port for node 0 if enabled
+```
+
+### Check functionality
+
+Check all application / service type ports configured for cluster.
+
+```powershell
+$managementEndpoint = 'sfcluster.eastus.cloudapp.azure.com'
+$applicationPorts = @('443','20000') # add application ports that are publicly accessible
+foreach($port in $applicationPorts) {
+  test-netConnection -ComputerName $managementEndpoint -Port $port
+}
+```
+
+### Check cluster
+
+Open Service Fabric Explorer (SFX) and verify cluster is 'green' with no warnings or errors. 
+
+Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
+
+![](../media/upgrade-service-fabric-cluster-basic-load-balancer/sfx-green.png)
 
 ## Troubleshooting
 
@@ -316,6 +393,12 @@ After upgrade completes, update template information used for cluster deployment
     ```
 
 - Check source for new releases or issues [https://github.com/Azure/AzLoadBalancerMigration](https://github.com/Azure/AzLoadBalancerMigration)
+
+- Check SFX Events for any warnings or errors.
+
+  Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer/index.html#/events
+
+  ![](../media/upgrade-service-fabric-cluster-basic-load-balancer/sfx-cluster-events.png)
 
 ### Example log
 
