@@ -25,7 +25,7 @@ In SFRP Clusters the VMSS resource is a separate entity controlled by customers.
 
 - NodeType {0} with VMSS Durability {1} should have atleast 5 VMs but actually has {2} VMs. If you need to deploy with less than 5 VMs, please consider using Durability = Bronze, but this is not recommended for Production clusters. For details: <https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-capacity#durability-characteristics-of-the-cluster>";
 
-#### Mitigation
+#### Required action
 
 - Update existing/new deployments to have atleast 5 virtual machine instances when the VMSS durability tier is "Silver" or "Gold". We’ll block operations for new cluster creation of “Silver” and “Gold” durability tier VMSS when the target instance count is less than 5 starting 15 February 2023.
 - If the cluster is a testing cluster you can consider changing the durability to bronze but this isn't recommended for production
@@ -41,7 +41,7 @@ For more information see: VMSS Image Upgrades
 
 - This update will make your cluster vulnerable to multiple nodes of NodeType: {0} going down at the same time due to windows updates. Current durability: {1}, stateless: {2}. For durability silver and up automatic OS upgrades are recommended. Disable WindowsUpdates in the OSProfile of the VMSS by setting \"enableAutomaticUpdates\": false. For more details, please follow the doc: <https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade>;
 
-#### Mitigation
+#### Required action
 
 - Explicitly set `properties.virtualMachineProfile.osProfile.windowsConfiguration.enableAutomaticUpdates: false`, in the VMSS OSProfile
 - Follow the details in this doc to set up auto os upgrades for your SF cluster <https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade>
