@@ -3,6 +3,7 @@
 >[Overview](#overview)  
 >[Upcoming Validations](#upcoming-validations)
 >>[MinVMCountValidation](#minvmcountvalidation)
+>>
 >>[WindowsUpdatesValidation](#windowsupdatesvalidation)
 >
 >[Existing Validations](#existing-validations)  
@@ -26,7 +27,7 @@ In SFRP Clusters the VMSS resource is a separate entity controlled by customers.
 
 #### Mitigation
 
-- Scale up the nodetype to 5+ nodes
+- Update existing/new deployments to have atleast 5 virtual machine instances when the VMSS durability tier is "Silver" or "Gold". We’ll block operations for new cluster creation of “Silver” and “Gold” durability tier VMSS when the target instance count is less than 5 starting 15 February 2023.
 - If the cluster is a testing cluster you can consider changing the durability to bronze but this isn't recommended for production
 
 ### WindowsUpdatesValidation
