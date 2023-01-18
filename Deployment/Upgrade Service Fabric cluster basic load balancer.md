@@ -2,7 +2,7 @@
 
 ## Overview  
 
-This documents the overall process of upgrading a basic load balancer sku to standard load balancer sku for a service fabric cluster. [Upgrade a basic load balancer used with Virtual Machine Scale Sets](https://learn.microsoft.com/azure/load-balancer/upgrade-basic-standard-virtual-machine-scale-sets) documents the commands used and detailed information about upgrading the load balancer sku. Upgrading a scaleset / nodetype for a Service Fabric cluster will take longer to complete than documented in link above due to cluster characteristics and requirements. Anticipate a minimum of one hour of downtime.
+This documents the overall process of upgrading a basic load balancer sku to standard load balancer sku for a service fabric cluster. [Upgrade a basic load balancer used with Virtual Machine Scale Sets](https://learn.microsoft.com/azure/load-balancer/upgrade-basic-standard-virtual-machine-scale-sets) documents the commands used and detailed information about upgrading the load balancer sku. Upgrading a scaleset / nodetype for a Service Fabric cluster will take longer to complete than documented in link above due to cluster characteristics and requirements. Anticipate a minimum of one hour of downtime for a silver or greater cluster and 30 minutes for bronze.
 
 > ### :exclamation:NOTE: While the following process executes, connectivity to the cluster will be unavailable. 
 
@@ -44,9 +44,7 @@ Start-AzBasicLoadBalancerUpgrade -ResourceGroupName $resourceGroupName `
 
 ## Updating ARM template with changes
 
-After upgrade completes, update template information used for cluster deployment and recovery.
-
-### Default 5 node silver reliability template diff
+Best practice for Service fabric is to deploy, maintain, and recover clusters using ARM templates. After upgrade completes, update ARM template used for cluster deployment. The following base template was created from the Azure portal using a 'silver' 5 node single nodetype cluster. There are some resources in below diff, for example NSG rules, that may or may not apply or may need the tcp ports modified.
 
 ```diff
 diff --git a/c:/configs/arm/sf-1nt-5n-1lb.json b/c:/configs/arm/sf-1nt-5n-1slb.json
@@ -173,13 +171,13 @@ index 0cd7316..8a54ba2 100644
 +                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
 +                        "properties": {
 +                            "provisioningState": "Succeeded",
-+                            "description": "Optional rule to open SF cluster gateway ports. To override add a custom NSG rule for gateway ports in priority range 1000-3000.",
++                            "description": "Optional rule to open SF cluster gateway ports.",
 +                            "protocol": "tcp",
 +                            "sourcePortRange": "*",
 +                            "sourceAddressPrefix": "*",
 +                            "destinationAddressPrefix": "VirtualNetwork",
 +                            "access": "Allow",
-+                            "priority": 3002,
++                            "priority": 3001,
 +                            "direction": "Inbound",
 +                            "sourcePortRanges": [],
 +                            "destinationPortRanges": [
@@ -190,19 +188,20 @@ index 0cd7316..8a54ba2 100644
 +                            "destinationAddressPrefixes": []
 +                        }
 +                    },
+// For RDP connectivity if enabled START
 +                    {
 +                        "name": "SF_AllowRdpPort",
 +                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
 +                        "properties": {
 +                            "provisioningState": "Succeeded",
-+                            "description": "Optional rule to open RDP ports. To override add a custom NSG rule for RDP port in priority range 1000-3000.",
++                            "description": "Optional rule to open RDP ports.",
 +                            "protocol": "tcp",
 +                            "sourcePortRange": "*",
 +                            "destinationPortRange": "3389",
 +                            "sourceAddressPrefix": "*",
 +                            "destinationAddressPrefix": "VirtualNetwork",
 +                            "access": "Allow",
-+                            "priority": 3003,
++                            "priority": 3002,
 +                            "direction": "Inbound",
 +                            "sourcePortRanges": [],
 +                            "destinationPortRanges": [],
@@ -210,6 +209,29 @@ index 0cd7316..8a54ba2 100644
 +                            "destinationAddressPrefixes": []
 +                        }
 +                    },
+// For RDP connectivity if enabled END
+// For Reverse Proxy connectivity if enabled START
++                    {
++                        "name": "SF_AllowReverseProxyPort",
++                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
++                        "properties": {
++                            "provisioningState": "Succeeded",
++                            "description": "Optional rule to open SF Reverse Proxy ports.",
++                            "protocol": "tcp",
++                            "sourcePortRange": "*",
++                            "destinationPortRange": "19081",
++                            "sourceAddressPrefix": "*",
++                            "destinationAddressPrefix": "VirtualNetwork",
++                            "access": "Allow",
++                            "priority": 503,
++                            "direction": "Inbound",
++                            "sourcePortRanges": [],
++                            "destinationPortRanges": [],
++                            "sourceAddressPrefixes": [],
++                            "destinationAddressPrefixes": []
++                        }
++                    },
+// For Reverse Proxy connectivity if enabled END
 +                    {
 +                        "name": "SF_AllowSFExtensionToDLC",
 +                        "type": "Microsoft.Network/networkSecurityGroups/securityRules",
@@ -310,6 +332,8 @@ After migration to standard load balancer is complete, verify functionality and 
 
 For public load balancers, from an external device / admin machine, open powershell and run the following commands to Service Fabric port connectivity. If there are connectivity issues, verify the NSG security rules. Depending on configuration, there may be multiple NSG's configured for cluster if migration script does not detect an existing NSG.
 
+> ### :exclamation:NOTE: The newly created NSG will not have rules for RDP port access. For RDP access after migration to standard load balancer, add a new rule for RDP in new NSG. 
+
 ```powershell
 $managementEndpoint = 'sfcluster.eastus.cloudapp.azure.com'
 $networkPorts = @(
@@ -341,7 +365,7 @@ Open Service Fabric Explorer (SFX) and verify cluster is 'green' with no warning
 
 Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
 
-![](../media/upgrade-service-fabric-cluster-basic-load-balancer/sfx-green.png)
+![sfx-green](../media/upgrade-service-fabric-cluster-basic-load-balancer/sfx-green.png)
 
 ## Troubleshooting
 
@@ -457,6 +481,9 @@ WARNING: [Warning]:[PublicIPToStatic] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') was
 [Information]:[RemoveLBFromVMSS] Checking Upgrade Policy Mode of VMSS nt0
 [Information]:[RemoveLBFromVMSS] Cleaning LoadBalancerBackendAddressPools from Basic Load Balancer LB-sfcluster-nt0
 [Information]:[RemoveLBFromVMSS] Updating VMSS nt0
+
+<<<NOTE: Start of bronze cluster unavailability here. There will be a delay in logging here until above command in script is complete>>>
+
 [Information]:[UpdateVmssInstances] Initiating Update Vmss Instances
 [Information]:[UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
 [Information]:[UpdateVmssInstances] Update Vmss Instances Completed
@@ -518,6 +545,9 @@ WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.4'
 [Information]:[_MigrateNetworkInterfaceConfigurations] Adding NAT Pool 'LoadBalancerBEAddressNatPool' to IPConfig 'NIC-0'
 [Information]:[_MigrateNetworkInterfaceConfigurations] Migrate NetworkInterface Configurations completed
 [Information]:[_UpdateAzVmss] Saving VMSS nt0
+
+<<<NOTE: Start of silver cluster unavailability here. There will be a delay in logging here until above command in script is complete>>>
+
 [Information]:[UpdateVmssInstances] Initiating Update Vmss Instances
 [Information]:[UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
 [Information]:[UpdateVmssInstances] Update Vmss Instances Completed
@@ -560,6 +590,9 @@ WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.4'
 [Information]:[_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
 [Information]:[_MigrateNetworkInterfaceConfigurations] Migrate NetworkInterface Configurations completed
 [Information]:[UpdateVmss] Updating configuration of VMSS 'nt0'
+
+<<<NOTE: End of cluster unavailability here. There will be a delay in logging here until above command in script is complete>>>
+
 [Information]:[UpdateVmss] Completed update configuration of VMSS 'nt0'
 [Information]:[UpdateVmssInstances] Initiating Update Vmss Instances
 [Information]:[UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
