@@ -63,9 +63,6 @@ index 0cd7316..8a54ba2 100644
 +            "type": "string",
 +            "defaultValue": "NSG"
 +        },
-+        "networkSecurityGroupRules": {
-+            "type": "array"
-+        },
          "nicName": {
              "type": "string",
              "defaultValue": "NIC"
@@ -128,7 +125,6 @@ index 0cd7316..8a54ba2 100644
 +            "apiVersion": "2019-02-01",
 +            "location": "[parameters('computelocation')]",
 +            "properties": {
-+                //"securityRules": "[parameters('networkSecurityGroupRules')]"
 +                "securityRules": [
 +                    {
 +                        "name": "SF_AllowServiceFabricGatewayToSFRP",
@@ -316,10 +312,15 @@ For public load balancers, from an external device / admin machine, open powersh
 
 ```powershell
 $managementEndpoint = 'sfcluster.eastus.cloudapp.azure.com'
-test-netConnection -ComputerName $managementEndpoint -Port 19000 # default gateway address
-test-netConnection -ComputerName $managementEndpoint -Port 19080 # default http address
-test-netConnection -ComputerName $managementEndpoint -Port 19081 # default reverse proxy address if enabled
-test-netConnection -ComputerName $managementEndpoint -Port 3389 # default RDP port for node 0 if enabled
+$networkPorts = @(
+  19000, # default gateway address
+  19080, # default https address
+  19081, # default reverse proxy address if enabled
+  3389   # default RDP port for node 0 if enabled
+) 
+foreach($port in $networkPorts) {
+  test-netConnection -ComputerName $managementEndpoint -Port $port
+}
 ```
 
 ### Check functionality
@@ -328,8 +329,8 @@ Check all application / service type ports configured for cluster.
 
 ```powershell
 $managementEndpoint = 'sfcluster.eastus.cloudapp.azure.com'
-$applicationPorts = @('443','20000') # add application ports that are publicly accessible
-foreach($port in $applicationPorts) {
+$networkPorts = @(443,20000) # add application ports that are publicly accessible
+foreach($port in $networkPorts) {
   test-netConnection -ComputerName $managementEndpoint -Port $port
 }
 ```
