@@ -61,7 +61,8 @@ Add-AzServiceFabricManagedClusterClientCertificate -ResourceGroupName $resourceG
 
 ### Using ARM template to add common name certificate to configuration
 
-Add a new 'clients' element to array as shown below
+If using an ARM template for deployment, add a new 'clients' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
+
 
 - isAdmin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
 - commonName - certificate 'SubjectName' without the 'CN='
@@ -80,7 +81,7 @@ Add a new 'clients' element to array as shown below
 ## Adding common name certificate for application connectivity
 
 If using a common name certificate for application connectivity, the certificate needs to be in an Azure key vault and configured on the 'managedClusters/nodetype'.
-This will copy the certificate to each of the nodes into the appropriate certificate store. Before the application can use the certificate, ACL'ing of the certificate will need to be configured. See [How to ACL application certificate private key using ApplicationManifest.xml](https://github.com/Azure/Service-Fabric-Troubleshooting-Guides/blob/master/Security/How%20to%20ACL%20application%20certificate%20from%20ApplicationManifest.md).
+This will copy the certificate to each of the nodes into the appropriate certificate store. Before the application can use the certificate, ACL'ing of the certificate will need to be configured. See [How to ACL application certificate private key using ApplicationManifest.xml](./How%20to%20ACL%20application%20certificate%20from%20ApplicationManifest.md).
 
 Use one of the three options below  to add a common name certificate for application connectivity.
 
@@ -141,7 +142,7 @@ Add-AzServiceFabricManagedNodeTypeVMSecret -ResourceGroupName $resourceGroupName
 
 ### Using ARM template to add common name certificate to nodetype configuration
 
-Add a new 'clients' element to array as shown below
+If using an ARM template for deployment, add a new 'vmSecrets' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
 
 - id - Azure key vault id. Example: '/subscriptions/{{subscription id}}/resourceGroups/xxxxxxx/providers/Microsoft.KeyVault/vaults/{{vault name}}'
 - certificateStore - 'My'
