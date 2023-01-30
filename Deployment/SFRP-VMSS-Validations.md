@@ -17,6 +17,10 @@ In SFRP Clusters the VMSS resource is a separate entity controlled by customers.
 
 ### MinVMCountValidation
 
+#### Date Validation Starts Applying
+
+February 15, 2023
+
 #### Summary
 
 - This validator is being introduced to validate the minimum virtual machine count configuration meets the durability requirements for "Silver" and "Gold." This has been a documented requirement to ensure reliable and safe infrastructure updates can occur for production workloads. Per this policy, Service Fabric Resource Provider node types with virtual machine scale set "Silver" or "Gold" durability tiers should always have at least 5 virtual machines. Having misconfiguration leads to various reliability issues while performing infrastructure updates (such as AutoOSUpgrades, scale out/in, platform updates, etc.) and can lead to availability or data loss.
@@ -32,6 +36,10 @@ In SFRP Clusters the VMSS resource is a separate entity controlled by customers.
 
 ### WindowsUpdatesValidation
 
+#### Date Validation Starts Applying
+
+March 15, 2023
+
 #### Summary
 
 - This validator is being introduced to validate that VMSS with durability of Silver or Gold should always have Windows Update explicitly disabled to avoid unintended OS restarts due to the Windows updates, which can impact the production workloads. This can be done by setting the `properties.virtualMachineProfile.osProfile.windowsConfiguration.enableAutomaticUpdates: false`, in the VMSS OSProfile. Instead please enable Automatic VMSS Image upgrades instead - for more details, please follow the doc: <https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade>.
@@ -44,7 +52,10 @@ For more information see: VMSS Image Upgrades
 #### Required action
 
 - Explicitly set `properties.virtualMachineProfile.osProfile.windowsConfiguration.enableAutomaticUpdates: false`, in the VMSS OSProfile
-- Follow the details in this doc to set up auto os upgrades for your SF cluster <https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade>
+- Follow the details in this doc to set up auto os upgrades for your SF cluster <https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade>, specifics to ServiceFabric can be found [here](https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade#service-fabric-requirements)
+  - Find VMSSs of durability of Silver or Gold
+  - Ensure the Service Fabric Extension has TypeHandlerVersion 1.1 or above
+  - Turn on automatic OS upgrades by setting `properties.upgradePolicy.automaticOSUpgradePolicy.enableAutomaticOSUpgrade: true`
 
 ## Existing Validations
 
