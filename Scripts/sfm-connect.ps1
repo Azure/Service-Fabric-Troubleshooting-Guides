@@ -83,19 +83,19 @@ function main() {
     if($certs.Count -gt 1) {
         write-warning "found multiple certificates: $($certs | convertto-json)"
     }
-    elseif($certs.Count -lt 1) {
+    elseif($certs.Count -lt 1 -or ($certs.Count -eq 1 -and !$certs[0])) {
         write-warning "unable to find certificate."
     }
     else {
         write-host "found certificate: $($certs[0] | convertto-json)" -ForegroundColor Green
     }
 
-    if (!(Test-NetConnection -p $clusterendpointPort)) {
+    if (!(Test-NetConnection $clusterEndpoint -Port $clusterendpointPort)) {
         write-error "unable to ping $clusterEndpoint port $clusterEndpointPort"
         return
     }
 
-    if (!(get-command Connect-ServiceFabricCluster)) {
+    if (!(get-command Connect-ServiceFabricCluster | out-null)) {
         import-module servicefabric
         if (!(get-command Connect-ServiceFabricCluster)) {
             write-error "unable to import servicefabric powershell module. try executing script from a working node."
