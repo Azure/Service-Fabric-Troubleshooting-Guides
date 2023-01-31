@@ -2,7 +2,7 @@
 
 Service Fabric managed clusters manage the certificate used by the cluster for communication and authentication automatically. This certificate, known as the 'cluster' certificate, is regenerated periodically and is not configurable. A common name certificate from a Certificate Authority can however be configured as a 'client' certificate to connect to the cluster in addition to the managed cluster certificate or as an application certificate.
 
-> ### :exclamation:NOTE: Connecting to a managed cluster endpoint, for example Service Fabric Explorer (SFX), a certificate error (NET::ERR_CERT_AUTHORITY_INVALID) will occur regardless of certificate being used or configuration due to the cluster using a managed 'cluster' certificate.
+> ### :exclamation:NOTE: Connecting to a managed cluster endpoint, for example Service Fabric Explorer (SFX), a certificate error (NET::ERR_CERT_AUTHORITY_INVALID) will occur regardless of certificate being used or cluster configuration due to the cluster using a managed 'cluster' certificate.
 
 ## Prerequisites
 
@@ -12,7 +12,25 @@ Service Fabric managed clusters manage the certificate used by the cluster for c
 
 ## Adding common name certificate as a 'client' certificate for cluster connectivity
 
-Use one of the three options below  to add a common name certificate as a 'client' certificate for cluster connectivity.
+Use one of the three options below to add a common name certificate as a 'client' certificate for cluster connectivity.
+
+### Using ARM template to add common name certificate to configuration
+
+If using an ARM template for deployment, add a new 'clients' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
+
+- isAdmin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
+- commonName - certificate 'SubjectName' without the 'CN='
+- issuerThumbprint - a comma separated string of thumbprints of the Issuing certificates for the common name certificate.
+
+```json
+//"clients": [
+  {
+    "isAdmin": "(Boolean)",
+    "commonName": "(String)",
+    "issuerThumbprint": "(String),(String),(String),..."
+  }
+//]
+```
 
 ### Using Azure Resource Explorer to add common name certificate configuration
 
@@ -21,14 +39,14 @@ Use one of the three options below  to add a common name certificate as a 'clien
 - Populate provided 'clients' new element template
   - isAdmin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
   - commonName - certificate 'SubjectName' without the 'CN='
-  - issuerThumbprint - thumbprint of the Issuing certificate for the common name certificate.
+  - issuerThumbprint - a comma separated string of thumbprints of the Issuing certificates for the common name certificate.
 
   ```json
   //"clients": [
     {
       "isAdmin": "(Boolean)",
       "commonName": "(String)",
-      "issuerThumbprint": "(String)"
+      "issuerThumbprint": "(String),(String),(String),..."
     }
   //]
   ```
@@ -43,14 +61,14 @@ Variables:
 
 - resourceGroupName - Azure resource group that contains the managed cluster.
 - commonName - certificate 'SubjectName' without the 'CN='.
-- issuerThumbprint - thumbprint of the Issuing certificate for the common name certificate.
+- issuerThumbprint - string array of thumbprints of the Issuing certificates for the common name certificate.
 - admin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
 
 ```powershell
 $resourceGroupName = ''
 $clusterName = $resourceGroupName
 $commonName = '*.sfcluster.com'
-$issuerThumbprint = ''
+$issuerThumbprint = @('')
 $admin = $false
 Add-AzServiceFabricManagedClusterClientCertificate -ResourceGroupName $resourceGroupName `
    -Name $clusterName `
@@ -59,31 +77,36 @@ Add-AzServiceFabricManagedClusterClientCertificate -ResourceGroupName $resourceG
    -Admin:$admin
 ```
 
-### Using ARM template to add common name certificate to configuration
-
-If using an ARM template for deployment, add a new 'clients' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
-
-
-- isAdmin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
-- commonName - certificate 'SubjectName' without the 'CN='
-- issuerThumbprint - thumbprint of the Issuing certificate for the common name certificate.
-
-```json
-//"clients": [
-  {
-    "isAdmin": "(Boolean)",
-    "commonName": "(String)",
-    "issuerThumbprint": "(String)"
-  }
-//]
-```
-
 ## Adding common name certificate for application connectivity
 
 If using a common name certificate for application connectivity, the certificate needs to be in an Azure key vault and configured on the 'managedClusters/nodetype'.
 This will copy the certificate to each of the nodes into the appropriate certificate store. Before the application can use the certificate, ACL'ing of the certificate will need to be configured. See [How to ACL application certificate private key using ApplicationManifest.xml](./How%20to%20ACL%20application%20certificate%20from%20ApplicationManifest.md).
 
 Use one of the three options below  to add a common name certificate for application connectivity.
+
+### Using ARM template to add common name certificate to nodetype configuration
+
+If using an ARM template for deployment, add a new 'vmSecrets' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
+
+- id - Azure key vault id. Example: '/subscriptions/{{subscription id}}/resourceGroups/xxxxxxx/providers/Microsoft.KeyVault/vaults/{{vault name}}'
+- certificateStore - 'My'
+- certificateUrl - Azure key vault certificate secret. Example: 'https://{{vault name}}.vault.azure.net:443/secrets/{{secret name}}/{{secret}}'
+
+  ```json
+  //"vmSecrets": [
+  {
+    "sourceVault": {
+      "id": "string"
+    },
+    "vaultCertificates": [
+      {
+        "certificateStore": "My",
+        "certificateUrl": "string"
+      }
+    ]
+  }
+  //]
+  ```
 
 ### Using Azure Resource Explorer to add common name certificate to nodetype configuration
 
@@ -139,30 +162,6 @@ Add-AzServiceFabricManagedNodeTypeVMSecret -ResourceGroupName $resourceGroupName
    -CertificateStore $certificateStore `
    -Verbose
 ```
-
-### Using ARM template to add common name certificate to nodetype configuration
-
-If using an ARM template for deployment, add a new 'vmSecrets' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
-
-- id - Azure key vault id. Example: '/subscriptions/{{subscription id}}/resourceGroups/xxxxxxx/providers/Microsoft.KeyVault/vaults/{{vault name}}'
-- certificateStore - 'My'
-- certificateUrl - Azure key vault certificate secret. Example: 'https://{{vault name}}.vault.azure.net:443/secrets/{{secret name}}/{{secret}}'
-
-  ```json
-  //"vmSecrets": [
-  {
-    "sourceVault": {
-      "id": "string"
-    },
-    "vaultCertificates": [
-      {
-        "certificateStore": "My",
-        "certificateUrl": "string"
-      }
-    ]
-  }
-  //]
-  ```
 
 ## Adding common name certificate to 'client' machine
 
@@ -225,9 +224,9 @@ invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubl
 
 - Verify the common name certificate being used is installed on machine where PowerShell commands are being executed. Opening Certmgr.msc on machine will open the 'CurrentUser' certificate store.
 
-- Verify the Issuer certificate thumbprint matches 'issuerThumbprint' in cluster 'clients' configuration for common name certificate. Renewed certificates may not have the same Issuer thumbprint.
+- Verify that all of the Issuer certificates thumbprints are configured for 'issuerThumbprint' in cluster 'clients' configuration for common name certificate. Renewed certificates may not have the same Issuer thumbprints.
 
-- Verify network connectivity to the managed cluster. By defualt PowerShell connects to Service Fabric over port 19000. Use 'test-netConnection' to test network connectivity.
+- Verify network connectivity to the managed cluster. By default, PowerShell connects to Service Fabric over port 19000. Use 'test-netConnection' to test network connectivity.
 
   ```powershell
   $clusterEndpoint = 'sfcluster.eastus.cloudapp.azure.com' # {{cluster name}}.{{location}}.cloudapp.azure.com
