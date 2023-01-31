@@ -30,10 +30,10 @@
     SOFTWARE
 
 .EXAMPLE
-    .\sfm-connect.ps1 -clusterEndpoint mycluster.eastus.cloudapp.azure.com -commonName *.mycluster.com
+    .\sfmc-connect.ps1 -clusterEndpoint mycluster.eastus.cloudapp.azure.com -commonName *.mycluster.com
 
 .LINK
-    invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sfm-connect.ps1" -outFile "$pwd\sfm-connect.ps1";
+    invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sfmc-connect.ps1" -outFile "$pwd\sfmc-connect.ps1";
 
 #>
 param(

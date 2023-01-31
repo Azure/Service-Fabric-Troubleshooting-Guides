@@ -213,8 +213,8 @@ Connect-ServiceFabricCluster -ConnectionEndpoint "$managementEndpoint`:$manageme
 The following script performs the commands documented in this TSG to connect to a Service Fabric Managed Cluster.
 
 ```powershell
-invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sfm-connect.ps1" -outFile "$pwd\sfm-connect.ps1";
-.\sfm-connect.ps1 -clusterEndpoint sfcluster.eastus.cloudapp.azure.com -commonName *.sfcluster.com
+invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sfmc-connect.ps1" -outFile "$pwd\sfmc-connect.ps1";
+.\sfmc-connect.ps1 -clusterEndpoint sfcluster.eastus.cloudapp.azure.com -commonName *.sfcluster.com
 ```
 
 ## Troubleshooting
