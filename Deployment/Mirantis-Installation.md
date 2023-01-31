@@ -31,7 +31,7 @@ Please use a copy of [Install-Mirantis.ps1](https://raw.githubusercontent.com/Az
                     "autoUpgradeMinorVersion": true,
                     "settings": {
                         "fileUris": [
-                            "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/chrpap/dockermigration/Scripts/Mirantis-Install.ps1"
+                            "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/Install-Mirantis.ps1"
                         ],
                         "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File .\\', 'Mirantis-Install.ps1')]"
                     }
