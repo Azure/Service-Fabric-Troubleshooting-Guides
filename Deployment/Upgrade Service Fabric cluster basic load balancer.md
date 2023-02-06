@@ -428,181 +428,188 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
 ### Example log
 
 ```log
-PS C:\> start-AzBasicLoadBalancerUpgrade -ResourceGroupName sfcluster -BasicLoadBalancerName LB-sfcluster-nt0 -FollowLog
-[Information]:############################## Initializing Start-AzBasicLoadBalancerUpgrade ##############################
-[Information]:[Start-AzBasicLoadBalancerUpgrade] Checking that user is signed in to Azure PowerShell
-[Information]:[Start-AzBasicLoadBalancerUpgrade] Loading Azure Resources
-[Information]:[Start-AzBasicLoadBalancerUpgrade] Basic Load Balancer LB-sfcluster-nt0 loaded
-[Information]:[Test-SupportedMigrationScenario] Verifying if Load Balancer LB-sfcluster-nt0 is valid for migration
-[Information]:[Test-SupportedMigrationScenario] Verifying source load balancer SKU
-[Information]:[Test-SupportedMigrationScenario] Source load balancer SKU is type Basic
-[Information]:[Test-SupportedMigrationScenario] Checking if there are any backend pool members which are not virtualMachineScaleSets and that all backend pools are not empty
-[Information]:[Test-SupportedMigrationScenario] All backend pools members virtualMachineScaleSets!
-[Information]:[Test-SupportedMigrationScenario] Checking if there are more than one VMSS in the backend pool
-[Information]:[Test-SupportedMigrationScenario] Basic Load Balancer has only one VMSS in the backend pool
-[Information]:[Test-SupportedMigrationScenario] Checking that source load balancer is configured
-[Information]:[Test-SupportedMigrationScenario] Load balancer has at least 1 frontend IP configuration
-[Information]:[Test-SupportedMigrationScenario] Checking that standard load balancer name 'LB-sfcluster-nt0'
-[Information]:[Test-SupportedMigrationScenario] Load balancer resource 'LB-sfcluster-nt0' already exists. Checking if it is a Basic SKU for migration
-[Information]:[Test-SupportedMigrationScenario] Load balancer resource 'LB-sfcluster-nt0' is a Basic Load Balancer. The same name will be re-used.
-[Information]:[Test-SupportedMigrationScenario] Checking if backend pools contain members which are members of another load balancer's backend pools...
-[Information]:[Test-SupportedMigrationScenario] Checking for instances in backend pool member VMSS 'nt0' with Instance Protection configured
-[Information]:[Test-SupportedMigrationScenario] No VMSS instances with Instance Protection found
-[Information]:[Test-SupportedMigrationScenario] Checking for VMSS with publicIPConfigurations
-[Information]:[Test-SupportedMigrationScenario] Determining if LB is internal or external based on FrontEndIPConfiguration[0]'s IP configuration
-[Information]:[Test-SupportedMigrationScenario] FrontEndIPConfiguiration[0] is assigned a public IP address '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Network/publicIPAddresses/PublicIP-LB-FE-0', so this LB is External
-[Information]:[Test-SupportedMigrationScenario] Determining if there is a frontend IPV6 configuration
-[Information]:[Test-SupportedMigrationScenario] Load Balancer LB-sfcluster-nt0 is valid for migration
-[Information]:[PublicLBMigration] Public Load Balancer Detected. Initiating Public Load Balancer Migration
-[Information]:[GetVMSSFromBasicLoadBalancer] Initiating GetVMSSFromBasicLoadBalancer
-[Information]:[GetVMSSFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0' from Azure
-[Information]:[GetVMSSFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
-[Information]:[BackupBasicLoadBalancer] Initiating Backup of Basic Load Balancer Configurations to path 'c:\serviceFabric'    
-[Information]:[BackupBasicLoadBalancer] JSON backup Basic Load Balancer to file c:\serviceFabric\State_LB-sfcluster-nt0_sfcluster_20230115T1745222186.json Completed
-[Information]:[BackupBasicLoadBalancer] Exporting Basic Load Balancer ARM template to path 'c:\serviceFabric'...
-[Information]:[BackupBasicLoadBalancer] Completed export Basic Load Balancer ARM template to path 'c:\serviceFabric\ARMTemplate_LB-sfcluster-nt0_sfcluster_20230115T1745222186.json'...
-[Information]:[BackupBasicLoadBalancer] Attempting to create a file-based backup VMSS with id '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0'
-[Information]:[RemoveVMSSPublicIPConfig] Removing Public IP Address configuration from VMSS 
-[Information]:[GetVMSSFromBasicLoadBalancer] Initiating GetVMSSFromBasicLoadBalancer
-[Information]:[GetVMSSFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0' from Azure
-[Information]:[GetVMSSFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
-[Information]:[RemoveVMSSPublicIPConfig] Completed removing Public IP Address configuration from VMSS nt0. PIPs removed: 'False'
-[Information]:[PublicIPToStatic] Changing public IP addresses to static (if necessary)
-WARNING: [Warning]:[PublicIPToStatic] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') was using Dynamic IP, changing to Static IP allocation method.
-[Information]:[PublicIPToStatic] Completed the migration of 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') from Basic SKU and/or dynamic to static
-[Information]:[PublicIPToStatic] Public Frontend Migration Completed
-[Information]:[RemoveLBFromVMSS] Initiating removal of LB LB-sfcluster-nt0 from VMSS
-[Information]:[RemoveLBFromVMSS] Looping all VMSS from Basic Load Balancer LB-sfcluster-nt0
-[Information]:[RemoveLBFromVMSS] Building VMSS object from Basic Load Balancer LB-sfcluster-nt0
-[Information]:[GetVMSSFromBasicLoadBalancer] Initiating GetVMSSFromBasicLoadBalancer
-[Information]:[GetVMSSFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0' from Azure
-[Information]:[GetVMSSFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
-[Information]:[RemoveLBFromVMSS] Cleaning healthProbe from NetworkProfile of VMSS nt0
-[Information]:[RemoveLBFromVMSS] Checking Upgrade Policy Mode of VMSS nt0
-[Information]:[RemoveLBFromVMSS] Cleaning LoadBalancerBackendAddressPools from Basic Load Balancer LB-sfcluster-nt0
-[Information]:[RemoveLBFromVMSS] Updating VMSS nt0
-
-<<<NOTE: Start of bronze cluster unavailability here. There will be a delay in logging here until above command in script is complete>>>
-
-[Information]:[UpdateVmssInstances] Initiating Update Vmss Instances
-[Information]:[UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
-[Information]:[UpdateVmssInstances] Update Vmss Instances Completed
-[Information]:[RemoveLBFromVMSS] Removing Basic Loadbalancer LB-sfcluster-nt0 from Resource Group sfcluster
-[Information]:[RemoveLBFromVMSS] Removal of Basic Loadbalancer LB-sfcluster-nt0 Completed
-[Information]:[AddVMSSPublicIPConfig] Adding Public IP Address configuration back to VMSSIP Configs
-[Information]:[GetVMSSFromBasicLoadBalancer] Initiating GetVMSSFromBasicLoadBalancer
-[Information]:[GetVMSSFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0' from Azure
-[Information]:[GetVMSSFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
-[Information]:[_CreateStandardLoadBalancer] Initiating Standard Load Balancer Creation
-[Information]:[_CreateStandardLoadBalancer] Standard Load Balancer LB-sfcluster-nt0 created successfully
-[Information]:[PublicFEMigration] Initiating Public Frontend Migration
-WARNING: [Warning]:[PublicFEMigration] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') is using Basic SKU, changing Standard SKU.
-[Information]:[PublicFEMigration] Completed the migration of 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') from Basic SKU and/or dynamic to static
-[Information]:[PublicFEMigration] Saving Standard Load Balancer LB-sfcluster-nt0
-[Information]:[PublicFEMigration] Public Frontend Migration Completed
-[Information]:[AddLoadBalancerBackendAddressPool] Adding BackendAddressPool LoadBalancerBEAddressPool
-[Information]:[AddLoadBalancerBackendAddressPool] Saving added BackendAddressPool to Standard Load Balancer LB-sfcluster-nt0
-[Information]:[ProbesMigration] Initiating Probes Migration
-[Information]:[ProbesMigration] Adding Probe FabricGatewayProbe to Standard Load Balancer
-[Information]:[ProbesMigration] Adding Probe FabricHttpGatewayProbe to Standard Load Balancer
-[Information]:[ProbesMigration] Saving Standard Load Balancer LB-sfcluster-nt0
-[Information]:[ProbesMigration] Probes Migration Completed
-[Information]:[LoadBalacingRulesMigration] Initiating LoadBalacing Rules Migration
-[Information]:[LoadBalacingRulesMigration] Adding LoadBalacing Rule LBRule to Standard Load Balancer
-[Information]:[LoadBalacingRulesMigration] Adding LoadBalacing Rule LBHttpRule to Standard Load Balancer
-[Information]:[LoadBalacingRulesMigration] Saving Standard Load Balancer LB-sfcluster-nt0
-[Information]:[LoadBalacingRulesMigration] LoadBalacing Rules Migration Completed
-[Information]:[OutboundRulesCreation] Initiating Outbound Rules Creation
-[Information]:[OutboundRulesCreation] Adding Outbound Rule LoadBalancerBEAddressPool to Standard Load Balancer
-[Information]:[OutboundRulesCreation] Saving Standard Load Balancer LB-sfcluster-nt0
-[Information]:[OutboundRulesCreation] Outbound Rules Creation Completed
-[Information]:[NatRulesMigration] Initiating Nat Rules Migration
-[Information]:[NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.0 to Standard Load Balancer
-[Information]:[NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.0' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
-WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.0' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
-[Information]:[NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.1 to Standard Load Balancer
-[Information]:[NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.1' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
-WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.1' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
-[Information]:[NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.2 to Standard Load Balancer
-[Information]:[NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.2' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
-WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.2' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
-[Information]:[NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.3 to Standard Load Balancer
-[Information]:[NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.3' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
-WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.3' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
-[Information]:[NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.4 to Standard Load Balancer
-[Information]:[NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.4' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
-WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.4' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
-[Information]:[NatRulesMigration] Saving Standard Load Balancer LB-sfcluster-nt0
-[Information]:[NatRulesMigration] Nat Rules Migration Completed
-[Information]:[InboundNatPoolsMigration] Initiating Inbound NAT Pools Migration
-[Information]:[InboundNatPoolsMigration] Adding Inbound NAT Pool LoadBalancerBEAddressNatPool to Standard Load Balancer
-[Information]:[InboundNatPoolsMigration] Saving Standard Load Balancer LB-sfcluster-nt0
-[Information]:[GetVMSSFromBasicLoadBalancer] Initiating GetVMSSFromBasicLoadBalancer
-[Information]:[GetVMSSFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0' from Azure
-[Information]:[GetVMSSFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding InboundNATPool to VMSS nt0
-[Information]:[_MigrateNetworkInterfaceConfigurations] Checking if VMSS 'nt0' NIC 'NIC-0' IPConfig 'NIC-0' should be associated with NAT Pool 'LoadBalancerBEAddressNatPool'
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding NAT Pool 'LoadBalancerBEAddressNatPool' to IPConfig 'NIC-0'
-[Information]:[_MigrateNetworkInterfaceConfigurations] Migrate NetworkInterface Configurations completed
-[Information]:[_UpdateAzVmss] Saving VMSS nt0
-
-<<<NOTE: Start of silver cluster unavailability here. There will be a delay in logging here until above command in script is complete>>>
-
-[Information]:[UpdateVmssInstances] Initiating Update Vmss Instances
-[Information]:[UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
-[Information]:[UpdateVmssInstances] Update Vmss Instances Completed
-[Information]:[InboundNatPoolsMigration] Inbound NAT Pools Migration Completed
-[Information]:[NSGCreation] Initiating NSG Creation
-[Information]:[NSGCreation] Looping all VMSS in the backend pool of the Load Balancer
-[Information]:[NSGCreation] Checking if VMSS Named: nt0 has a NSG
-[Information]:[NSGCreation] NSG not detected.
-[Information]:[NSGCreation] Creating NSG for VMSS:
-[Information]:[NSGCreation] NSG Named: NSG-nt0 created.
-[Information]:[NSGCreation] Adding one NSG Rule for each Load Balancing Rule
-[Information]:[NSGCreation] Adding NSG Rule Named: LBRule-loadBalancingRule to NSG Named: NSG-nt0
-[Information]:[NSGCreation] Adding NSG Rule Named: LBHttpRule-loadBalancingRule to NSG Named: NSG-nt0
-[Information]:[NSGCreation] Adding one NSG Rule for each inboundNatRule
-[Information]:[NSGCreation] Adding NSG Rule Named: LoadBalancerBEAddressNatPool.0-NatRule to NSG Named: NSG-nt0
-[Information]:[NSGCreation] Adding NSG Rule Named: LoadBalancerBEAddressNatPool.1-NatRule to NSG Named: NSG-nt0
-[Information]:[NSGCreation] Adding NSG Rule Named: LoadBalancerBEAddressNatPool.2-NatRule to NSG Named: NSG-nt0
-[Information]:[NSGCreation] Adding NSG Rule Named: LoadBalancerBEAddressNatPool.3-NatRule to NSG Named: NSG-nt0
-[Information]:[NSGCreation] Adding NSG Rule Named: LoadBalancerBEAddressNatPool.4-NatRule to NSG Named: NSG-nt0
-[Information]:[NSGCreation] Saving NSG Named: NSG-nt0
-[Information]:[NSGCreation] Adding NSG Named: NSG-nt0 to VMSS Named: nt0
-[Information]:[NSGCreation] Saving VMSS Named: nt0
-[Information]:[UpdateVmssInstances] Initiating Update Vmss Instances
-[Information]:[UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
-[Information]:[UpdateVmssInstances] Update Vmss Instances Completed
-[Information]:[NSGCreation] NSG Creation Completed
-[Information]:[BackendPoolMigration] Initiating Backend Pool Migration
-[Information]:[BackendPoolMigration] Adding Standard Load Balancer back to the VMSS
-[Information]:[BackendPoolMigration] Building VMSS object from Basic Load Balancer LB-sfcluster-nt0[Information]:[GetVMSSFromBasicLoadBalancer] Initiating GetVMSSFromBasicLoadBalancer
-[Information]:[GetVMSSFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt0' from Azure
-[Information]:[GetVMSSFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
-[Information]:[_MigrateHealthProbe] Migrating Health Probes
-[Information]:[_MigrateHealthProbe] Health Probes not found in reference VMSS nt0
-[Information]:[_MigrateHealthProbe] Migrating Health Probes completed
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool to VMSS nt0
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
-[Information]:[_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
-[Information]:[_MigrateNetworkInterfaceConfigurations] Migrate NetworkInterface Configurations completed
-[Information]:[UpdateVmss] Updating configuration of VMSS 'nt0'
-
-<<<NOTE: End of cluster unavailability here. There will be a delay in logging here until above command in script is complete>>>
-
-[Information]:[UpdateVmss] Completed update configuration of VMSS 'nt0'
-[Information]:[UpdateVmssInstances] Initiating Update Vmss Instances
-[Information]:[UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
-[Information]:[UpdateVmssInstances] Update Vmss Instances Completed
-[Information]:[_RestoreUpgradePolicyMode] Restoring VMSS Upgrade Policy Mode
-[Information]:[_RestoreUpgradePolicyMode] VMSS Upgrade Policy Mode not changed
-[Information]:[_RestoreUpgradePolicyMode] Restoring VMSS Upgrade Policy Mode completed
-[Information]:[UpdateVmss] Updating configuration of VMSS 'nt0'
-[Information]:[UpdateVmss] Completed update configuration of VMSS 'nt0'
-[Information]:[BackendPoolMigration] Backend Pool Migration Completed
-[Information]:############################## Migration Completed ##############################
-PS C:\>
+2023-02-06T11:02:39-05 [Information] - ############################## Initializing Start-AzBasicLoadBalancerUpgrade ##############################
+2023-02-06T11:02:39-05 [Information] - [Start-AzBasicLoadBalancerUpgrade] Checking that user is signed in to Azure PowerShell
+2023-02-06T11:02:39-05 [Information] - [Start-AzBasicLoadBalancerUpgrade] Loading Azure Resources
+2023-02-06T11:02:39-05 [Information] - [Start-AzBasicLoadBalancerUpgrade] Basic Load Balancer LB-sfcluster-nt0 loaded
+2023-02-06T11:02:39-05 [Information] - [Test-SupportedMigrationScenario] Verifying if Load Balancer LB-sfcluster-nt0 is valid for migration
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Verifying source load balancer SKU
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Source load balancer SKU is type Basic
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Checking if there are any backend pool members which are not virtualMachineScaleSets and that all backend pools are not empty
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] All backend pools members virtualMachineScaleSets!
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Checking if there are more than one VMSS in the backend pool
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Basic Load Balancer has only one VMSS in the backend pool
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Checking that source load balancer is configured
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Load balancer has at least 1 frontend IP configuration
+2023-02-06T11:02:40-05 [Information] - [Test-SupportedMigrationScenario] Checking that standard load balancer name 'LB-sfcluster-nt0'
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] Load balancer resource 'LB-sfcluster-nt0' already exists. Checking if it is a Basic SKU for migration
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] Load balancer resource 'LB-sfcluster-nt0' is a Basic Load Balancer. The same name will be re-used.
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] Checking if backend pools contain members which are members of another load balancer's backend pools...
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] Checking for instances in backend pool member VMSS 'nt0' with Instance Protection configured
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] No VMSS instances with Instance Protection found
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] Checking for VMSS with publicIPConfigurations
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] Determining if LB is internal or external based on FrontEndIPConfiguration[0]'s IP configuration
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] FrontEndIPConfiguiration[0] is assigned a public IP address '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Network/publicIPAddresses/PublicIP-LB-FE-0', so this LB is External
+2023-02-06T11:02:41-05 [Information] - [Test-SupportedMigrationScenario] Determining if there is a frontend IPV6 configuration
+2023-02-06T11:02:42-05 [Information] - [Test-SupportedMigrationScenario] Load Balancer LB-sfcluster-nt0 is valid for migration
+2023-02-06T11:02:42-05 [Information] - [PublicLBMigration] Public Load Balancer Detected. Initiating Public Load Balancer Migration
+2023-02-06T11:02:42-05 [Information] - [GetVmssFromBasicLoadBalancer] Initiating GetVmssFromBasicLoadBalancer
+2023-02-06T11:02:42-05 [Information] - [GetVmssFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/sfcluster/providers/microsoft.compute/virtualmachinescalesets/nt0' from Azure
+2023-02-06T11:02:43-05 [Information] - [GetVmssFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
+2023-02-06T11:02:43-05 [Information] - [BackupBasicLoadBalancer] Initiating Backup of Basic Load Balancer Configurations to path 'C:\temp'
+2023-02-06T11:02:43-05 [Information] - [BackupBasicLoadBalancer] JSON backup Basic Load Balancer to file C:\temp\State_LB-sfcluster-nt0_sfcluster_20230206T1102433143.json Completed
+2023-02-06T11:02:43-05 [Information] - [BackupBasicLoadBalancer] Exporting Basic Load Balancer ARM template to path 'C:\temp'...
+2023-02-06T11:02:48-05 [Information] - [BackupBasicLoadBalancer] Completed export Basic Load Balancer ARM template to path 'C:\temp\ARMTemplate_LB-sfcluster-nt0_sfcluster_20230206T1102433143.json'...
+2023-02-06T11:02:48-05 [Information] - [BackupBasicLoadBalancer] Attempting to create a file-based backup VMSS with id '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/sfcluster/providers/microsoft.compute/virtualmachinescalesets/nt0'
+2023-02-06T11:02:49-05 [Information] - [RemoveVMSSPublicIPConfig] Removing Public IP Address configuration from VMSS 
+2023-02-06T11:02:49-05 [Information] - [GetVmssFromBasicLoadBalancer] Initiating GetVmssFromBasicLoadBalancer
+2023-02-06T11:02:49-05 [Information] - [GetVmssFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/sfcluster/providers/microsoft.compute/virtualmachinescalesets/nt0' from Azure
+2023-02-06T11:02:50-05 [Information] - [GetVmssFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
+2023-02-06T11:02:50-05 [Information] - [RemoveVMSSPublicIPConfig] Completed removing Public IP Address configuration from VMSS nt0. PIPs removed: 'False'
+2023-02-06T11:02:50-05 [Information] - [PublicIPToStatic] Changing public IP addresses to static (if necessary)
+2023-02-06T11:02:50-05 [Warning] - [PublicIPToStatic] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') was using Dynamic IP, changing to Static IP allocation method.
+2023-02-06T11:02:53-05 [Information] - [PublicIPToStatic] Completed the migration of 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') from Basic SKU and/or dynamic to static
+2023-02-06T11:02:53-05 [Information] - [PublicIPToStatic] Public Frontend Migration Completed
+2023-02-06T11:02:53-05 [Information] - [RemoveLoadBalancerFromVmss] Initiating removal of LB LB-sfcluster-nt0 from VMSS 
+2023-02-06T11:02:53-05 [Information] - [RemoveLoadBalancerFromVmss] Looping all VMSS from Basic Load Balancer LB-sfcluster-nt0
+2023-02-06T11:02:53-05 [Information] - [RemoveLoadBalancerFromVmss] Building VMSS object from Basic Load Balancer LB-sfcluster-nt0
+2023-02-06T11:02:53-05 [Information] - [GetVmssFromBasicLoadBalancer] Initiating GetVmssFromBasicLoadBalancer
+2023-02-06T11:02:53-05 [Information] - [GetVmssFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/sfcluster/providers/microsoft.compute/virtualmachinescalesets/nt0' from Azure
+2023-02-06T11:02:54-05 [Information] - [GetVmssFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
+2023-02-06T11:02:54-05 [Information] - [RemoveLoadBalancerFromVmss] Cleaning healthProbe from NetworkProfile of VMSS nt0
+2023-02-06T11:02:54-05 [Information] - [RemoveLoadBalancerFromVmss] Checking Upgrade Policy Mode of VMSS nt0
+2023-02-06T11:02:54-05 [Information] - [RemoveLoadBalancerFromVmss] Cleaning LoadBalancerBackendAddressPools from Basic Load Balancer LB-sfcluster-nt0
+2023-02-06T11:02:54-05 [Information] - [RemoveLoadBalancerFromVmss] Updating VMSS nt0
+2023-02-06T11:02:54-05 [Information] - [WaitJob] Checking Job Id: 13
+2023-02-06T11:18:28-05 [Information] - [WaitJob] Receiving Job: Microsoft.Azure.Commands.Compute.Automation.Models.PSVirtualMachineScaleSet
+2023-02-06T11:18:28-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
+2023-02-06T11:18:28-05 [Information] - [RemoveJob] Removing Job Id: 13
+2023-02-06T11:18:28-05 [Information] - [RemoveJob] Job Removed: 13
+2023-02-06T11:18:28-05 [Information] - [WaitJob] Job Complete: IP Avail:False (96% Total Avail) Minutes Executing:15 State:Completed
+2023-02-06T11:18:28-05 [Information] - [RemoveJob] Removing Job Id: 14
+2023-02-06T11:18:28-05 [Information] - [RemoveJob] Job Removed: 14
+2023-02-06T11:18:28-05 [Information] - [UpdateVmssInstances] Initiating Update Vmss Instances
+2023-02-06T11:18:28-05 [Information] - [UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
+2023-02-06T11:18:28-05 [Information] - [UpdateVmssInstances] Update Vmss Instances Completed
+2023-02-06T11:18:28-05 [Information] - [RemoveLoadBalancerFromVmss] Removing Basic Loadbalancer LB-sfcluster-nt0 from Resource Group sfcluster
+2023-02-06T11:18:38-05 [Information] - [RemoveLoadBalancerFromVmss] Removal of Basic Loadbalancer LB-sfcluster-nt0 Completed
+2023-02-06T11:18:38-05 [Information] - [AddVMSSPublicIPConfig] Adding Public IP Address configuration back to VMSS  IP Configs
+2023-02-06T11:18:38-05 [Information] - [GetVmssFromBasicLoadBalancer] Initiating GetVmssFromBasicLoadBalancer
+2023-02-06T11:18:38-05 [Information] - [GetVmssFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/sfcluster/providers/microsoft.compute/virtualmachinescalesets/nt0' from Azure
+2023-02-06T11:18:40-05 [Information] - [GetVmssFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
+2023-02-06T11:18:40-05 [Information] - [_CreateStandardLoadBalancer] Initiating Standard Load Balancer Creation
+2023-02-06T11:18:41-05 [Information] - [_CreateStandardLoadBalancer] Standard Load Balancer LB-sfcluster-nt0 created successfully
+2023-02-06T11:18:41-05 [Information] - [PublicFEMigration] Initiating Public Frontend Migration
+2023-02-06T11:18:41-05 [Warning] - [PublicFEMigration] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') is using Basic SKU, changing Standard SKU.
+2023-02-06T11:18:43-05 [Information] - [PublicFEMigration] Completed the migration of 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') from Basic SKU and/or dynamic to static
+2023-02-06T11:18:43-05 [Information] - [PublicFEMigration] Saving Standard Load Balancer LB-sfcluster-nt0
+2023-02-06T11:18:46-05 [Information] - [PublicFEMigration] Public Frontend Migration Completed
+2023-02-06T11:18:46-05 [Information] - [AddLoadBalancerBackendAddressPool] Adding BackendAddressPool LoadBalancerBEAddressPool
+2023-02-06T11:18:46-05 [Information] - [AddLoadBalancerBackendAddressPool] Saving added BackendAddressPool to Standard Load Balancer LB-sfcluster-nt0
+2023-02-06T11:18:48-05 [Information] - [ProbesMigration] Initiating Probes Migration
+2023-02-06T11:18:48-05 [Information] - [ProbesMigration] Adding Probe FabricGatewayProbe to Standard Load Balancer
+2023-02-06T11:18:48-05 [Information] - [ProbesMigration] Adding Probe FabricHttpGatewayProbe to Standard Load Balancer
+2023-02-06T11:18:48-05 [Information] - [ProbesMigration] Saving Standard Load Balancer LB-sfcluster-nt0
+2023-02-06T11:18:51-05 [Information] - [ProbesMigration] Probes Migration Completed
+2023-02-06T11:18:51-05 [Information] - [LoadBalacingRulesMigration] Initiating LoadBalacing Rules Migration
+2023-02-06T11:18:51-05 [Information] - [LoadBalacingRulesMigration] Adding LoadBalacing Rule LBRule to Standard Load Balancer
+2023-02-06T11:18:51-05 [Information] - [LoadBalacingRulesMigration] Adding LoadBalacing Rule LBHttpRule to Standard Load Balancer
+2023-02-06T11:18:51-05 [Information] - [LoadBalacingRulesMigration] Saving Standard Load Balancer LB-sfcluster-nt0
+2023-02-06T11:18:53-05 [Information] - [LoadBalacingRulesMigration] LoadBalacing Rules Migration Completed
+2023-02-06T11:18:53-05 [Information] - [OutboundRulesCreation] Initiating Outbound Rules Creation
+2023-02-06T11:18:53-05 [Information] - [OutboundRulesCreation] Adding Outbound Rule LoadBalancerBEAddressPool to Standard Load Balancer
+2023-02-06T11:18:53-05 [Information] - [OutboundRulesCreation] Saving Standard Load Balancer LB-sfcluster-nt0
+2023-02-06T11:18:56-05 [Information] - [OutboundRulesCreation] Outbound Rules Creation Completed
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Initiating Nat Rules Migration
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.0 to Standard Load Balancer
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.0' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
+2023-02-06T11:18:56-05 [Warning] - [NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.0' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.1 to Standard Load Balancer
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.1' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
+2023-02-06T11:18:56-05 [Warning] - [NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.1' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.2 to Standard Load Balancer
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.2' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
+2023-02-06T11:18:56-05 [Warning] - [NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.2' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.3 to Standard Load Balancer
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.3' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
+2023-02-06T11:18:56-05 [Warning] - [NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.3' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Evaluating adding NAT Rule LoadBalancerBEAddressNatPool.4 to Standard Load Balancer
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Checking if the NAT rule has a name that 'LoadBalancerBEAddressNatPool.4' matches an Inbound NAT Pool name with pattern 'LoadBalancerBEAddressNatPool'
+2023-02-06T11:18:56-05 [Warning] - [NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.4' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+2023-02-06T11:18:56-05 [Information] - [NatRulesMigration] Saving Standard Load Balancer LB-sfcluster-nt0
+2023-02-06T11:18:58-05 [Information] - [NatRulesMigration] Nat Rules Migration Completed
+2023-02-06T11:18:58-05 [Information] - [InboundNatPoolsMigration] Initiating Inbound NAT Pools Migration
+2023-02-06T11:18:58-05 [Information] - [InboundNatPoolsMigration] Adding Inbound NAT Pool LoadBalancerBEAddressNatPool to Standard Load Balancer
+2023-02-06T11:18:58-05 [Information] - [InboundNatPoolsMigration] Saving Standard Load Balancer LB-sfcluster-nt0
+2023-02-06T11:19:01-05 [Information] - [GetVmssFromBasicLoadBalancer] Initiating GetVmssFromBasicLoadBalancer
+2023-02-06T11:19:01-05 [Information] - [GetVmssFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/sfcluster/providers/microsoft.compute/virtualmachinescalesets/nt0' from Azure
+2023-02-06T11:19:01-05 [Information] - [GetVmssFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
+2023-02-06T11:19:01-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding InboundNATPool to VMSS nt0
+2023-02-06T11:19:01-05 [Debug] - Getting NAT Pool name from ID: '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Network/loadBalancers/LB-sfcluster-nt0/inboundNatPools/LoadBalancerBEAddressNatPool'
+2023-02-06T11:19:01-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Checking if VMSS 'nt0' NIC 'NIC-0' IPConfig 'NIC-0' should be associated with NAT Pool 'LoadBalancerBEAddressNatPool'
+2023-02-06T11:19:01-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding NAT Pool 'LoadBalancerBEAddressNatPool' to IPConfig 'NIC-0'
+2023-02-06T11:19:01-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Migrate NetworkInterface Configurations completed
+2023-02-06T11:19:01-05 [Information] - [_UpdateAzVmss] Saving VMSS nt0
+2023-02-06T11:19:01-05 [Information] - [WaitJob] Checking Job Id: 16
+2023-02-06T11:35:26-05 [Information] - [WaitJob] Receiving Job: Microsoft.Azure.Commands.Compute.Automation.Models.PSVirtualMachineScaleSet
+2023-02-06T11:35:26-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
+2023-02-06T11:35:26-05 [Information] - [RemoveJob] Removing Job Id: 16
+2023-02-06T11:35:26-05 [Information] - [RemoveJob] Job Removed: 16
+2023-02-06T11:35:26-05 [Information] - [WaitJob] Job Complete: IP Avail:False (0% Total Avail) Minutes Executing:16 State:Completed
+2023-02-06T11:35:26-05 [Information] - [RemoveJob] Removing Job Id: 17
+2023-02-06T11:35:26-05 [Information] - [RemoveJob] Job Removed: 17
+2023-02-06T11:35:26-05 [Information] - [UpdateVmssInstances] Initiating Update Vmss Instances
+2023-02-06T11:35:26-05 [Information] - [UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
+2023-02-06T11:35:26-05 [Information] - [UpdateVmssInstances] Update Vmss Instances Completed
+2023-02-06T11:35:26-05 [Information] - [InboundNatPoolsMigration] Inbound NAT Pools Migration Completed
+2023-02-06T11:35:26-05 [Information] - [NsgCreation] Initiating NSG Creation
+2023-02-06T11:35:26-05 [Information] - [NsgCreation] Looping all VMSS in the backend pool of the Load Balancer
+2023-02-06T11:35:27-05 [Information] - [NsgCreation] Checking if VMSS Named: nt0 has a NSG
+2023-02-06T11:35:30-05 [Information] - [NsgCreation] NSG detected in Subnet for VMSS Named: nt0 Subnet.NetworkSecurityGroup Id: /subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/sfcluster/providers/Microsoft.Network/networkSecurityGroups/VNet-Subnet-0-nsg-eastus
+2023-02-06T11:35:30-05 [Information] - [NsgCreation] NSG will not be created for VMSS Named: nt0
+2023-02-06T11:35:30-05 [Information] - [NsgCreation] NSG Creation Completed
+2023-02-06T11:35:30-05 [Information] - [BackendPoolMigration] Initiating Backend Pool Migration
+2023-02-06T11:35:30-05 [Information] - [BackendPoolMigration] Adding Standard Load Balancer back to the VMSS
+2023-02-06T11:35:30-05 [Information] - [BackendPoolMigration] Building VMSS object from Basic Load Balancer LB-sfcluster-nt0
+2023-02-06T11:35:30-05 [Information] - [GetVmssFromBasicLoadBalancer] Initiating GetVmssFromBasicLoadBalancer
+2023-02-06T11:35:30-05 [Information] - [GetVmssFromBasicLoadBalancer] Getting VMSS object '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/sfcluster/providers/microsoft.compute/virtualmachinescalesets/nt0' from Azure
+2023-02-06T11:35:31-05 [Information] - [GetVmssFromBasicLoadBalancer] VMSS loaded Name nt0 from RG sfcluster
+2023-02-06T11:35:31-05 [Information] - [_MigrateHealthProbe] Migrating Health Probes
+2023-02-06T11:35:31-05 [Information] - [_MigrateHealthProbe] Health Probes not found in reference VMSS nt0
+2023-02-06T11:35:31-05 [Information] - [_MigrateHealthProbe] Migrating Health Probes completed
+2023-02-06T11:35:31-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool to VMSS nt0
+2023-02-06T11:35:31-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
+2023-02-06T11:35:31-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
+2023-02-06T11:35:31-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
+2023-02-06T11:35:31-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
+2023-02-06T11:35:31-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Adding BackendAddressPool LoadBalancerBEAddressPool to VMSS Nic: NIC-0 ipConfig: NIC-0
+2023-02-06T11:35:31-05 [Information] - [_MigrateNetworkInterfaceConfigurations] Migrate NetworkInterface Configurations completed
+2023-02-06T11:35:31-05 [Information] - [UpdateVmss] Updating configuration of VMSS 'nt0'
+2023-02-06T11:35:31-05 [Information] - [WaitJob] Checking Job Id: 19
+2023-02-06T11:51:05-05 [Information] - [WaitJob] Receiving Job: Microsoft.Azure.Commands.Compute.Automation.Models.PSVirtualMachineScaleSet
+2023-02-06T11:51:05-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
+2023-02-06T11:51:05-05 [Information] - [RemoveJob] Removing Job Id: 19
+2023-02-06T11:51:05-05 [Information] - [RemoveJob] Job Removed: 19
+2023-02-06T11:51:05-05 [Information] - [WaitJob] Job Complete: IP Avail:True (100% Total Avail) Minutes Executing:15 State:Completed
+2023-02-06T11:51:05-05 [Information] - [RemoveJob] Removing Job Id: 20
+2023-02-06T11:51:05-05 [Information] - [RemoveJob] Job Removed: 20
+2023-02-06T11:51:05-05 [Information] - [UpdateVmss] Completed update configuration of VMSS 'nt0'
+2023-02-06T11:51:05-05 [Information] - [UpdateVmssInstances] Initiating Update Vmss Instances
+2023-02-06T11:51:05-05 [Information] - [UpdateVmssInstances] VMSS 'nt0' is configured with Upgrade Policy 'Automatic', so the update NetworkProfile will be applied automatically.
+2023-02-06T11:51:05-05 [Information] - [UpdateVmssInstances] Update Vmss Instances Completed
+2023-02-06T11:51:05-05 [Information] - [_RestoreUpgradePolicyMode] Restoring VMSS Upgrade Policy Mode
+2023-02-06T11:51:05-05 [Information] - [_RestoreUpgradePolicyMode] VMSS Upgrade Policy Mode not changed
+2023-02-06T11:51:05-05 [Information] - [_RestoreUpgradePolicyMode] Restoring VMSS Upgrade Policy Mode completed
+2023-02-06T11:51:05-05 [Information] - [UpdateVmss] Updating configuration of VMSS 'nt0'
+2023-02-06T11:51:05-05 [Information] - [WaitJob] Checking Job Id: 22
+2023-02-06T11:51:22-05 [Information] - [WaitJob] Receiving Job: Microsoft.Azure.Commands.Compute.Automation.Models.PSVirtualMachineScaleSet
+2023-02-06T11:51:22-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
+2023-02-06T11:51:22-05 [Information] - [RemoveJob] Removing Job Id: 22
+2023-02-06T11:51:22-05 [Information] - [RemoveJob] Job Removed: 22
+2023-02-06T11:51:22-05 [Information] - [WaitJob] Job Complete: IP Avail:True (100% Total Avail) Minutes Executing:0 State:Completed
+2023-02-06T11:51:22-05 [Information] - [RemoveJob] Removing Job Id: 23
+2023-02-06T11:51:22-05 [Information] - [RemoveJob] Job Removed: 23
+2023-02-06T11:51:22-05 [Information] - [UpdateVmss] Completed update configuration of VMSS 'nt0'
+2023-02-06T11:51:22-05 [Information] - [BackendPoolMigration] Backend Pool Migration Completed
+2023-02-06T11:51:22-05 [Information] - ############################## Migration Completed ##############################
 ```
