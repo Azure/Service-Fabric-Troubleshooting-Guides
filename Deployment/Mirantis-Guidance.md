@@ -30,6 +30,9 @@ Customer is using Windows Server SemiAnnual images with Containers
 - Datacenter-Core-1803-with-Containers-smalldisk
 - Datacenter-Core-1709-with-Containers-smalldisk
 - Datacenter-Core-1809-with-Containers-smalldisk
+- Datacenter-Core-1903-with-Containers-smalldisk
+- Datacenter-Core-1909-with-Containers-smalldisk
+- Datacenter-Core-2004-with-Containers-smalldisk
 
 ## Migration risk decision guide
 
