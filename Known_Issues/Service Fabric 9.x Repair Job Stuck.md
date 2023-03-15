@@ -24,15 +24,15 @@ Select one of the following Mitigation options to allow Repair job to resume pro
 
     #### **Normally Deployed Application**
 
-    Use Service Fabric SDK PowerShell command to update Minimum and Target Counts. [Update-ServiceFabricApplication](https://learn.microsoft.com/powershell/module/servicefabric/update-servicefabricapplication)
+    Use Service Fabric SDK PowerShell command to update Minimum and Target Counts. [Update-ServiceFabricService](https://learn.microsoft.com/powershell/module/servicefabric/Update-ServiceFabricService)
 
     Example:
 
     ```powershell
-    Update-ServiceFabricApplication `
-        -ApplicationName 'fabric:/...' `
-        -MaximumNodes 5 `
-        -MinimumNodes 3
+    Update-ServiceFabricService `
+        -Stateful 'fabric:/...' `
+        -TargetReplicaSetSize 5 `
+        -MinReplicaSetSize 3
     ```
 
     #### **ARM Deployed Application**
@@ -77,10 +77,10 @@ Example if not using ARM for application deployment.
 
 ```powershell
 Connect-ServiceFabricCluster
-Update-ServiceFabricApplication `
-    -ApplicationName 'fabric:/Voting' `
-    -MaximumNodes 5 `
-    -MinimumNodes 3 `
+Update-ServiceFabricService `
+    -Stateful 'fabric:/Voting/VotingData' `
+    -TargetReplicaSetSize 5 `
+    -MinReplicaSetSize 3 `
     -TimeoutSec 1200
 ```
 
@@ -157,6 +157,6 @@ Move-ServiceFabricSecondaryReplica `
     -CurrentSecondaryNodeName _nt0_5 `
     -NewSecondaryNodeName _nt0_3 `
     -IgnoreConstraints $true `
-    -ServiceName fabric:/Voting/VotingData `
+    -Stateful fabric:/Voting/VotingData `
     -TimeoutSec 1200
 ```
