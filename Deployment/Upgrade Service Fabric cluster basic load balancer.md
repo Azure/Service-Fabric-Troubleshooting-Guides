@@ -485,7 +485,7 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
 2023-02-06T11:18:28-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
 2023-02-06T11:18:28-05 [Information] - [RemoveJob] Removing Job Id: 13
 2023-02-06T11:18:28-05 [Information] - [RemoveJob] Job Removed: 13
-2023-02-06T11:18:28-05 [Information] - [WaitJob] Job Complete: IP Avail:False (96% Total Avail) Minutes Executing:15 State:Completed
+2023-02-06T11:18:28-05 [Information] - [WaitJob] Minutes Executing:15 State:Completed
 2023-02-06T11:18:28-05 [Information] - [RemoveJob] Removing Job Id: 14
 2023-02-06T11:18:28-05 [Information] - [RemoveJob] Job Removed: 14
 2023-02-06T11:18:28-05 [Information] - [UpdateVmssInstances] Initiating Update Vmss Instances
@@ -555,7 +555,7 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
 2023-02-06T11:35:26-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
 2023-02-06T11:35:26-05 [Information] - [RemoveJob] Removing Job Id: 16
 2023-02-06T11:35:26-05 [Information] - [RemoveJob] Job Removed: 16
-2023-02-06T11:35:26-05 [Information] - [WaitJob] Job Complete: IP Avail:False (0% Total Avail) Minutes Executing:16 State:Completed
+2023-02-06T11:35:26-05 [Information] - [WaitJob] Minutes Executing:16 State:Completed
 2023-02-06T11:35:26-05 [Information] - [RemoveJob] Removing Job Id: 17
 2023-02-06T11:35:26-05 [Information] - [RemoveJob] Job Removed: 17
 2023-02-06T11:35:26-05 [Information] - [UpdateVmssInstances] Initiating Update Vmss Instances
@@ -590,7 +590,7 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
 2023-02-06T11:51:05-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
 2023-02-06T11:51:05-05 [Information] - [RemoveJob] Removing Job Id: 19
 2023-02-06T11:51:05-05 [Information] - [RemoveJob] Job Removed: 19
-2023-02-06T11:51:05-05 [Information] - [WaitJob] Job Complete: IP Avail:True (100% Total Avail) Minutes Executing:15 State:Completed
+2023-02-06T11:51:05-05 [Information] - [WaitJob] Job Complete: Minutes Executing:15 State:Completed
 2023-02-06T11:51:05-05 [Information] - [RemoveJob] Removing Job Id: 20
 2023-02-06T11:51:05-05 [Information] - [RemoveJob] Job Removed: 20
 2023-02-06T11:51:05-05 [Information] - [UpdateVmss] Completed update configuration of VMSS 'nt0'
@@ -606,7 +606,7 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
 2023-02-06T11:51:22-05 [Information] - [WaitJob] Job Not Running: Microsoft.Azure.Commands.Common.AzureLongRunningJob`1[Microsoft.WindowsAzure.Commands.Utilities.Common.AzurePSCmdlet]
 2023-02-06T11:51:22-05 [Information] - [RemoveJob] Removing Job Id: 22
 2023-02-06T11:51:22-05 [Information] - [RemoveJob] Job Removed: 22
-2023-02-06T11:51:22-05 [Information] - [WaitJob] Job Complete: IP Avail:True (100% Total Avail) Minutes Executing:0 State:Completed
+2023-02-06T11:51:22-05 [Information] - [WaitJob] Job Complete: Minutes Executing:0 State:Completed
 2023-02-06T11:51:22-05 [Information] - [RemoveJob] Removing Job Id: 23
 2023-02-06T11:51:22-05 [Information] - [RemoveJob] Job Removed: 23
 2023-02-06T11:51:22-05 [Information] - [UpdateVmss] Completed update configuration of VMSS 'nt0'
