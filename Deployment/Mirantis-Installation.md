@@ -6,7 +6,7 @@ This document is to guide through the process of doing a post-deployment to inst
 
 ## Use VM Scale Set Custom Script Extensions to install Mirantis
 
-Each node type in a Service Fabric managed cluster is backed by a virtual machine scale set. This enables you to add [virtual machine scale set extensions](https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/overview) to your Service Fabric managed cluster node types. Extensions are small applications that provide post-deployment configuration and automation on Azure VMs. The Azure platform hosts many extensions covering VM configuration, monitoring, security, and utility applications. Publishers take an application, wrap it into an extension, and simplify the installation. All you need to do is provide mandatory parameters.
+Each node type in a Service Fabric cluster is backed by a virtual machine scale set. This enables you to add [virtual machine scale set extensions](https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/overview) to your Service Fabric cluster node types. Extensions are small applications that provide post-deployment configuration and automation on Azure VMs. The Azure platform hosts many extensions covering VM configuration, monitoring, security, and utility applications. Publishers take an application, wrap it into an extension, and simplify the installation. All you need to do is provide mandatory parameters.
 
 For testing purposes you can add a virtual machine scale set extension to an Azure Service Fabric cluster node type using the [Add-AzVmssExtension](https://docs.microsoft.com/powershell/module/az.compute/add-azvmssextension) PowerShell command.
 
