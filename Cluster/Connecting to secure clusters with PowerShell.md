@@ -1,6 +1,48 @@
-# Connecting to secure clusters with PowerShell
+# Connecting to Service Fabric clusters with PowerShell
 
-## **Connect to Secure Clusters**
+To connect to a Service Fabric cluster from PowerShell, cmdlet [Connect-ServiceFabricCluster](https://learn.microsoft.com/powershell/module/servicefabric/connect-servicefabriccluster) is used.
+
+## **Connect to Service Fabric Managed Clusters**
+
+Service Fabric Managed Cluster connection requires the use of the 'cluster' certificate which is generated internally and rotates automatically.
+Additional options are documented here for managed clusters: [Connect to a Service Fabric managed cluster](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-connect)
+
+Service Fabric Managed Cluster X509 connection example.
+
+```powershell
+#For X509 based authentication to managed cluster
+$clusterEndpoint = 'mysftestcluster.eastus.cloudapp.azure.com:19000'
+$clusterName = 'mysftestcluster'
+$clientThumbprint = ''
+$clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'
+$serverCertThumbprint = $clusterResource.Properties.clusterCertificateThumbprints
+
+Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint `
+  -X509Credential `
+  -ServerCertThumbprint $serverCertThumbprint `
+  -FindType FindByThumbprint `
+  -FindValue $clientThumbprint `
+  -StoreLocation CurrentUser `
+  -Verbose
+```
+
+Service Fabric Managed Cluster AAD connection example.
+
+```powershell
+#For AAD based authentication to managed cluster
+$clusterEndpoint = 'mysftestcluster.eastus.cloudapp.azure.com:19000'
+$clusterName = 'mysftestcluster'
+
+$clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'
+$serverCertThumbprint = $clusterResource.Properties.clusterCertificateThumbprints
+
+Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint `
+  -AzureActiveDirectory `
+  -ServerCertThumbprint $serverCertThumbprint `
+  -Verbose
+```
+
+## **Connect to Service Fabric Clusters**
 
 Verbose script example
 
