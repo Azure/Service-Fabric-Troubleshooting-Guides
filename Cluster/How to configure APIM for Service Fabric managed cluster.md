@@ -96,7 +96,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     $virtualNetwork | Set-AzVirtualNetwork
     ```
 
-1. Prepare the steps for SFMC BYOVNET as per [https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network)
+1. Prepare the steps for SFMC BYOVNET as per [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network)
 
     - Get the service Id from your subscription for Service Fabric Resource Provider application:
 
@@ -156,15 +156,18 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     ```
 
 1. Create the SFMC within the VNET previously created.
-    <!-- TODO -->
-    > Find the sfmc.json ARM template [here](/.attachments/Azure-APIM/arm-templates/sfmc.json)
+    > Example existing vnet managed cluster ARM template below: [SFMC ARM deployment template](#sfmc-arm-deployment-template).
+
+    > Multiple nodetype example here: [Standard SKU Service Fabric managed cluster, 2 node types, deployed in to existing subnet](https://github.com/Azure-Samples/service-fabric-cluster-templates/tree/master/SF-Managed-Standard-SKU-2-NT-BYOVNET).
 
     ```powershell
+    $templateFile = "$pwd\sfmc-template.json"
+
     $sfmc = @{
       clusterName = 'mysfmtestcluster'
       location = $rg.Location
       clusterSku = 'Basic'
-      adminUserName = 'marroyo'
+      adminUserName = 'cloudadmin'
       adminPassword = '<enter a password>'
       clusterUpgradeCadence = 'Wave0'
       clientConnectionPort = 19000
@@ -196,8 +199,8 @@ When the certificate is rolled over, the APIM connection will fail to connect to
         }
       )
       nodeType1name = 'nodetype1'
-      nodeType1vmSize = 'Standard_D2_v2'
-      nodeType1vmInstanceCount = 3
+      nodeType1vmSize = 'Standard_D2s_v3'
+      nodeType1vmInstanceCount = 5
       nodeType1dataDiskSizeGB = 256
       nodeType1dataDiskType = 'StandardSSD_LRS'
       nodeType1vmImagePublisher = 'MicrosoftWindowsServer'
@@ -208,7 +211,10 @@ When the certificate is rolled over, the APIM connection will fail to connect to
       subnetId = $sfmcSubscriptionId
     }
 
-    New-AzResourceGroupDeployment -Name sfmcDeployment -ResourceGroupName $rg.Name -TemplateFile .\sfmc.json -TemplateParameterObject $sfmc
+    New-AzResourceGroupDeployment -Name 'sfmcDeployment' `
+      -ResourceGroupName $rg.Name `
+      -TemplateFile $templateFile `
+      -TemplateParameterObject $sfmc
     ```
 
 1. Deploy a simple ASP.NET Web API service to Service Fabric
@@ -235,17 +241,16 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 1. Create a keyVault Certificate in APIM
 
     ```powershell
+    $kvcertId = 'apimcloud-com'
     $secretIdentifier = 'https://apimKV.vault.azure.net/secrets/apimcloud-com/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     $apiMgmtContext = New-AzApiManagementContext -ResourceGroupName $rg.Name -ServiceName $apimName
-    $keyvault = New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier
     
-    $kvcertId = 'apimcloud-com'
+    $keyvault = New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier
     $keyVaultCertificate = New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault
     ```
 
 1. Create a Service Fabric Backend in APIM using certificate common name (Get the serverX509Name from the Cluster Manifest)
-    <!-- TODO -->
-    > Find the apim-backend.json ARM template [here](/.attachments/Azure-APIM/arm-templates/apim-backend.json) 
+    > Find the apim-backend.json ARM template below: [APIM ARM deployment template](#apim-arm-deployment-template) 
 
     ```powershell
     $serviceFabricAppUrl = 'fabric:/myapp/myservice'
@@ -327,7 +332,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
     ```powershell
     $sfResolveCondition = '@((int)context.Response.StatusCode != 200)'
-    $policy = "
+    $policyString = "
     <policies>
         <inbound>
             <base />
@@ -350,11 +355,10 @@ When the certificate is rolled over, the APIM connection will fail to connect to
       -Format 'application/vnd.ms-azure-apim.policy.raw+xml'
     ```
 
-1. Test Connectivity
-
 ## Test
 
 <!-- TODO -->
+To test connection
 
 ## Troubleshooting
 <!-- TODO -->
@@ -368,7 +372,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
   ```
 
 - Verify ability to connect successfully to cluster using PowerShell. The 'servicefabric' module is required and is installed as part of Service Fabric SDK.
-
+<!-- TODO -->
   ```powershell
   import-module servicefabric
   import-module az.resources
@@ -384,3 +388,242 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     -ServerCertThumbprint $serverCertThumbprint `
     -Verbose
   ```
+
+## Reference
+
+### SFMC ARM deployment template
+
+sfmc-template.json
+
+```json
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "clusterName": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 23,
+            "metadata": {
+                "description": "Name of your cluster - Between 3 and 23 characters. Letters and numbers only"
+            }
+        },
+        "clusterSku": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "Standard"
+            ],
+            "defaultValue": "Standard"
+        },
+        "adminUserName": {
+            "type": "string",
+            "defaultValue": "vmadmin"
+        },
+        "adminPassword": {
+            "type": "securestring"
+        },
+        "clientCertificateThumbprint": {
+            "type": "string"
+        },
+        "nodeType1Name": {
+            "type": "string",
+            "maxLength": 9,
+            "defaultValue": "NT1"
+        },
+        "nodeType1VmSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2s_v3"
+        },
+        "nodeType1VmInstanceCount": {
+            "type": "int",
+            "defaultValue": 5
+        },
+        "nodeType1DataDiskSizeGB": {
+            "type": "int",
+            "defaultValue": 256
+        },
+        "nodeType1managedDataDiskType": {
+            "type": "string",
+            "allowedValues": [
+                "Standard_LRS",
+                "StandardSSD_LRS",
+                "Premium_LRS"
+            ],
+            "defaultValue": "StandardSSD_LRS"
+        },
+        "nodeType1vmImagePublisher": {
+            "type": "string",
+            "defaultValue": "MicrosoftWindowsServer"
+        },
+        "nodeType1vmImageOffer": {
+            "type": "string",
+            "defaultValue": "WindowsServer"
+        },
+        "nodeType1vmImageSku": {
+            "type": "string",
+            "defaultValue": "2022-Datacenter"
+        },
+        "nodeType1vmImageVersion": {
+            "type": "string",
+            "defaultValue": "latest"
+        },
+        "subnetId": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "sfApiVersion": "2022-01-01"
+    },
+    "resources": [
+        {
+            "apiVersion": "[variables('sfApiVersion')]",
+            "type": "Microsoft.ServiceFabric/managedclusters",
+            "name": "[parameters('clusterName')]",
+            "location": "[resourcegroup().location]",
+            "sku": {
+                "name" : "[parameters('clusterSku')]"
+            },
+            "properties": {
+                "subnetId": "[parameters('subnetId')]",
+                "dnsName": "[toLower(parameters('clusterName'))]",
+                "adminUserName": "[parameters('adminUserName')]",
+                "adminPassword": "[parameters('adminPassword')]",
+                "clientConnectionPort": 19000,
+                "httpGatewayConnectionPort": 19080,
+                "allowRdpAccess": false,
+                "enableIpv6": false,
+                "clients" : [
+                    {
+                        "isAdmin" : true,
+                        "thumbprint" : "[parameters('clientCertificateThumbprint')]"
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "frontendPort": 8080, 
+                        "backendPort": 8080,
+                        "protocol": "tcp",
+                        "probeProtocol": "tcp"
+                    }
+                ]
+            },
+            "tags": {
+                "Environment": "APIM-SF"
+            }
+        },
+        {
+            "apiVersion": "[variables('sfApiVersion')]",
+            "type": "Microsoft.ServiceFabric/managedclusters/nodetypes",
+            "name": "[concat(parameters('clusterName'), '/', parameters('nodeType1Name'))]",
+            "location": "[resourcegroup().location]",
+            "dependsOn": [
+              "[concat('Microsoft.ServiceFabric/managedclusters/', parameters('clusterName'))]"
+            ],
+            "properties": {
+                "isPrimary": true,
+                "vmImagePublisher": "[parameters('nodeType1vmImagePublisher')]",
+                "vmImageOffer": "[parameters('nodeType1vmImageOffer')]",
+                "vmImageSku": "[parameters('nodeType1vmImageSku')]",
+                "vmImageVersion": "[parameters('nodeType1vmImageVersion')]",
+                "vmSize": "[parameters('nodeType1VmSize')]",
+                "vmInstanceCount": "[parameters('nodeType1VmInstanceCount')]",
+                "dataDiskSizeGB": "[parameters('nodeType1DataDiskSizeGB')]",
+                "dataDiskType": "[parameters('nodeType1managedDataDiskType')]",
+                "applicationPorts": {
+                    "startPort": 20000,
+                    "endPort": 30000
+                },
+                "ephemeralPorts": {
+                    "startPort": 49152,
+                    "endPort": 65534
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "serviceFabricExplorer": {
+            "value": "[concat('https://', reference(parameters('clusterName')).fqdn, ':', reference(parameters('clusterName')).httpGatewayConnectionPort)]",
+            "type": "string"
+        },
+        "clientConnectionEndpoint": {
+            "value": "[concat(reference(parameters('clusterName')).fqdn, ':', reference(parameters('clusterName')).clientConnectionPort)]",
+            "type": "string"
+        },
+        "clusterProperties": {
+            "value": "[reference(parameters('clusterName'))]",
+            "type": "object"
+        }
+    }
+}
+```
+
+### APIM ARM deployment template
+
+apim-backend.json
+
+```json
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apimName": {
+            "type": "string"
+        },
+        "backendName": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "clientCertificatethumbprint":{
+            "type": "string"
+        },
+        "managementEndpoints":{
+            "type": "array"
+        },
+        "maxPartitionResolutionRetries":{
+            "type": "int"
+        },
+        "serverX509Names":{
+            "type": "array"
+        },
+        "protocol": {
+            "type": "string"
+        },
+        "url": {
+            "type": "string"
+        },
+        "validateCertificateChain": {
+            "type": "bool"
+        },
+        "validateCertificateName": {
+            "type": "bool"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.ApiManagement/service/backends",
+            "apiVersion": "2022-08-01",
+            "name": "[concat(parameters('apimName'), '/', parameters('backendName'))]",
+            "properties": {
+                "description": "[parameters('description')]",
+                "properties": {
+                "serviceFabricCluster": {
+                    "clientCertificatethumbprint": "[parameters('clientCertificatethumbprint')]",
+                    "managementEndpoints": "[parameters('managementEndpoints')]",
+                    "maxPartitionResolutionRetries": "[parameters('maxPartitionResolutionRetries')]",
+                    "serverX509Names": "[parameters('serverX509Names')]"
+                }
+                },
+                "protocol": "[parameters('protocol')]",
+                "tls": {
+                    "validateCertificateChain": "[parameters('validateCertificateChain')]",
+                    "validateCertificateName": "[parameters('validateCertificateName')]"
+                },
+                "url": "[parameters('url')]"
+            }
+        }
+    ]
+}
+```
