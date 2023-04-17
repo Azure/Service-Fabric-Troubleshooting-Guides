@@ -469,7 +469,10 @@ sfmc-template.json
             "defaultValue": "latest"
         },
         "subnetId": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "/subscriptions/<subscription id>/resourceGroups/<resource group name>/providers/Microsoft.Network/virtualNetworks/<vnet name>/subnets/<subnet name>"
+            }
         }
     },
     "variables": {
