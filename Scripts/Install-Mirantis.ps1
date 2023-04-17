@@ -26,7 +26,8 @@
     More information about the Mirantis installer, see: https://docs.mirantis.com/mcr/20.10/install/mcr-windows.html
 
 .NOTES
-    v 1.0.4 adding support for docker ce using https://github.com/microsoft/Windows-Containers/tree/Main/helpful_tools/Install-DockerCE 
+    v 1.0.4 adding support for docker ce using 
+        https://github.com/microsoft/Windows-Containers/tree/Main/helpful_tools/Install-DockerCE 
         https://docs.docker.com/desktop/install/windows-install/
         https://learn.microsoft.com/en-us/azure/virtual-machines/acu
 
@@ -112,6 +113,7 @@ template json :
     https://github.com/Azure/Service-Fabric-Troubleshooting-Guides
 #>
 
+[cmdletbinding()]
 param(
     [string]$dockerVersion = '0.0.0.0', # latest
     [string]$containerDVersion = '0.0.0.0', # latest
@@ -144,6 +146,7 @@ $dockerCeRepo = 'https://download.docker.com'
 $dockerPackageAbsolutePath = 'win/static/stable/x86_64'
 $dockerOfflineFile = "$psscriptroot/Docker.zip"
 $containerDOfflineFile = "$psscriptroot/Containerd.zip"
+$maxEventMessageSize = 16384  #32766 - 1000
 
 $global:currentDockerVersions = @{}
 $global:currentContainerDVersions = @{}
@@ -175,7 +178,7 @@ function Main() {
     Add-UseBasicParsing -ScriptFile $installFile
 
     $version = Set-DockerVersion -dockerVersion $dockerVersion
-    $installedVersion = Get-DockerVersion
+    $installedVersion = Get-InstalledDockerVersion
 
     # install windows-features
     Install-Feature -name 'containers'
@@ -238,14 +241,16 @@ function Main() {
             -checkError $false
         
         $error.Clear()
-        $finalVersion = Get-DockerVersion
+        $finalVersion = Get-InstalledDockerVersion
         if ($finalVersion -eq $nullVersion) {
+            Write-Host "setting `$global:result to false: finalversion:$finalVersion nullversion:$nullversion"
             $global:result = $false
         }
 
         Write-Host "Install result:$($scriptResult | Format-List * | Out-String)"
         Write-Host "Global result:$global:result"
         Write-Host "Installed docker version:$finalVersion"
+        Write-HOst "docker.exe output: $(docker | out-string)"
         Write-Host "Restarting OS:$global:restart"
     }
 
@@ -315,18 +320,17 @@ function Add-UseBasicParsing($scriptFile) {
 
 function Download-File($url, $outputFile) {
     Write-Host "$result = [Net.WebClient]::New().DownloadFile($url, $outputFile)"
-    $global:result = [Net.WebClient]::new().DownloadFile($url, $outputFile)
+    [Net.WebClient]::new().DownloadFile($url, $outputFile)
     Write-Host "DownloadFile result:$($result | Format-List *)"
 
     if ($error -or !(Test-Path $outputFile)) {
         Write-Error "failure downloading file:$($error | out-string)"
         $global:result = $false
     }
-    return $global:result
 }
 
 # Get the docker version
-function Get-DockerVersion() {
+function Get-InstalledDockerVersion() {
     $installedVersion = [version]::new($nullVersion)
 
     if (Test-IsDockerRunning) {
@@ -340,7 +344,7 @@ function Get-DockerVersion() {
         Write-Host "Docker exe path:$path"
         $path = [Text.RegularExpressions.Regex]::Match($path.PathName, "`"(.+)`"").Groups[1].Value
         Write-Host "Docker exe clean path:$path"
-        $installedVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($path)
+        $installedVersion = [version]::new([Diagnostics.FileVersionInfo]::GetVersionInfo($path).FileVersion)
         Write-Warning "Warning: docker installed but not running: $path"
     }
     else {
@@ -444,7 +448,6 @@ function Invoke-Script([string]$script, [string] $arguments, [bool]$checkError =
 
 # Set version parameter
 function Set-Version($version, $currentVersions) {
-    Get-AvailableVersions
     $setVersion = $version
     Write-Host "Current versions: $($currentVersions | out-string)"
 
@@ -477,16 +480,18 @@ function Set-Version($version, $currentVersions) {
 
 # Set containerd version parameter
 function Set-ContainerDVersion($containerDVersion) {
+    Get-AvailableVersions
     Write-Host "Requesting containerd target install version: $containerDVersion"
-    $version = Set-Version($containerDVersion, $global:currentContainerDVersions)
+    $version = Set-Version -version $containerDVersion -currentVersions $global:currentContainerDVersions
     Write-Host "Returning containerd target install version: $version"
     return $version
 }
 
 # Set docker version parameter
 function Set-DockerVersion($dockerVersion) {
+    Get-AvailableVersions
     Write-Host "Requesting docker target install version: $dockerVersion"
-    $version = Set-Version($dockerVersion, $global:currentDockerVersions)
+    $version = Set-Version -version $dockerVersion -currentVersions $global:currentDockerVersions
     Write-Host "Returning docker target install version: $version"
     return $version
 }
@@ -544,11 +549,26 @@ function Write-Event($data, $level = 'Information') {
 
     try {
         if ($registerEvent) {
-            Write-EventLog -LogName $eventLogName `
-                -Source $registerEventSource `
-                -Message $data `
-                -EventId 1000 `
-                -EntryType $level
+            $index = 0
+            $counter = 1
+            $totalEvents = [int]($data.Length / $maxEventMessageSize)
+
+            while ($index -lt $data.Length) {
+                $header = "$counter of $totalEvents`n"
+                $counter++
+                $dataSize = [math]::Min($data.Length - $index, $maxEventMessageSize)
+                Write-Verbose "`$data.Substring($index, $dataSize)"
+                $dataChunk = $header
+                $dataChunk += $data.Substring($index, $dataSize)
+                $index += $dataSize
+
+                Write-EventLog -LogName $eventLogName `
+                    -Source $registerEventSource `
+                    -Message $dataChunk `
+                    -EventId 1000 `
+                    -EntryType $level
+
+            }
         }
     }
     catch {
