@@ -26,7 +26,7 @@
     More information about the Mirantis installer, see: https://docs.mirantis.com/mcr/20.10/install/mcr-windows.html
 
 .NOTES
-    v 1.0.2
+    v 1.0.3
 
 .PARAMETER dockerVersion
 [string] Version of docker to install. Default will be to install latest version.
@@ -139,7 +139,8 @@ function Main() {
 
     $isAdmin = ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole] "Administrator")
 
-    if (!$isAdmin) {s-dockerInstalled
+    if (!$isAdmin) {
+        s-dockerInstalled
         Write-Error "Restart script as administrator."
         return
     }
@@ -163,6 +164,17 @@ function Main() {
 
     $version = Set-DockerVersion -dockerVersion $dockerVersion
     $installedVersion = Get-DockerVersion
+
+    if (!$noRestart) {
+        # prevent sf extension from trying to install before restart
+        Start-Process powershell '-c', {
+            $outvar = $null;
+            $mutex = [threading.mutex]::new($true, 'Global\ServiceFabricExtensionHandler.A6C37D68-0BDA-4C46-B038-E76418AFC690', [ref]$outvar);
+            write-host $mutex;
+            write-host $outvar;
+            read-host;
+        }
+    }
 
     if ($hypervIsolation) {
         $hypervInstalled = (Get-WindowsFeature -name hyper-v).Installed
@@ -211,6 +223,7 @@ function Main() {
     Write-Event (Get-Content -raw $transcriptLog)
 
     if (!$noRestart) {
+        # return immediately after this call
         Restart-Computer -Force
     }
 
@@ -337,7 +350,7 @@ function Register-Event() {
     if ($registerEvent) {
         $error.clear()
         New-EventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue
-        if($error -and ($error -inotmatch 'source is already registered')) {
+        if ($error -and ($error -inotmatch 'source is already registered')) {
             $registerEvent = $false
         }
         else {
