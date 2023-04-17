@@ -16,7 +16,7 @@ The PowerShell script is prepared to check if Mirantis needs to be installed by 
 
 Please use a copy of [Install-Mirantis.ps1](https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/Install-Mirantis.ps1) to install Mirantis Container Runtime on your Azure Service Fabric cluster.
 
-If using Docker Community Edition (CE) instead of Mirantis, add script switch '-dockerCe' to the 'commandToExecute' variable.
+If using [Docker Desktop / Community Edition (CE)](https://docs.docker.com/desktop/) instead of Mirantis, add script switch '-dockerCe' to the 'commandToExecute' variable.
 
 Example:
 
