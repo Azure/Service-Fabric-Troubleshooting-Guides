@@ -26,7 +26,9 @@
     More information about the Mirantis installer, see: https://docs.mirantis.com/mcr/20.10/install/mcr-windows.html
 
 .NOTES
-    v 1.0.3
+    v 1.0.4 adding support for docker ce using https://github.com/microsoft/Windows-Containers/tree/Main/helpful_tools/Install-DockerCE 
+        https://docs.docker.com/desktop/install/windows-install/
+        https://learn.microsoft.com/en-us/azure/virtual-machines/acu
 
 .PARAMETER dockerVersion
 [string] Version of docker to install. Default will be to install latest version.
@@ -112,20 +114,23 @@ template json :
 
 param(
     [string]$dockerVersion = '0.0.0.0', # latest
+    [string]$containerDVersion = '0.0.0.0', # latest
     [switch]$allowUpgrade,
     [switch]$hypervIsolation,
     [switch]$installContainerD,
     [string]$mirantisInstallUrl = 'https://get.mirantis.com/install.ps1',
+    [switch]$dockerCe,
     [switch]$uninstall,
     [switch]$noRestart,
+    [switch]$noExceptionOnError,
     [bool]$registerEvent = $true,
     [string]$registerEventSource = 'CustomScriptExtension'
 )
 
 #$PSModuleAutoLoadingPreference = 2
 #$ErrorActionPreference = 'continue'
-[System.Net.ServicePointManager]::Expect100Continue = $true;
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12;
+[Net.ServicePointManager]::Expect100Continue = $true;
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
 
 $eventLogName = 'Application'
 $dockerProcessName = 'dockerd'
@@ -134,29 +139,36 @@ $transcriptLog = "$psscriptroot\transcript.log"
 $defaultDockerExe = 'C:\Program Files\Docker\dockerd.exe'
 $nullVersion = '0.0.0.0'
 $versionMap = @{}
+$mirantisRepo = 'https://repos.mirantis.com'
+$dockerCeRepo = 'https://download.docker.com'
+$dockerPackageAbsolutePath = 'win/static/stable/x86_64'
+$dockerOfflineFile = "$psscriptroot/Docker.zip"
+$containerDOfflineFile = "$psscriptroot/Containerd.zip"
+
+$global:currentDockerVersions = @{}
+$global:currentContainerDVersions = @{}
+$global:downloadUrl = $mirantisRepo
+$global:restart = !$noRestart
+$global:result = $true
 
 function Main() {
 
-    $isAdmin = ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole] "Administrator")
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
     if (!$isAdmin) {
-        s-dockerInstalled
         Write-Error "Restart script as administrator."
-        return
+        return $false
     }
     
     Register-Event
     Start-Transcript -Path $transcriptLog
     $error.Clear()
 
-    $installFile = "$psscriptroot\$([System.IO.Path]::GetFileName($mirantisInstallUrl))"
+    $installFile = "$psscriptroot\$([IO.Path]::GetFileName($mirantisInstallUrl))"
     Write-Host "Installation file:$installFile"
 
     if (!(Test-Path $installFile)) {
-        "Downloading [$url]`nSaving at [$installFile]" 
-        Write-Host "$result = [System.Net.WebClient]::New().DownloadFile($mirantisInstallUrl, $installFile)"
-        $result = [System.Net.WebClient]::new().DownloadFile($mirantisInstallUrl, $installFile)
-        Write-Host "DownloadFile result:$($result | Format-List *)"
+        Download-File -url $mirantisInstallUrl -outputFile $installFile
     }
 
     # temp fix
@@ -165,7 +177,89 @@ function Main() {
     $version = Set-DockerVersion -dockerVersion $dockerVersion
     $installedVersion = Get-DockerVersion
 
-    if (!$noRestart) {
+    # install windows-features
+    Install-Feature -name 'containers'
+
+    if ($hypervIsolation) {
+        Install-Feature -Name 'hyper-v'
+        Install-Feature -Name 'rsat-hyper-v-tools'
+        Install-Feature -Name 'hyper-v-tools'
+        Install-Feature -Name 'hyper-v-powershell'
+    }
+
+    if ($uninstall -and (Test-DockerIsInstalled)) {
+        Write-Warning "Uninstalling docker. Uninstall:$uninstall"
+        Invoke-Script -Script $installFile -Arguments "-Uninstall -verbose 6>&1"
+    }
+    elseif ($installedVersion -eq $version) {
+        Write-Host "Docker $installedVersion already installed and is equal to $version. Skipping install."
+        $global:restart = $false
+    }
+    elseif ($installedVersion -ge $version) {
+        Write-Host "Docker $installedVersion already installed and is newer than $version. Skipping install."
+        $global:restart = $false
+    }
+    elseif ($installedVersion -ne $nullVersion -and ($installedVersion -lt $version -and !$allowUpgrade)) {
+        Write-Host "Docker $installedVersion already installed and is older than $version. allowupgrade:$allowUpgrade. skipping install."
+        $global:restart = $false
+    }
+    else {
+        $error.Clear()
+        $noServiceStarts = $null
+        if ($global:restart) {
+            $noServiceStarts = "-NoServiceStarts "
+        }
+
+        $global:downloadUrl = $mirantisRepo
+        if ($dockerCe) {
+            $global:downloadUrl = $dockerCeRepo
+        }
+
+        $engineOnly = $null
+        if (!$installContainerD) {
+            $engineOnly = "-EngineOnly "
+        }
+        else {
+            # download containerd outside mirantis script
+            $setContainerDVersion = Set-ContainerDVersion -containerDVersion $containerDVersion
+            $containerDDownloadFile = $global:currentContainerDVersions.Item($setContainerDVersion)
+            Download-File -url "$global:downloadUrl/$dockerPackageAbsolutePath/$containerDDownloadFile" -outputFile $containerDOfflineFile
+        }
+
+        # download docker outside mirantis script
+        $dockerDownloadFile = $global:currentDockerVersions.Item($version)
+        Download-File -url "$global:downloadUrl/$dockerPackageAbsolutePath/$dockerDownloadFile" -outputFile $dockerOfflineFile
+
+
+        # docker script will always emit errors checking for files even when successful
+        Write-Host "Installing docker."
+        $scriptResult = Invoke-Script -script $installFile `
+            -arguments "-DockerVersion $($version.tostring()) -OffLine -OffLinePackagesPath $psscriptroot $engineOnly$noServiceStarts-Verbose 6>&1" `
+            -checkError $false
+        
+        $error.Clear()
+        $finalVersion = Get-DockerVersion
+        if ($finalVersion -eq $nullVersion) {
+            $global:result = $false
+        }
+
+        Write-Host "Install result:$($scriptResult | Format-List * | Out-String)"
+        Write-Host "Global result:$global:result"
+        Write-Host "Installed docker version:$finalVersion"
+        Write-Host "Restarting OS:$global:restart"
+    }
+
+    Stop-Transcript
+    $level = 'Information'
+    if (!$global:result) {
+        $level = 'Error'
+    }
+
+    $transcript = Get-Content -raw $transcriptLog
+    Write-Event -data $transcript -level $level
+
+
+    if ($global:result -and $global:restart) {
         # prevent sf extension from trying to install before restart
         Start-Process powershell '-c', {
             $outvar = $null;
@@ -174,76 +268,31 @@ function Main() {
             write-host $outvar;
             read-host;
         }
-    }
 
-    if ($hypervIsolation) {
-        $hypervInstalled = (Get-WindowsFeature -name hyper-v).Installed
-        Write-Host "Windows feature Hyper-V installed:$hypervInstalled"
-        
-        if (!$uninstall -and !$hypervInstalled) {
-            Write-Host "Installing Hyper-V features"
-            Install-WindowsFeature -Name hyper-v
-            Install-WindowsFeature -Name rsat-hyper-v-tools
-            Install-WindowsFeature -Name hyper-v-tools
-            Install-WindowsFeature -Name hyper-v-powershell
-        }
-    }
-
-    if ($uninstall -and (Test-DockerIsInstalled)) {
-        Write-Warning "Uninstalling docker. Uninstall:$uninstall"
-        $result = Invoke-Script -Script $installFile -Arguments "-Uninstall -verbose 6>&1"
-    }
-    elseif ($installedVersion -eq $version) {
-        Write-Host "Docker $installedVersion already installed and is equal to $version. Skipping install."
-        $noRestart = $true
-    }
-    elseif ($installedVersion -ge $version) {
-        Write-Host "Docker $installedVersion already installed and is newer than $version. Skipping install."
-        $noRestart = $true
-    }
-    elseif ($installedVersion -ne $nullVersion -and ($installedVersion -lt $version -and !$allowUpgrade)) {
-        Write-Host "Docker $installedVersion already installed and is older than $version. allowupgrade:$allowUpgrade. skipping install."
-        $noRestart = $true
-    }
-    else {
-        $engineOnly = $null
-        if (!$installContainerD) {
-            $engineOnly = "-EngineOnly "
-        }
-    
-        Write-Host "Installing docker."
-        $result = Invoke-Script -script $installFile -arguments "-DockerVersion $($versionMap.($version.tostring())) $engineOnly-Verbose 6>&1"
-
-        Write-Host "Install result:$($result | Format-List * | Out-String)"
-        Write-Host "Installed docker version:$(Get-DockerVersion)"
-        Write-Host "Restarting OS:$(!$noRestart)"
-    }
-
-    Stop-Transcript
-    Write-Event (Get-Content -raw $transcriptLog)
-
-    if (!$noRestart) {
         # return immediately after this call
         Restart-Computer -Force
     }
 
-    return $result
+    if (!$noExceptionOnError -and !$global:result) {
+        throw [Exception]::new("Exception $($MyInvocation.ScriptName)`n$($transcript)")
+    }
+    return $global:result
 }
 
 # Adding as most Windows Server images have installed PowerShell 5.1 and without this switch Invoke-WebRequest is using Internet Explorer COM API which is causing issues with PowerShell < 6.0.
 function Add-UseBasicParsing($scriptFile) {
     $newLine
     $updated = $false
-    $scriptLines = [System.IO.File]::ReadAllLines($scriptFile)
-    $newScript = [System.Collections.ArrayList]::new()
+    $scriptLines = [IO.File]::ReadAllLines($scriptFile)
+    $newScript = [Collections.ArrayList]::new()
     Write-Host "Updating $scriptFile to use -UseBasicParsing for Invoke-WebRequest"
 
     foreach ($line in $scriptLines) {
         $newLine = $line
-        if ([System.Text.RegularExpressions.Regex]::IsMatch($line, 'Invoke-WebRequest', [Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
+        if ([Text.RegularExpressions.Regex]::IsMatch($line, 'Invoke-WebRequest', [Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
             Write-Host "Found command $line"
-            if (![System.Text.RegularExpressions.Regex]::IsMatch($line, '-UseBasicParsing', [Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-                $newLine = [System.Text.RegularExpressions.Regex]::Replace($line, 'Invoke-WebRequest', 'Invoke-WebRequest -UseBasicParsing', [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            if (![Text.RegularExpressions.Regex]::IsMatch($line, '-UseBasicParsing', [Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
+                $newLine = [Text.RegularExpressions.Regex]::Replace($line, 'Invoke-WebRequest', 'Invoke-WebRequest -UseBasicParsing', [Text.RegularExpressions.RegexOptions]::IgnoreCase)
                 Write-Host "Updating command $line to $newLine"
                 $updated = $true
             }
@@ -252,7 +301,7 @@ function Add-UseBasicParsing($scriptFile) {
     }
 
     if ($updated) {
-        $newScriptContent = [string]::Join([System.Environment]::NewLine, $newScript.ToArray())
+        $newScriptContent = [string]::Join([Environment]::NewLine, $newScript.ToArray())
         $tempFile = "$scriptFile.oem"
         if ((Test-Path $tempFile)) {
             Remove-Item $tempFile -Force
@@ -264,48 +313,85 @@ function Add-UseBasicParsing($scriptFile) {
     }
 }
 
-# Invoke the MCR installer (this will require a reboot)
-function Invoke-Script([string]$script, [string] $arguments) {
-    Write-Host "Invoke-Expression -Command `"$script $arguments`""
-    return Invoke-Expression -Command "$script $arguments"
+function Download-File($url, $outputFile) {
+    Write-Host "$result = [Net.WebClient]::New().DownloadFile($url, $outputFile)"
+    $global:result = [Net.WebClient]::new().DownloadFile($url, $outputFile)
+    Write-Host "DownloadFile result:$($result | Format-List *)"
+
+    if ($error -or !(Test-Path $outputFile)) {
+        Write-Error "failure downloading file:$($error | out-string)"
+        $global:result = $false
+    }
+    return $global:result
 }
 
 # Get the docker version
 function Get-DockerVersion() {
+    $installedVersion = [version]::new($nullVersion)
+
     if (Test-IsDockerRunning) {
         $path = (Get-Process -Name $dockerProcessName).Path
         Write-Host "Docker installed and running: $path"
         $dockerInfo = (docker version)
-        $installedVersion = [System.Version][System.Text.RegularExpressions.Regex]::Match($dockerInfo, 'Version:\s+?(\d.+?)\s').Groups[1].Value
+        $installedVersion = [version][Text.RegularExpressions.Regex]::Match($dockerInfo, 'Version:\s+?(\d.+?)\s').Groups[1].Value
     }
     elseif (Test-DockerIsInstalled) {
         $path = Get-WmiObject win32_service | Where-Object { $psitem.Name -like $dockerServiceName } | Select-Object PathName
         Write-Host "Docker exe path:$path"
-        $path = [System.Text.RegularExpressions.Regex]::Match($path.PathName, "`"(.+)`"").Groups[1].Value
+        $path = [Text.RegularExpressions.Regex]::Match($path.PathName, "`"(.+)`"").Groups[1].Value
         Write-Host "Docker exe clean path:$path"
-        $installedVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($path)
+        $installedVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($path)
         Write-Warning "Warning: docker installed but not running: $path"
     }
     else {
         Write-Host "Docker not installed"
-        $installedVersion = [System.Version]::new($nullVersion)
     }
 
     Write-Host "Installed docker defaultPath:$($defaultDockerExe -ieq $path) path:$path version:$installedVersion"
     return $installedVersion
 }
 
+# Get Available Versions
+function Get-AvailableVersions() {
+    # install.ps1 using Write-Host to output string data. have to capture with 6>&1
+    # for docker ce and mirantis compat, query versions outside install.ps1
+
+    if ($global:currentDockerVersions.Count -lt 1 -or $global:currentContainerDVersions.Count -lt 1) {
+        $result = Invoke-WebRequest -Uri "$global:downloadUrl/$dockerPackageAbsolutePath" -UseBasicParsing
+
+        $filePattern = '(?<file>(?<filetype>docker|containerd)-(?<major>\d+?)\.(?<minor>\d+?)\.(?<build>\d+?)\.zip)'
+        $linkMatches = [regex]::matches($result.Links.href, $filePattern, [text.regularexpressions.regexoptions]::IgnoreCase)
+
+        foreach ($match in $linkMatches) {
+            $major = $match.groups['major'].value
+            $minor = $match.groups['minor'].value
+            $build = $match.groups['build'].value
+            $version = [version]::new($major, $minor, $build)
+
+            $file = $match.groups['file'].value
+            $filetype = $match.groups['filetype'].value
+        
+            if ($filetype -ieq 'docker') {
+                [void]$global:currentDockerVersions.Add($version, $file)
+            }
+            else {
+                [void]$global:currentContainerDVersions.Add($version, $file)
+            }
+        }
+    }
+}
+
 # Get the latest docker version
 function Get-LatestVersion([string[]] $versions) {
-    $latestVersion = [System.Version]::new()
+    $latestVersion = [version]::new()
     
     if (!$versions) {
-        return [System.Version]::new($nullVersion)
+        return [version]::new($nullVersion)
     }
 
     foreach ($version in $versions) {
         try {
-            $currentVersion = [System.Version]::new($version)
+            $currentVersion = [version]::new($version)
             if ($currentVersion -gt $latestVersion) {
                 $latestVersion = $currentVersion
             }
@@ -317,6 +403,92 @@ function Get-LatestVersion([string[]] $versions) {
     }
 
     return $latestVersion
+}
+
+# Install Windows-Feature if not installed
+function Install-Feature([string]$name) {
+    $feautureResult = $null
+    $isInstalled = (Get-WindowsFeature -name $name).Installed
+    Write-Host "Windows feature '$name' installed:$isInstalled"
+
+    if (!$isInstalled) {
+        Write-Host "Installing windows feature '$name'"
+        $feautureResult = Install-WindowsFeature -Name $name
+        if (!$feautureResult.Success) {
+            Write-Error "error installing feature:$($error | out-string)"
+            $global:result = $false
+        }
+        else {
+            if (!$noRestart) {
+                $global:restart = $global:restart -or $feautureResult.RestartNeeded -ieq 'yes'
+                Write-Host "`$global:restart set to $global:restart"
+            }
+        }
+    }
+
+    return $feautureResult
+}
+
+# Invoke the MCR installer (this will require a reboot)
+function Invoke-Script([string]$script, [string] $arguments, [bool]$checkError = $true) {
+    Write-Host "Invoke-Expression -Command `"$script $arguments`""
+    $scriptResult = Invoke-Expression -Command "$script $arguments"
+
+    if ($checkError -and $error) {
+        Write-Error "failure executing script:$script $arguments $($error | out-string)"
+        $global:result = $false
+    }
+
+    return $scriptResult
+}
+
+# Set version parameter
+function Set-Version($version, $currentVersions) {
+    Get-AvailableVersions
+    $setVersion = $version
+    Write-Host "Current versions: $($currentVersions | out-string)"
+
+    $latestVersion = Get-LatestVersion -versions $currentVersions.Keys
+    Write-Host "Latest version: $latestVersion"
+
+    if ($version -eq $nullVersion -or $version -ieq 'latest' -or $allowUpgrade) {
+        Write-Host "Setting version to latest"
+        $setVersion = $latestVersion
+    }
+    else {
+        try {
+            $setVersion = [version]::new($version)
+            Write-Host "Setting version to $setVersion"
+        }
+        catch {
+            $setVersion = [version]::new($nullVersion)
+            Write-Warning "Exception setting version to $version`r`n$($error | Out-String)"
+        }
+    
+        if ($setVersion -ieq [version]::new($nullVersion)) {
+            $setVersion = $latestdockerVersion
+            Write-Host "Setting version to latest version $latestVersion"
+        }
+    }
+
+    Write-Host "Returning target install version: $setVersion"
+    return $setVersion
+}
+
+# Set containerd version parameter
+function Set-ContainerDVersion($containerDVersion) {
+    Write-Host "Requesting containerd target install version: $containerDVersion"
+    $version = Set-Version($containerDVersion, $global:currentContainerDVersions)
+    Write-Host "Returning containerd target install version: $version"
+    return $version
+}
+
+# Set docker version parameter
+function Set-DockerVersion($dockerVersion) {
+    Write-Host "Requesting docker target install version: $dockerVersion"
+    $version = Set-Version($dockerVersion, $global:currentDockerVersions)
+    Write-Host "Returning docker target install version: $version"
+    return $version
 }
 
 # Validate if docker is installed
@@ -359,69 +531,28 @@ function Register-Event() {
     }
 }
 
-# Set docker version parameter (script internally)
-function Set-DockerVersion($dockerVersion) {
-    # install.ps1 using Write-Host to output string data. have to capture with 6>&1
-    $currentVersions = Invoke-Script -script $installFile -arguments '-ShowVersions 6>&1'
-    Write-Host "Current versions: $currentVersions"
-    
-    $version = [System.Version]::New($nullVersion)
-    $currentdockerVersions = @($currentVersions[0].ToString().TrimStart('docker:').Replace(" ", "").Split(","))
-    
-    # map string to [version] for 0's
-    foreach ($stringVersion in $currentdockerVersions) {
-        [void]$versionMap.Add([System.Version]::New($stringVersion).ToString(), $stringVersion)
-    }
-    
-    Write-Host "Version map:`r`n$($versionMap | Out-String)"
-    Write-Host "Current docker versions: $currentdockerVersions"
-    
-    $latestdockerVersion = Get-LatestVersion -versions $currentdockerVersions
-    Write-Host "Latest docker version: $latestdockerVersion"
-    
-    $currentContainerDVersions = @($currentVersions[1].ToString().TrimStart('containerd:').Replace(" ", "").Split(","))
-    Write-Host "Current containerd versions: $currentContainerDVersions"
-
-    if ($dockerVersion -ieq 'latest' -or $allowUpgrade) {
-        Write-Host "Setting version to latest"
-        $version = $latestdockerVersion
-    }
-    else {
-        try {
-            $version = [System.Version]::new($dockerVersion)
-            Write-Host "Setting version to `$dockerVersion ($dockerVersion)"
-        }
-        catch {
-            $version = [System.Version]::new($nullVersion)
-            Write-Warning "Exception setting version to `$dockerVersion ($dockerVersion)`r`n$($error | Out-String)"
-        }
-    
-        if ($version -ieq [System.Version]::new($nullVersion)) {
-            $version = $latestdockerVersion
-            Write-Host "Setting version to latest docker version $latestdockerVersion"
-        }
-    }
-
-    Write-Host "Returning target install version: $version"
-    return $version
-}
-
 # Trace event
-function Write-Event($data) {
+function Write-Event($data, $level = 'Information') {
     Write-Host $data
-    $level = 'Information'
 
-    if ($error) {
+    if ($error -or $level -ieq 'Error') {
         $level = 'Error'
         $data = "$data`r`nErrors:`r`n$($error | Out-String)"
+        Write-Error $data
+        $error.Clear()
     }
 
     try {
         if ($registerEvent) {
-            Write-EventLog -LogName $eventLogName -Source $registerEventSource -Message $data -EventId 1000 -EntryType $level
+            Write-EventLog -LogName $eventLogName `
+                -Source $registerEventSource `
+                -Message $data `
+                -EventId 1000 `
+                -EntryType $level
         }
     }
     catch {
+        Write-Host "exception writing event to event log:$($error | out-string)"
         $error.Clear()
     }
 }
