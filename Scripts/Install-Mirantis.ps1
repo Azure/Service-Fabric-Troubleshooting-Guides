@@ -126,7 +126,8 @@ param(
     [switch]$noRestart,
     [switch]$noExceptionOnError,
     [bool]$registerEvent = $true,
-    [string]$registerEventSource = 'CustomScriptExtension'
+    [string]$registerEventSource = 'CustomScriptExtension',
+    [switch]$whatIf
 )
 
 #$PSModuleAutoLoadingPreference = 2
@@ -177,7 +178,7 @@ function Main() {
     # temp fix
     Add-UseBasicParsing -ScriptFile $installFile
 
-    $version = Set-DockerVersion -dockerVersion $dockerVersion
+    $dockerVersion = Set-DockerVersion -dockerVersion $dockerVersion
     $installedVersion = Get-InstalledDockerVersion
 
     # install windows-features
@@ -194,50 +195,55 @@ function Main() {
         Write-Warning "Uninstalling docker. Uninstall:$uninstall"
         Invoke-Script -Script $installFile -Arguments "-Uninstall -verbose 6>&1"
     }
-    elseif ($installedVersion -eq $version) {
-        Write-Host "Docker $installedVersion already installed and is equal to $version. Skipping install."
+    elseif ($installedVersion -eq $dockerVersion) {
+        Write-Host "Docker $installedVersion already installed and is equal to $dockerVersion. Skipping install."
         $global:restart = $false
     }
-    elseif ($installedVersion -ge $version) {
-        Write-Host "Docker $installedVersion already installed and is newer than $version. Skipping install."
+    elseif ($installedVersion -ge $dockerVersion) {
+        Write-Host "Docker $installedVersion already installed and is newer than $dockerVersion. Skipping install."
         $global:restart = $false
     }
-    elseif ($installedVersion -ne $nullVersion -and ($installedVersion -lt $version -and !$allowUpgrade)) {
-        Write-Host "Docker $installedVersion already installed and is older than $version. allowupgrade:$allowUpgrade. skipping install."
+    elseif ($installedVersion -ne $nullVersion -and ($installedVersion -lt $dockerVersion -and !$allowUpgrade)) {
+        Write-Host "Docker $installedVersion already installed and is older than $dockerVersion. allowupgrade:$allowUpgrade. skipping install."
         $global:restart = $false
     }
     else {
         $error.Clear()
-        $noServiceStarts = $null
+        $dockerInstallArgs = @{}
+        [void]$dockerInstallArgs.Add('dockerVersion', $dockerVersion.ToString())
+        [void]$dockerInstallArgs.Add('offline', $null)
+        [void]$dockerInstallArgs.Add('offlinePackagesPath', $psscriptroot)
+        [void]$dockerInstallArgs.Add('verbose', $null)
+
         if ($global:restart) {
-            $noServiceStarts = "-NoServiceStarts "
+            [void]$dockerInstallArgs.Add('noServiceStarts', $null)
         }
 
-        $global:downloadUrl = $mirantisRepo
         if ($dockerCe) {
             $global:downloadUrl = $dockerCeRepo
         }
 
-        $engineOnly = $null
         if (!$installContainerD) {
-            $engineOnly = "-EngineOnly "
+            [void]$dockerInstallArgs.Add('engineOnly', $null)
         }
         else {
             # download containerd outside mirantis script
-            $setContainerDVersion = Set-ContainerDVersion -containerDVersion $containerDVersion
-            $containerDDownloadFile = $global:currentContainerDVersions.Item($setContainerDVersion)
-            Download-File -url "$global:downloadUrl/$dockerPackageAbsolutePath/$containerDDownloadFile" -outputFile $containerDOfflineFile
+            $containerDVersion = Set-ContainerDVersion -containerDVersion $containerDVersion
+            $containerDDownloadFile = $global:currentContainerDVersions.Item($containerDVersion)
+            
+            # containerd only in mirantis repo
+            Download-File -url "$mirantisRepo/$dockerPackageAbsolutePath/$containerDDownloadFile" -outputFile $containerDOfflineFile
+            [void]$dockerInstallArgs.Add('containerDVersion', $containerDVersion.ToString())
         }
 
         # download docker outside mirantis script
-        $dockerDownloadFile = $global:currentDockerVersions.Item($version)
+        $dockerDownloadFile = $global:currentDockerVersions.Item($dockerVersion)
         Download-File -url "$global:downloadUrl/$dockerPackageAbsolutePath/$dockerDownloadFile" -outputFile $dockerOfflineFile
-
 
         # docker script will always emit errors checking for files even when successful
         Write-Host "Installing docker."
         $scriptResult = Invoke-Script -script $installFile `
-            -arguments "-DockerVersion $($version.tostring()) -OffLine -OffLinePackagesPath $psscriptroot $engineOnly$noServiceStarts-Verbose 6>&1" `
+            -argumentsTable $dockerInstallArgs `
             -checkError $false
         
         $error.Clear()
@@ -255,16 +261,12 @@ function Main() {
     }
 
     Stop-Transcript
-    $level = 'Information'
-    if (!$global:result) {
-        $level = 'Error'
-    }
 
     $transcript = Get-Content -raw $transcriptLog
-    Write-Event -data $transcript -level $level
+    Write-Event -data $transcript
 
 
-    if ($global:result -and $global:restart) {
+    if (!$whatIf -and $global:result -and $global:restart) {
         # prevent sf extension from trying to install before restart
         Start-Process powershell '-c', {
             $outvar = $null;
@@ -288,16 +290,16 @@ function Main() {
 function Add-UseBasicParsing($scriptFile) {
     $newLine
     $updated = $false
-    $scriptLines = [IO.File]::ReadAllLines($scriptFile)
-    $newScript = [Collections.ArrayList]::new()
+    $scriptLines = [io.file]::ReadAllLines($scriptFile)
+    $newScript = [collections.arrayList]::new()
     Write-Host "Updating $scriptFile to use -UseBasicParsing for Invoke-WebRequest"
 
     foreach ($line in $scriptLines) {
         $newLine = $line
-        if ([Text.RegularExpressions.Regex]::IsMatch($line, 'Invoke-WebRequest', [Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
+        if ([regex]::IsMatch($line, 'Invoke-WebRequest', [text.regularExpressions.regexOptions]::IgnoreCase)) {
             Write-Host "Found command $line"
-            if (![Text.RegularExpressions.Regex]::IsMatch($line, '-UseBasicParsing', [Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-                $newLine = [Text.RegularExpressions.Regex]::Replace($line, 'Invoke-WebRequest', 'Invoke-WebRequest -UseBasicParsing', [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            if (![regex]::IsMatch($line, '-UseBasicParsing', [text.regularExpressions.regexOptions]::IgnoreCase)) {
+                $newLine = [regex]::Replace($line, 'Invoke-WebRequest', 'Invoke-WebRequest -UseBasicParsing', [text.regularExpressions.regexOptions]::IgnoreCase)
                 Write-Host "Updating command $line to $newLine"
                 $updated = $true
             }
@@ -311,7 +313,7 @@ function Add-UseBasicParsing($scriptFile) {
         if ((Test-Path $tempFile)) {
             Remove-Item $tempFile -Force
         }
-    
+
         Rename-Item $scriptFile -NewName $tempFile -force
         Write-Host "Saving new script $scriptFile"
         Out-File -InputObject $newScriptContent -FilePath $scriptFile -Force    
@@ -319,13 +321,16 @@ function Add-UseBasicParsing($scriptFile) {
 }
 
 function Download-File($url, $outputFile) {
-    Write-Host "$result = [Net.WebClient]::New().DownloadFile($url, $outputFile)"
-    [Net.WebClient]::new().DownloadFile($url, $outputFile)
+    Write-Host "$result = [net.webClient]::new().downloadFile($url, $outputFile)"
+    [net.webClient]::new().downloadFile($url, $outputFile)
     Write-Host "DownloadFile result:$($result | Format-List *)"
 
     if ($error -or !(Test-Path $outputFile)) {
         Write-Error "failure downloading file:$($error | out-string)"
         $global:result = $false
+    }
+    elseif($whatIf) {
+        [io.file]::delete($outputFile)
     }
 }
 
@@ -337,14 +342,14 @@ function Get-InstalledDockerVersion() {
         $path = (Get-Process -Name $dockerProcessName).Path
         Write-Host "Docker installed and running: $path"
         $dockerInfo = (docker version)
-        $installedVersion = [version][Text.RegularExpressions.Regex]::Match($dockerInfo, 'Version:\s+?(\d.+?)\s').Groups[1].Value
+        $installedVersion = [version][regex]::Match($dockerInfo, 'Version:\s+?(\d.+?)\s').Groups[1].Value
     }
     elseif (Test-DockerIsInstalled) {
         $path = Get-WmiObject win32_service | Where-Object { $psitem.Name -like $dockerServiceName } | Select-Object PathName
         Write-Host "Docker exe path:$path"
-        $path = [Text.RegularExpressions.Regex]::Match($path.PathName, "`"(.+)`"").Groups[1].Value
+        $path = [regex]::Match($path.PathName, "`"(.+)`"").Groups[1].Value
         Write-Host "Docker exe clean path:$path"
-        $installedVersion = [version]::new([Diagnostics.FileVersionInfo]::GetVersionInfo($path).FileVersion)
+        $installedVersion = [version]::new([diagnostics.fileVersionInfo]::GetVersionInfo($path).FileVersion)
         Write-Warning "Warning: docker installed but not running: $path"
     }
     else {
@@ -364,7 +369,7 @@ function Get-AvailableVersions() {
         $result = Invoke-WebRequest -Uri "$global:downloadUrl/$dockerPackageAbsolutePath" -UseBasicParsing
 
         $filePattern = '(?<file>(?<filetype>docker|containerd)-(?<major>\d+?)\.(?<minor>\d+?)\.(?<build>\d+?)\.zip)'
-        $linkMatches = [regex]::matches($result.Links.href, $filePattern, [text.regularexpressions.regexoptions]::IgnoreCase)
+        $linkMatches = [regex]::matches($result.Links.href, $filePattern, [text.regularExpressions.regexOptions]::IgnoreCase)
 
         foreach ($match in $linkMatches) {
             $major = $match.groups['major'].value
@@ -434,13 +439,22 @@ function Install-Feature([string]$name) {
 }
 
 # Invoke the MCR installer (this will require a reboot)
-function Invoke-Script([string]$script, [string] $arguments, [bool]$checkError = $true) {
-    Write-Host "Invoke-Expression -Command `"$script $arguments`""
-    $scriptResult = Invoke-Expression -Command "$script $arguments"
+function Invoke-Script([string]$script, [string] $arguments = $null, [hashtable] $argumentsTable = @{}, [bool]$checkError = $true) {
+    $scriptResult = $null
+    if($argumentsTable.Count -gt 0) {
+        foreach($arg in $argumentsTable.GetEnumerator()) {
+            $argValue = $null
+            if($arg.Value) {
+                $argValue = " '$($arg.Value)'"
+            }
+            $arguments += " -$($arg.Key)$argValue"
+        }
+    }
 
-    if ($checkError -and $error) {
-        Write-Error "failure executing script:$script $arguments $($error | out-string)"
-        $global:result = $false
+    Write-Host "Invoke-Expression -Command `"$script $arguments`""
+
+    if (!$whatIf) {
+        $scriptResult = Invoke-Expression -Command "$script $arguments"
     }
 
     return $scriptResult
@@ -540,7 +554,7 @@ function Register-Event() {
 function Write-Event($data, $level = 'Information') {
     Write-Host $data
 
-    if ($error -or $level -ieq 'Error') {
+    if (!$global:result -or $error -or $level -ieq 'Error') {
         $level = 'Error'
         $data = "$data`r`nErrors:`r`n$($error | Out-String)"
         Write-Error $data
