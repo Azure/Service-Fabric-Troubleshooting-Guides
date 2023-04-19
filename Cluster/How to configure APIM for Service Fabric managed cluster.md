@@ -30,19 +30,6 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     New-AzResourceGroup @rg
     ```
 
-1. Use New-AzVirtualNetwork to create a virtual network named VNet with IP address prefix 10.0.0.0/16 in the TestRG resource group and eastus 2 location.
-
-    ```powershell
-    $vnet = @{
-        Name = 'VNet'
-        ResourceGroupName = $rg.name
-        Location = $rg.location
-        AddressPrefix = '10.0.0.0/16'
-    }
-
-    $virtualNetwork = New-AzVirtualNetwork @vnet
-    ```
-
 1. Create a Network Security Group for APIM
 
     ```powershell
@@ -70,6 +57,19 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
     > Note: Create more rules as needed as per [https://learn.microsoft.com/azure/api-management/virtual-network-reference?tabs=stv2#required-ports](https://learn.microsoft.com/azure/api-management/virtual-network-reference?tabs=stv2#required-ports)
 
+1. Use New-AzVirtualNetwork to create a virtual network named VNet with IP address prefix 10.0.0.0/16 in the TestRG resource group and eastus 2 location.
+
+    ```powershell
+    $vnet = @{
+        Name = 'VNet'
+        ResourceGroupName = $rg.name
+        Location = $rg.location
+        AddressPrefix = '10.0.0.0/16'
+    }
+
+    $virtualNetwork = New-AzVirtualNetwork @vnet
+    ```
+
 1. Use Add-AzVirtualNetworkSubnetConfig to create a subnet configuration named default with address prefix 10.0.0.0/24.
 
     ```powershell
@@ -83,7 +83,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
         Name = 'apim'
         VirtualNetwork = $virtualNetwork
         AddressPrefix = '10.0.1.0/24'
-      NetworkSecurityGroup = $networkSecurityGroup
+        NetworkSecurityGroup = $networkSecurityGroup
     }
 
     Add-AzVirtualNetworkSubnetConfig @sfmcSubnet
@@ -107,14 +107,14 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     - Obtain the SubnetId from the existing VNet:
 
       ```powershell
-      $sfmcSubcriptionId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $rg.name).Subnets | Where Name -eq $sfmcSubnet.Name | Select Id).Id
+      $sfmcSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $rg.name).Subnets | Where Name -eq $sfmcSubnet.Name | Select Id).Id
       ```
 
     - Run the following PowerShell command using the principal ID from previous steps, and assignment scope Id obtained above:
 
       ```powershell
       foreach($sfrpPrincipal in $sfrpPrincipals) {
-        New-AzRoleAssignment -PrincipalId $sfrpPrincipal.Id -RoleDefinitionName "Network Contributor" -Scope $sfmcSubscriptionId
+        New-AzRoleAssignment -PrincipalId $sfrpPrincipal.Id -RoleDefinitionName "Network Contributor" -Scope $sfmcSubnetId
       }
       ```
 
@@ -162,53 +162,24 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
     ```powershell
     $templateFile = "$pwd\sfmc-template.json"
+    $adminPassword = '<enter a password>'
+    $clientCertificateThumbprint = '<enter a thumbprint>'
 
     $sfmc = @{
       clusterName = 'mysfmtestcluster'
-      location = $rg.Location
-      clusterSku = 'Basic'
+      clusterSku = 'Standard'
       adminUserName = 'cloudadmin'
-      adminPassword = '<enter a password>'
-      clusterUpgradeCadence = 'Wave0'
-      clientConnectionPort = 19000
-      httpGatewayConnectionPort = 19080
-      clients = @(
-        @{
-            isAdmin = $true
-            thumbprint = '<enter a thumbprint>'
-        }
-      )
-      loadBalancingRules = @(
-        @{
-          frontendPort = 80
-          backendPort = 80
-          protocol = 'tcp'
-          probeProtocol = 'tcp'
-        }
-        @{
-          frontendPort = 443
-          backendPort = 443
-          protocol = 'tcp'
-          probeProtocol = 'tcp'
-        }
-        @{
-          frontendPort = 3000
-          backendPort = 3000
-          protocol = 'tcp'
-          probeProtocol = 'tcp'
-        }
-      )
+      adminPassword = $adminPassword
+      clientCertificateThumbprint = $clientCertificateThumbprint
       nodeType1name = 'nodetype1'
       nodeType1vmSize = 'Standard_D2s_v3'
       nodeType1vmInstanceCount = 5
       nodeType1dataDiskSizeGB = 256
-      nodeType1dataDiskType = 'StandardSSD_LRS'
       nodeType1vmImagePublisher = 'MicrosoftWindowsServer'
       nodeType1vmImageOffer = 'WindowsServer'
       nodeType1vmImageSku = '2022-Datacenter'
       nodeType1vmImageVersion = 'latest'
-      zonalResiliency = $false
-      subnetId = $sfmcSubscriptionId
+      subnetId = $sfmcSubnetId
     }
 
     New-AzResourceGroupDeployment -Name 'sfmcDeployment' `
@@ -255,27 +226,10 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     ```powershell
     $serviceFabricAppUrl = 'fabric:/myapp/myservice'
     $clusterName = 'mysfmtestcluster'
-    $clientThumbprint = ''
     $clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'
     $cluster = Get-AzServiceFabricManagedCluster -Name $clustername -ResourceGroupName $clusterResource.ResourceGroupName
     $serverCertThumbprint = $clusterResource.Properties.clusterCertificateThumbprints
     $x509CertName = $cluster.ClusterId.Replace('-','')
-    $sfmcWellKnownIssuers = @(
-      '4A34324798CDE744B6BB83C08FFE12559603972E',
-      '7E1B85B7A502F2EA8346F2E74126B5276E34EAF5',
-      '88092B4018F3E6441F8C79A8E87BD4168439DE59',
-      '9FD805A36EFDFB632705992DBA09DDA6E039F34A',
-      'C91D63F5F70A9BBEEE8C2FA38433458314844814',
-      'E80D143BE075B64469975A2D5D3761A72B4DE228'
-    )
-
-    $serverX509Names = [Collections.ArrayList]::new()
-    foreach($issuer in $sfmcWellKnownIssuers) {
-        $serverX509Names.Add(@{
-          name = "$x509CertName.sfmc.azclient.ms"
-          issuerCertificateThumbprint = $issuer
-        })
-    }
 
     $backend = @{
       apimName = $apimName
@@ -284,7 +238,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
       clientCertificateThumbprint = $keyVaultCertificate.Thumbprint
       managementEndpoints = @("https://$($cluster.Fqdn):$($cluster.HttpGatewayConnectionPort)")
       maxPartitionResolutionRetries = 5
-      serverX509Names = @($serverX509Names)
+      serviceFabricManagedClusterId = $cluster.ClusterId
       protocol = 'http'
       url = $serviceFabricAppUrl
       validateCertificateChain = $false
@@ -567,7 +521,7 @@ apim-backend.json
 
 ```json
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "apimName": {
@@ -579,17 +533,17 @@ apim-backend.json
         "description": {
             "type": "string"
         },
-        "clientCertificatethumbprint":{
+        "clientCertificatethumbprint": {
             "type": "string"
         },
-        "managementEndpoints":{
+        "managementEndpoints": {
             "type": "array"
         },
-        "maxPartitionResolutionRetries":{
+        "maxPartitionResolutionRetries": {
             "type": "int"
         },
-        "serverX509Names":{
-            "type": "array"
+        "serviceFabricManagedClusterId": {
+            "type": "string"
         },
         "protocol": {
             "type": "string"
@@ -604,6 +558,17 @@ apim-backend.json
             "type": "bool"
         }
     },
+    "variables": {
+        "issuerThumbprints": [
+            "4A34324798CDE744B6BB83C08FFE12559603972E",
+            "7E1B85B7A502F2EA8346F2E74126B5276E34EAF5",
+            "88092B4018F3E6441F8C79A8E87BD4168439DE59",
+            "9FD805A36EFDFB632705992DBA09DDA6E039F34A",
+            "C91D63F5F70A9BBEEE8C2FA38433458314844814",
+            "E80D143BE075B64469975A2D5D3761A72B4DE228"
+        ],
+        "x509CertificateName": "[concat(replace(parameters('serviceFabricManagedClusterId'),'-',''),'.sfmc.azclient.ms')]"
+    },
     "resources": [
         {
             "type": "Microsoft.ApiManagement/service/backends",
@@ -612,12 +577,21 @@ apim-backend.json
             "properties": {
                 "description": "[parameters('description')]",
                 "properties": {
-                "serviceFabricCluster": {
-                    "clientCertificatethumbprint": "[parameters('clientCertificatethumbprint')]",
-                    "managementEndpoints": "[parameters('managementEndpoints')]",
-                    "maxPartitionResolutionRetries": "[parameters('maxPartitionResolutionRetries')]",
-                    "serverX509Names": "[parameters('serverX509Names')]"
-                }
+                    "serviceFabricCluster": {
+                        "clientCertificatethumbprint": "[parameters('clientCertificatethumbprint')]",
+                        "managementEndpoints": "[parameters('managementEndpoints')]",
+                        "maxPartitionResolutionRetries": "[parameters('maxPartitionResolutionRetries')]",
+                        "copy": [
+                            {
+                                "name": "serverX509Names",
+                                "count": "[length(variables('issuerThumbprints'))]",
+                                "input": {
+                                    "name": "[variables('x509CertificateName')]",
+                                    "issuerCertificateThumbprint": "[variables('issuerThumbprints')[copyIndex('serverX509Names')]]"
+                                }
+                            }
+                        ]
+                    }
                 },
                 "protocol": "[parameters('protocol')]",
                 "tls": {
