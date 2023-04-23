@@ -47,6 +47,7 @@ param(
     $apimName = 'myApimCloud',
     $adminEmail = 'admin@contoso.com',
     $adminUserName = 'cloudadmin',
+    $organization = 'contoso',
     $adminPassword = '',
     $clusterName = $resourceGroupName,
     $clusterTemplateFile = "$pwd\sfmc-template.json",
@@ -57,17 +58,40 @@ param(
     $nodeTypeVmSize = 'Standard_D2s_v3'
 )
 
-if (!(Get-AzResourceGroup -Name $rg.Name)) {
-    New-AzResourceGroup @rg
+if (!(Get-AzResourceGroup -Name $resourceGroupName)) {
+    write-host "creating resource group $resourceGroupName"
+    New-AzResourceGroup -Name $resourceGroupName -Location $location
 }
 
 write-host "create nsg"
-$networkSecurityGroup = New-AzNetworkSecurityGroup -Name 'vnet-apim-nsg' -ResourceGroupName $rg.Name  -Location $rg.Location
+write-host "
+New-AzNetworkSecurityGroup -Name 'vnet-apim-nsg' `
+    -ResourceGroupName $resourceGroupName `
+    -Location $location
+" -foregroundColor Cyan
+
+$networkSecurityGroup = New-AzNetworkSecurityGroup -Name 'vnet-apim-nsg' `
+    -ResourceGroupName $resourceGroupName `
+    -Location $location
 
 write-host "configure nsg"
+write-host "
 Add-AzNetworkSecurityRuleConfig -Name 'AllowManagementEndpoint' `
     -NetworkSecurityGroup $networkSecurityGroup `
-    -Description "Management endpoint for Azure portal and PowerShell" `
+    -Description 'Management endpoint for Azure portal and PowerShell' `
+    -Access Allow `
+    -Protocol Tcp `
+    -Direction Inbound `
+    -Priority 300 `
+    -SourceAddressPrefix ApiManagement `
+    -SourcePortRange * `
+    -DestinationAddressPrefix VirtualNetwork `
+    -DestinationPortRange 3443
+" -foregroundColor Cyan
+
+Add-AzNetworkSecurityRuleConfig -Name 'AllowManagementEndpoint' `
+    -NetworkSecurityGroup $networkSecurityGroup `
+    -Description 'Management endpoint for Azure portal and PowerShell' `
     -Access Allow `
     -Protocol Tcp `
     -Direction Inbound `
@@ -78,16 +102,17 @@ Add-AzNetworkSecurityRuleConfig -Name 'AllowManagementEndpoint' `
     -DestinationPortRange 3443
 
 ## Updates the network security group. ##
+write-host "Set-AzNetworkSecurityGroup -NetworkSecurityGroup $networkSecurityGroup" -foregroundColor Cyan
 Set-AzNetworkSecurityGroup -NetworkSecurityGroup $networkSecurityGroup
 
-write-host "creating vnet"
 $vnet = @{
     Name              = 'VNet'
-    ResourceGroupName = $rg.name
-    Location          = $rg.location
+    ResourceGroupName = $resourceGroupName
+    Location          = $location
     AddressPrefix     = '10.0.0.0/16'
 }
 
+write-host "New-AzVirtualNetwork $($vnet | convertto-json)" -foregroundColor Cyan
 $virtualNetwork = New-AzVirtualNetwork @vnet
 
 write-host "creating subnets"
@@ -104,7 +129,10 @@ $apimSubnet = @{
     NetworkSecurityGroup = $networkSecurityGroup
 }
 
+write-host "Add-AzVirtualNetworkSubnetConfig $($sfmcSubnet | convertto-json)" -foregroundColor Cyan
 Add-AzVirtualNetworkSubnetConfig @sfmcSubnet
+
+write-host "Add-AzVirtualNetworkSubnetConfig $($apimSubnet | convertto-json)" -foregroundColor Cyan
 Add-AzVirtualNetworkSubnetConfig @apimSubnet
 
 write-host "associating subnets"
@@ -114,39 +142,58 @@ write-host "retrieving sfrp principal"
 $sfrpPrincipals = @(Get-AzADServicePrincipal -DisplayName "Azure Service Fabric Resource Provider")
 
 write-host "getting subnet id"
-$sfmcSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $rg.name).Subnets | Where-Object Name -eq $sfmcSubnet.Name | Select-Object Id).Id
+$sfmcSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName).Subnets | Where-Object Name -eq $sfmcSubnet.Name | Select-Object Id).Id
 
 write-host "assigning roles for sfrp"
 foreach ($sfrpPrincipal in $sfrpPrincipals) {
+    write-host "New-AzRoleAssignment -PrincipalId $sfrpPrincipal.Id -RoleDefinitionName 'Network Contributor' -Scope $sfmcSubnetId" -foregroundColor Cyan
     New-AzRoleAssignment -PrincipalId $sfrpPrincipal.Id -RoleDefinitionName "Network Contributor" -Scope $sfmcSubnetId
 }
 
 write-host "creating apim public ip"
 $ip = @{
     Name              = 'apimip'
-    ResourceGroupName = $rg.name
-    Location          = $rg.location
+    ResourceGroupName = $resourceGroupName
+    Location          = $location
     Sku               = 'Standard'
     AllocationMethod  = 'Static'
     IpAddressVersion  = 'IPv4'
     DomainNameLabel   = $apimIpDomainNameLabel
 }
 
+write-host "New-AzPublicIpAddress $($ip | convertto-json)" -ForegroundColor Cyan
 New-AzPublicIpAddress @ip
 
 write-host "creating apim service. this will take a while..."
-$apimSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $rg.name).Subnets | Where-Object Name -eq $apimSubnet.Name | Select-Object Id).Id
-$apimNetwork = New-AzApiManagementVirtualNetwork -SubnetResourceId $apimSubnetId
-$publicIpAddressId = (Get-AzPublicIpAddress -Name $ip.name -ResourceGroupName $rg.name | Select-Object Id).Id
+$apimSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName).Subnets | Where-Object Name -eq $apimSubnet.Name | Select-Object Id).Id
 
-New-AzApiManagement -ResourceGroupName $rg.name `
-    -Location $rg.location `
+write-host "New-AzApiManagementVirtualNetwork -SubnetResourceId $apimSubnetId" -foregroundColor Cyan
+$apimNetwork = New-AzApiManagementVirtualNetwork -SubnetResourceId $apimSubnetId
+
+$publicIpAddressId = (Get-AzPublicIpAddress -Name $ip.name -ResourceGroupName $resourceGroupName | Select-Object Id).Id
+
+write-host "
+New-AzApiManagement -ResourceGroupName $resourceGroupName `
+    -Location $location `
     -Name $apimName `
-    -Organization "Microsoft" `
+    -Organization $organization `
+    -AdminEmail $adminEmail `
+    -VirtualNetwork $($apimNetwork | convertto-json)`
+    -VpnType 'External' `
+    -Sku 'Developer' `
+    -PublicIpAddressId $publicIpAddressId `
+    -Verbose `
+    -Debug
+" -ForegroundColor Cyan
+
+New-AzApiManagement -ResourceGroupName $resourceGroupName `
+    -Location $location `
+    -Name $apimName `
+    -Organization $organization `
     -AdminEmail $adminEmail `
     -VirtualNetwork $apimNetwork `
-    -VpnType "External" `
-    -Sku "Developer" `
+    -VpnType 'External' `
+    -Sku 'Developer' `
     -PublicIpAddressId $publicIpAddressId `
     -Verbose `
     -Debug
@@ -169,30 +216,49 @@ $sfmc = @{
     subnetId                    = $sfmcSubnetId
 }
 
+write-host "
 New-AzResourceGroupDeployment -Name 'sfmcDeployment' `
-    -ResourceGroupName $rg.Name `
+    -ResourceGroupName $resourceGroupName `
+    -TemplateFile $clusterTemplateFile `
+    -TemplateParameterObject $($sfmc | convertto-json) `
+    -DeploymentDebugLogLevel All `
+    -Verbose `
+    -Debug
+" -foregroundColor Cyan
+
+New-AzResourceGroupDeployment -Name 'sfmcDeployment' `
+    -ResourceGroupName $resourceGroupName `
     -TemplateFile $clusterTemplateFile `
     -TemplateParameterObject $sfmc `
     -DeploymentDebugLogLevel All `
     -Verbose `
     -Debug
 
-write-host "deploy service fabric application before continuing."
+write-host "deploy service fabric application '$serviceFabricAppUrl' to cluster before continuing." -foregroundColor Magenta
 pause
 
 write-host "creating system managed identity for apim"
 # Get an API Management instance
-$apimService = Get-AzApiManagement -ResourceGroupName $rg.Name -Name $apimName
+$apimService = Get-AzApiManagement -ResourceGroupName $resourceGroupName -Name $apimName
+
 # Update an API Management instance
+write-host "Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity" -foregroundColor Cyan
 Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity
 
 write-host "configuration key vault access using managed identity"
 $managedIdentityId = (Get-AzADServicePrincipal -SearchString $apimName).Id
+
+write-host "Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName -ObjectId $managedIdentityId  -PermissionsToSecrets get, list" -foregroundColor Cyan
 Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName -ObjectId $managedIdentityId  -PermissionsToSecrets get, list
 
 write-host "creating key vault certificate in apim"
-$apiMgmtContext = New-AzApiManagementContext -ResourceGroupName $rg.Name -ServiceName $apimName
+write-host "New-AzApiManagementContext -ResourceGroupName $resourceGroupName -ServiceName $apimName" -foregroundColor Cyan
+$apiMgmtContext = New-AzApiManagementContext -ResourceGroupName $resourceGroupName -ServiceName $apimName
+
+write-host "New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier" -foregroundColor Cyan
 $keyvault = New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier
+
+write-host "New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault" -foregroundColor Cyan
 $keyVaultCertificate = New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault
 
 write-host "creating service fabric backend in apim"
@@ -213,10 +279,18 @@ $backend = @{
     validateCertificateName       = $false
 }
 
-$backend | ConvertTo-Json
+write-host "
+New-AzResourceGroupDeployment -Name 'apimBackendDeployment' `
+    -ResourceGroupName $resourceGroupName `
+    -TemplateFile $apimBackendTemplate `
+    -TemplateParameterObject $($backend | convertto-json) `
+    -DeploymentDebugLogLevel All `
+    -Verbose `
+    -Debug
+" -foregroundColor Cyan
 
 New-AzResourceGroupDeployment -Name 'apimBackendDeployment' `
-    -ResourceGroupName $rg.Name `
+    -ResourceGroupName $resourceGroupName `
     -TemplateFile $apimBackendTemplate `
     -TemplateParameterObject $backend `
     -DeploymentDebugLogLevel All `
@@ -227,24 +301,43 @@ write-host "creating api in apim"
 $apiId = 'service-fabric-app'
 $apiName = 'Service Fabric App'
 
+write-host "
 New-AzApiManagementApi -Context $apiMgmtContext `
     -ApiId $apiId `
     -Name $apiName `
-    -ServiceUrl "http://servicefabric" `
-    -Protocols @("http", "https") `
-    -Path "api"
+    -ServiceUrl 'http://servicefabric' `
+    -Protocols @('http', 'https') `
+    -Path 'api'
+" -foregroundColor Cyan
+
+New-AzApiManagementApi -Context $apiMgmtContext `
+    -ApiId $apiId `
+    -Name $apiName `
+    -ServiceUrl 'http://servicefabric' `
+    -Protocols @('http', 'https') `
+    -Path 'api'
 
 write-host "creating api operation"
 $operationId = 'service-fabric-app-operation'
 $operationName = 'Service Fabric App Operation'
 
+write-host "
 New-AzApiManagementOperation -Context $apiMgmtContext `
     -ApiId $apiId `
     -OperationId $operationId `
     -Name $operationName `
-    -Method "GET" `
-    -UrlTemplate "/api/values" `
-    -Description ""
+    -Method 'GET' `
+    -UrlTemplate '/api/values' `
+    -Description ''
+" -foregroundColor Cyan
+
+New-AzApiManagementOperation -Context $apiMgmtContext `
+    -ApiId $apiId `
+    -OperationId $operationId `
+    -Name $operationName `
+    -Method 'GET' `
+    -UrlTemplate '/api/values' `
+    -Description ''
 
 write-host "creating api policy"
 $sfResolveCondition = '@((int)context.Response.StatusCode != 200)'
@@ -266,9 +359,16 @@ $policyString = "
 </policies>
 "
 
+write-host "
+Set-AzApiManagementPolicy -Context $apiMgmtContext `
+    -ApiId $apiId `
+    -Policy $policyString `
+    -Format 'application/vnd.ms-azure-apim.policy.raw+xml'
+" -foregroundColor Cyan
+
 Set-AzApiManagementPolicy -Context $apiMgmtContext `
     -ApiId $apiId `
     -Policy $policyString `
     -Format 'application/vnd.ms-azure-apim.policy.raw+xml'
 
-write-host 'finished'
+write-host 'finished' -foregroundColor Green
