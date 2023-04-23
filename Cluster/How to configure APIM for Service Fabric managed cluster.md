@@ -19,21 +19,18 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
 ## Steps
 
-1. First, use New-AzResourceGroup to create a resource group to host the virtual network. Run the following code to create a resource group named TestRG in the eastus 2 Azure region.
+1. First, use New-AzResourceGroup to create a resource group to host the virtual network. Run the following code to create a resource group named TestRG in the eastus Azure region.
 
     ```powershell
-    $rg = @{
-        Name = 'TestRG'
-        Location = "eastus"
-    }
-
-    New-AzResourceGroup @rg
+    $resourceGroupName = 'testrg'
+    $location = 'eastus'
+    New-AzResourceGroup -Name $resourceGroupName -location $location
     ```
 
 1. Create a Network Security Group for APIM
 
     ```powershell
-    $networkSecurityGroup = New-AzNetworkSecurityGroup -Name 'vnet-apim-nsg' -ResourceGroupName $rg.Name  -Location $rg.Location
+    $networkSecurityGroup = New-AzNetworkSecurityGroup -Name 'vnet-apim-nsg' -ResourceGroupName $resourceGroupName  -Location $location
     ```
 
 1. Configure NSG rules for APIM (Management endpoint for Azure portal and PowerShell)
@@ -41,7 +38,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     ```powershell
     Add-AzNetworkSecurityRuleConfig -Name 'AllowManagementEndpoint' `
       -NetworkSecurityGroup $networkSecurityGroup `
-      -Description "Management endpoint for Azure portal and PowerShell" `
+      -Description 'Management endpoint for Azure portal and PowerShell' `
       -Access Allow `
       -Protocol Tcp `
       -Direction Inbound `
@@ -62,8 +59,8 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     ```powershell
     $vnet = @{
         Name = 'VNet'
-        ResourceGroupName = $rg.name
-        Location = $rg.location
+        ResourceGroupName = $resourceGroupName
+        Location = $location
         AddressPrefix = '10.0.0.0/16'
     }
 
@@ -101,20 +98,20 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     - Get the service Id from your subscription for Service Fabric Resource Provider application:
 
       ```powershell
-      $sfrpPrincipals = @(Get-AzADServicePrincipal -DisplayName "Azure Service Fabric Resource Provider")
+      $sfrpPrincipals = @(Get-AzADServicePrincipal -DisplayName 'Azure Service Fabric Resource Provider')
       ```
 
     - Obtain the SubnetId from the existing VNet:
 
       ```powershell
-      $sfmcSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $rg.name).Subnets | Where Name -eq $sfmcSubnet.Name | Select Id).Id
+      $sfmcSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName).Subnets | Where Name -eq $sfmcSubnet.Name | Select Id).Id
       ```
 
     - Run the following PowerShell command using the principal ID from previous steps, and assignment scope Id obtained above:
 
       ```powershell
       foreach($sfrpPrincipal in $sfrpPrincipals) {
-        New-AzRoleAssignment -PrincipalId $sfrpPrincipal.Id -RoleDefinitionName "Network Contributor" -Scope $sfmcSubnetId
+        New-AzRoleAssignment -PrincipalId $sfrpPrincipal.Id -RoleDefinitionName 'Network Contributor' -Scope $sfmcSubnetId
       }
       ```
 
@@ -124,8 +121,8 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     $domainNameLabel = 'apimip'
     $ip = @{
         Name = 'apimip'
-        ResourceGroupName = $rg.name
-        Location = $rg.location
+        ResourceGroupName = $resourceGroupName
+        Location = $location
         Sku = 'Standard'
         AllocationMethod = 'Static'
         IpAddressVersion = 'IPv4'
@@ -138,20 +135,21 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 1. Create API Management Service (It takes around 1 hour)
 
     ```powershell
-    $apimSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $rg.name).Subnets | Where Name -eq $apimSubnet.Name | Select Id).Id
+    $apimSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName).Subnets | Where Name -eq $apimSubnet.Name | Select Id).Id
     $apimNetwork = New-AzApiManagementVirtualNetwork -SubnetResourceId $apimSubnetId
-    $publicIpAddressId = (Get-AzPublicIpAddress -Name $ip.name -ResourceGroupName $rg.name | Select Id).Id
+    $publicIpAddressId = (Get-AzPublicIpAddress -Name $ip.name -ResourceGroupName $resourceGroupName | Select Id).Id
     $apimName = 'myApimCloud'
     $adminEmail = 'admin@contoso.com'
+    $organization = 'contoso'
 
-    New-AzApiManagement -ResourceGroupName $rg.name `
-      -Location $rg.location `
+    New-AzApiManagement -ResourceGroupName $resourceGroupName `
+      -Location $location `
       -Name $apimName `
-      -Organization "Microsoft" `
+      -Organization $organization `
       -AdminEmail $adminEmail `
       -VirtualNetwork $apimNetwork `
-      -VpnType "External" `
-      -Sku "Developer" `
+      -VpnType 'External' `
+      -Sku 'Developer' `
       -PublicIpAddressId $publicIpAddressId
     ```
 
@@ -183,7 +181,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     }
 
     New-AzResourceGroupDeployment -Name 'sfmcDeployment' `
-      -ResourceGroupName $rg.Name `
+      -ResourceGroupName $resourceGroupName `
       -TemplateFile $templateFile `
       -TemplateParameterObject $sfmc
     ```
@@ -194,7 +192,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
     ```powershell
     # Get an API Management instance
-    $apimService = Get-AzApiManagement -ResourceGroupName $rg.Name -Name $apimName
+    $apimService = Get-AzApiManagement -ResourceGroupName $resourceGroupName -Name $apimName
 
     # Update an API Management instance
     Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity
@@ -214,7 +212,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     ```powershell
     $kvcertId = 'apimcloud-com'
     $secretIdentifier = 'https://apimKV.vault.azure.net/secrets/apimcloud-com/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-    $apiMgmtContext = New-AzApiManagementContext -ResourceGroupName $rg.Name -ServiceName $apimName
+    $apiMgmtContext = New-AzApiManagementContext -ResourceGroupName $resourceGroupName -ServiceName $apimName
     
     $keyvault = New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier
     $keyVaultCertificate = New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault
@@ -248,7 +246,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     $backend | ConvertTo-Json
 
     New-AzResourceGroupDeployment -Name 'apimBackendDeployment' `
-      -ResourceGroupName $rg.Name `
+      -ResourceGroupName $resourceGroupName `
       -TemplateFile "$pwd\apim-backend.json" `
       -TemplateParameterObject $backend
     ```
@@ -262,9 +260,9 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     New-AzApiManagementApi -Context $apiMgmtContext `
       -ApiId $apiId `
       -Name $apiName `
-      -ServiceUrl "http://servicefabric" `
-      -Protocols @("http", "https") `
-      -Path "api"
+      -ServiceUrl 'http://servicefabric' `
+      -Protocols @('http', 'https') `
+      -Path 'api'
     ```
 
 1. Create an Operation
@@ -277,9 +275,9 @@ When the certificate is rolled over, the APIM connection will fail to connect to
       -ApiId $apiId `
       -OperationId $operationId `
       -Name $operationName `
-      -Method "GET" `
-      -UrlTemplate "/api/values" `
-      -Description ""
+      -Method 'GET' `
+      -UrlTemplate '/api/values' `
+      -Description ''
     ```
 
 1. Create a Policy
