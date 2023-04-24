@@ -11,6 +11,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
 - Service Fabric managed cluster deployed using an existing external virtual network. See [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network) in [Configure network settings for Service Fabric managed clusters](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking) for additional  information.
 - [Azure API Management](https://learn.microsoft.com/azure/api-management/).
+- Azure Key vault with certificate.
 
 ## Process
 
@@ -198,7 +199,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity
     ```
 
-1. Configure Key Vault access using a managed identity.
+1. Configure new Key vault Access policy using a managed identity on existing key vault.
 
     ```powershell
     $keyVaultName = 'apimKV'
@@ -448,6 +449,9 @@ sfmc-template.json
                 "httpGatewayConnectionPort": 19080,
                 "allowRdpAccess": false,
                 "enableIpv6": false,
+                "addonFeatures": [
+                    "DnsService"
+                ],
                 "clients" : [
                     {
                         "isAdmin" : true,
