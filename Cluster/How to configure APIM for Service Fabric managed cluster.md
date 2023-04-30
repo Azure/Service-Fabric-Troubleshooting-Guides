@@ -1,6 +1,6 @@
 # How to configure APIM Service Fabric Managed Cluster Service Connection
 
-The steps below describe how to configure [Azure API Management](https://learn.microsoft.com/azure/api-management/) (APIM) to route traffic to a back-end service in a Service Fabric managed cluster using PowerShell.
+The steps below describe how to configure [Azure API Management](https://learn.microsoft.com/azure/api-management/) (APIM) to route traffic to a back-end service in a Service Fabric managed cluster using PowerShell. For unmanaged clusters, use [Integrate API Management with Service Fabric in Azure](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-deploy-api-management).
 
 Service Fabric Managed Clusters provision and manage the 'server' certificate including the rollover process before certificate expiration.
 There is currently no notification when this occurs.
@@ -14,11 +14,6 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 - Azure Key vault with certificate.
 
 ## Process
-
-- Verify [Requirements](#requirements).
-- [Test](#test) connection.
-
-## Steps
 
 1. First, use New-AzResourceGroup to create a resource group to host the virtual network. Run the following code to create a resource group named TestRG in the eastus Azure region.
 
@@ -165,7 +160,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     $clientCertificateThumbprint = '<enter a thumbprint>'
 
     $sfmc = @{
-      clusterName = 'mysfmtestcluster'
+      clusterName = 'sfmcapim'
       clusterSku = 'Standard'
       adminUserName = 'cloudadmin'
       adminPassword = $adminPassword
@@ -187,7 +182,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
       -TemplateParameterObject $sfmc
     ```
 
-1. Deploy a simple ASP.NET Web API service to Service Fabric
+1. Deploy a simple ASP.NET Web API service to Service Fabric. See [WeatherForecast](#weatherforecast-service-fabric-api-example) example below.
 
 1. Create a system-assigned managed identity for APIM
 
@@ -220,11 +215,12 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     ```
 
 1. Create a Service Fabric Backend in APIM using certificate common name (Get the serverX509Name from the Cluster Manifest)
-    > Find the apim-backend.json ARM template below: [APIM ARM deployment template](#apim-arm-deployment-template) 
+
+    > Find the apim-backend.json ARM template below: [APIM ARM deployment template](#apim-arm-deployment-template)
 
     ```powershell
-    $serviceFabricAppUrl = 'fabric:/myapp/myservice'
-    $clusterName = 'mysfmtestcluster'
+    $serviceFabricAppUrl = 'fabric:/sfWeatherApiCore/WeatherApi' # 'fabric:/<Application>/<Service>
+    $clusterName = 'sfmcapim'
     $clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'
     $cluster = Get-AzServiceFabricManagedCluster -Name $clustername -ResourceGroupName $clusterResource.ResourceGroupName
     $serverCertThumbprint = $clusterResource.Properties.clusterCertificateThumbprints
@@ -255,13 +251,14 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 1. Create an API in APIM
 
     ```powershell
-    $apiId = 'service-fabric-app'
-    $apiName = 'Service Fabric App'
+    $apiId = 'service-fabric-weatherforecast-app'
+    $apiName = 'Service Fabric WeatherForecast App'
+    $serviceUrl = 'http://servicefabric' # this value is not used for service fabric and can be any value
 
     New-AzApiManagementApi -Context $apiMgmtContext `
       -ApiId $apiId `
       -Name $apiName `
-      -ServiceUrl 'http://servicefabric' `
+      -ServiceUrl $serviceUrl `
       -Protocols @('http', 'https') `
       -Path 'api'
     ```
@@ -269,15 +266,15 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 1. Create an Operation
 
     ```powershell
-    $operationId = 'service-fabric-app-operation'
-    $operationName = 'Service Fabric App Operation'
+    $operationId = 'service-fabric-weatherforecast-app-operation'
+    $operationName = 'Service Fabric WeatherForecast App Operation'
 
     New-AzApiManagementOperation -Context $apiMgmtContext `
       -ApiId $apiId `
       -OperationId $operationId `
       -Name $operationName `
       -Method 'GET' `
-      -UrlTemplate '/api/values' `
+      -UrlTemplate '' `
       -Description ''
     ```
 
@@ -319,9 +316,9 @@ To test connection
 - Test network connectivity to cluster management port. Run PowerShell command 'test-netconnection' command to cluster http endpoint, providing tcp port. Default port is 19080.
 
   ```powershell
-  $clusterEndpoint = 'mysftestcluster.eastus.cloudapp.azure.com'
-  $clusterHttpPort = 19080
-  Test-NetConnection -ComputerName $clusterEndpoint -Port $clusterHttpPort
+  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com'
+  $clusterHttpApiPort = 8080
+  Test-NetConnection -ComputerName $clusterEndpoint -Port $clusterHttpApiPort
   ```
 
 - Verify ability to connect successfully to cluster using PowerShell. The 'servicefabric' module is required and is installed as part of Service Fabric SDK.
@@ -330,8 +327,8 @@ To test connection
   import-module servicefabric
   import-module az.resources
 
-  $clusterEndpoint = 'mysftestcluster.eastus.cloudapp.azure.com:19000'
-  $clusterName = 'mysftestcluster'
+  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com:19000'
+  $clusterName = 'sfmcapim'
 
   $clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'
   $serverCertThumbprint = $clusterResource.Properties.clusterCertificateThumbprints
@@ -606,3 +603,52 @@ apim-backend.json
     ]
 }
 ```
+
+### WeatherForecast Service Fabric Api Example
+
+To create an example .net core api service fabric application project to test the apim connection setup, the builtin .net Core Stateless Web Api template can be used as shown in figures below:
+
+#### **Create Service Fabric Application Project**
+
+![create service fabric application project](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-1.png)
+
+#### **Configure project**
+
+![configure project](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-2.png)
+
+#### **Create a new service**
+
+![create a new service](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-3.png)
+
+#### **Create a new ASP.NET Core web application**
+
+![create a new asp.net core web application](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-4.png)
+
+#### **Modify ApplicationManifest.xml**
+
+To use the swagger functionality configured in template, set the ASPNETCORE_ENVIRONMENT variable to 'development' in 'ApplicationManifest.xml'.
+
+![modify application manifest](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-5.png)
+
+#### **Modify ServiceManifest.xml**
+
+To configure the web application TCP listening port, modify 'ServiceManifest.xml' file and set 'Port' to '8080'.
+
+![modify service manifest](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-6.png)
+
+
+#### **Publish application and verify**
+
+After modifications above, publish application to service fabric cluster.
+
+To verify deployment, use Service Fabric Explorer (SFX) to check application configuration and status.
+
+![verify deployment](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-sfx.png)
+
+To verify Api functionality, use PowerShell, Postman, or browser. 
+
+NOTE: NSG and Load balancer rules will need to be configured for port 8080 being used in this example before a connection can be made.
+
+![verify functionality](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-ps.png)
+
+![verify swagger](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-swagger.png)
