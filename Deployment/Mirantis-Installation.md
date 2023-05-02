@@ -14,7 +14,17 @@ The recommended way to add a virtual machine scale set extension on an Azure Ser
 
 The PowerShell script is prepared to check if Mirantis needs to be installed by downloading and executing the Mirantis installer, after successful installation the machine will be restarted.
 
-Please use a copy of [Install-Mirantis.ps1](https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/Install-Mirantis.ps1) to install Mirantis Container Runtime on your Azure Service Fabric cluster. If your Service Fabric project is hyper-v isolated container based, add script switch '-hypervIsolation' to the 'commandToExecute' variable.
+Please use a copy of [Install-Mirantis.ps1](https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/Install-Mirantis.ps1) to install Mirantis Container Runtime on your Azure Service Fabric cluster.
+
+If using [Docker Desktop / Community Edition (CE)](https://docs.docker.com/desktop/) instead of Mirantis, add script switch '-dockerCe' to the 'commandToExecute' variable.
+
+Example:
+
+```json
+    "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File .\\Install-Mirantis.ps1 -dockerCe"
+```
+
+If your Service Fabric project is hyper-v isolated container based, add script switch '-hypervIsolation' to the 'commandToExecute' variable.
 
 Example:
 
