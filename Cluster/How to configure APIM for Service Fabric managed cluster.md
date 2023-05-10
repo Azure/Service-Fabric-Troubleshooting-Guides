@@ -307,22 +307,24 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
 ## Test
 
-<!-- TODO -->
-To test connection
+- To test APIM connection navigate to the APIM service API in [Azure Portal](https://ms.portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.ApiManagement%2Fservice)
+
+- Create a new API Operation. In this example the only available API is 'WeatherForecast'.
+
+    ![](../media/how-to-configure-apim-for-service-fabric-managed-cluster/apim-api-operation-create.png)
+
+- Test operation
+
+    ![](../media/how-to-configure-apim-for-service-fabric-managed-cluster/apim-api-operation-test.png)
+
+- If needed, trace operation
+
+    ![](../media/how-to-configure-apim-for-service-fabric-managed-cluster/apim-api-operation-trace.png)
 
 ## Troubleshooting
-<!-- TODO -->
-- Error: ##[debug]System.AggregateException: One or more errors occurred. ---> System.Fabric.FabricTransientException: Could not ping any of the provided Service Fabric gateway endpoints. ---> System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x80071C49
-- Test network connectivity to cluster management port. Run PowerShell command 'test-netconnection' command to cluster http endpoint, providing tcp port. Default port is 19080.
-
-  ```powershell
-  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com'
-  $clusterHttpPort = 19080
-  Test-NetConnection -ComputerName $clusterEndpoint -Port $clusterHttpPort
-  ```
 
 - Verify ability to connect successfully to cluster using PowerShell. The 'servicefabric' module is required and is installed as part of Service Fabric SDK.
-<!-- TODO -->
+
   ```powershell
   import-module servicefabric
   import-module az.resources
@@ -337,6 +339,40 @@ To test connection
     -AzureActiveDirectory `
     -ServerCertThumbprint $serverCertThumbprint `
     -Verbose
+  ```
+
+- Test network connectivity to cluster management port. Run PowerShell command 'test-netconnection' command to cluster http endpoint, providing tcp port. Default port is 19080.
+
+  ```powershell
+  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com'
+  $clusterHttpPort = 19080
+  Test-NetConnection -ComputerName $clusterEndpoint -Port $clusterHttpPort
+  ```
+
+- Test API response directly from cluster
+
+  ```powershell
+  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com'
+  $apiPort = 8080
+  Test-NetConnection -ComputerName $clusterEndpoint -Port $apiPort
+  Invoke-RestMethod "http://$($clusterEndpoint):$($apiPort)/WeatherForecast"
+  
+  date                  temperatureC temperatureF summary
+  ----                  ------------ ------------ -------
+  5/11/2023 10:11:03 AM           54          129 Mild
+  5/12/2023 10:11:03 AM            9           48 Sweltering
+  5/13/2023 10:11:03 AM           21           69 Sweltering
+  5/14/2023 10:11:03 AM           54          129 Scorching
+  5/15/2023 10:11:03 AM           42          107 Scorching
+  ```
+
+- Test connectivity to APIM
+
+  ```powershell
+  $apimEndpoint = 'sfmcapimcloud.azure-api.net'
+  $apimPort = 443
+  Test-NetConnection -ComputerName $apimEndpoint -Port $apimPort
+  Invoke-RestMethod "https://$($clusterEndpoint):$($apiPort)/api/WeatherForecast"
   ```
 
 ## Reference
