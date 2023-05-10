@@ -128,7 +128,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     New-AzPublicIpAddress @ip
     ```
 
-1. Create API Management Service (It takes around 1 hour)
+1. Create API Management Service with External VNET integration (It takes around 1 hour)
 
     ```powershell
     $apimSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName).Subnets | Where Name -eq $apimSubnet.Name | Select Id).Id
@@ -317,8 +317,8 @@ To test connection
 
   ```powershell
   $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com'
-  $clusterHttpApiPort = 8080
-  Test-NetConnection -ComputerName $clusterEndpoint -Port $clusterHttpApiPort
+  $clusterHttpPort = 19080
+  Test-NetConnection -ComputerName $clusterEndpoint -Port $clusterHttpPort
   ```
 
 - Verify ability to connect successfully to cluster using PowerShell. The 'servicefabric' module is required and is installed as part of Service Fabric SDK.
@@ -456,6 +456,12 @@ sfmc-template.json
                     }
                 ],
                 "loadBalancingRules": [
+                    {
+                        "frontendPort": 443, 
+                        "backendPort": 443,
+                        "protocol": "tcp",
+                        "probeProtocol": "tcp"
+                    },
                     {
                         "frontendPort": 8080, 
                         "backendPort": 8080,
@@ -632,10 +638,9 @@ To use the swagger functionality configured in template, set the ASPNETCORE_ENVI
 
 #### **Modify ServiceManifest.xml**
 
-To configure the web application TCP listening port, modify 'ServiceManifest.xml' file and set 'Port' to '8080'.
+To configure the web application TCP listening port, modify 'ServiceManifest.xml' file and set 'Port' to '8080'. This step is not required but can help with testing / troubleshooting.
 
 ![modify service manifest](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-6.png)
-
 
 #### **Publish application and verify**
 
@@ -647,7 +652,7 @@ To verify deployment, use Service Fabric Explorer (SFX) to check application con
 
 To verify Api functionality, use PowerShell, Postman, or browser. 
 
-NOTE: NSG and Load balancer rules will need to be configured for port 8080 being used in this example before a connection can be made.
+NOTE: NSG and Load balancer rules will need to be configured for APIM port 443 and API test port 8080 being used in this example before a connection can be made.
 
 ![verify functionality](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-ps.png)
 
