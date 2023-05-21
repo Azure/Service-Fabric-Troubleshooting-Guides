@@ -297,9 +297,32 @@ index 3967309..ffd2d1e 100644
 
 ## Frequently Asked Questions
 
+- How does this affect me?  
+As of June 30th, 2023, new subscriptions won't be eligible to create unmanaged disks.
+As of September 30, 2023, existing customers won't be able to create new unmanaged disks.
+On September 30, 2025, customers will no longer be able to start IaaS VMs by using unmanaged disks. Any VMs that are still running or allocated will be stopped and deallocated.
+
+- What actions should I take?  
+Start planning your migration to Azure managed disks today.
+
+  - Make a list of all affected VMSS:  
+    The VMSS with Managed disks set to disabled on the Azure portal's VMSS Overview pane are affected.
+    You can also query Azure Resource Graph by using the portal or PowerShell to view the list of all flagged VMs and related information for the selected subscriptions.
+
+  - For technical questions, issues, and help with adding subscriptions to the allowlist, [contact support](https://portal.azure.com/#create/Microsoft.Support/Parameters/%7B%22pesId%22:%22e9e31931-21fa-d50a-e6e7-e37d5d784591%22,%22supportTopicId%22:%22218e397c-ecc6-5d2e-1352-9aadd85a4483%22%7D).
+
+  - Complete the migration as soon as possible to prevent business impact and to take advantage of the improved reliability, scalability, security, and new features of Azure managed disks.
+
+- What resources are available for this migration?  
+  - [Microsoft Q&A](https://learn.microsoft.com/answers/topics/azure-virtual-machines-migration.html): Microsoft and community support for migration.  
+  - [Azure Migration Support](https://portal.azure.com/#create/Microsoft.Support/Parameters/%7B%22pesId%22:%226f16735c-b0ae-b275-ad3a-03479cfa1396%22,%22supportTopicId%22:%221135e3d0-20e2-aec5-4ef0-55fd3dae2d58%22%7D): Dedicated support team for technical assistance during migration.  
+  - [Microsoft FastTrack](https://www.microsoft.com/fasttrack): FastTrack can assist eligible customers with planning and execution of this migration.  
+  - If your company/organization has partnered with Microsoft or works with Microsoft representatives such as cloud solution architects (CSAs) or technical account managers (TAMs), please work with them for additional resources for migration.
+
+- [Frequently asked questions about Azure IaaS VM disks and managed and unmanaged premium disks](https://learn.microsoft.com/azure/virtual-machines/faq-for-disks)
 
 ## Reference
 
-[Introduction to Azure managed disks](https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview)
-[Azure managed disk types](https://learn.microsoft.com/azure/virtual-machines/disks-types)
-[Microsoft.Compute virtualMachineScaleSets](https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachinescalesets?pivots=deployment-language-arm-template)
+[Introduction to Azure managed disks](https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview)  
+[Azure managed disk types](https://learn.microsoft.com/azure/virtual-machines/disks-types)  
+[Microsoft.Compute virtualMachineScaleSets](https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachinescalesets?pivots=deployment-language-arm-template)  
