@@ -118,6 +118,20 @@ foreach ($scaleset in $scalesets) {
 }
 ```
 
+Example output:
+
+<pre><b><div style="background:black">.\enum-unmanaged-disks.ps1
+<span style="color:cyan">checking scale set:/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/unmanagedCluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt1vm</span>
+<span style="color:yellow">        nt1vm is part of a service fabric cluster</span>
+<span style="color:red">        UNMANAGED DISK: nt1vm is not using managed disk for os disk</span>
+        nt1vm unable to enumerate / no data disk
+<span style="color:cyan">checking scale set:/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/managedCluster/providers/Microsoft.Compute/virtualMachineScaleSets/nt1vm</span>
+<span style="color:yellow">        nt1vm is part of a service fabric cluster</span>
+<span style="color:green;bold">        nt1vm is using managed disk for os disk</span>
+        nt1vm unable to enumerate / no data disk
+</div></b>
+</pre>
+
 ## Scenario 1: Customer is hosting Azure Service Fabric Node Type using deprecated Windows Server images with-Containers, but does NOT host containers in Docker as part of their overall applications
 
 ### Scenario 1/Option 1: Full rebuild the cluster
@@ -317,9 +331,9 @@ Documentation:
 
 ## Updating ARM template
 
-Below is a diff of ARM template changes needed to change provisioning from unmanaged to managed disks for the OS disk. 
+Below is a diff of ARM template changes needed to change provisioning from unmanaged to managed disks for the OS disk for a 5 node cluster.
 
-> ### :exclamation:NOTE: Additional changes may be necessary for different environments and for additional disk types, for example, 'Data Disks'.
+> ### :exclamation:NOTE: Additional or different changes may be necessary depending on configuration and for additional disk types, for example, 'Data Disks'.
 
 ```diff
 diff --git a/sf-1nt-5n-1lb-managed-disks.json b/sf-1nt-5n-1lb-managed-disks.json
@@ -334,6 +348,15 @@ index 3967309..ffd2d1e 100644
      "vmName": "vm",
      "publicIPAddressName": "PublicIP-VM",
      "publicIPAddressType": "Dynamic",
+@@ -173,7 +172,7 @@
+     "maxPercentUpgradeDomainDeltaUnhealthyNodes": "100",
+     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+     "overProvision": "false",
+-    "vmssApiVersion": "2016-03-30",
++    "vmssApiVersion": "2022-11-01",
+     "lbApiVersion": "2015-06-15",
+     "vNetApiVersion": "2015-06-15",
+     "storageApiVersion": "2016-01-01",
 @@ -196,15 +195,7 @@
      "lbHttpProbeID0": "[concat(variables('lbID0'),'/probes/FabricHttpGatewayProbe')]",
      "lbNatPoolID0": "[concat(variables('lbID0'),'/inboundNatPools/LoadBalancerBEAddressNatPool')]",
@@ -351,6 +374,37 @@ index 3967309..ffd2d1e 100644
    },
    "resources": [
      {
+@@ -451,30 +442,6 @@
+         "clusterName": "[parameters('clusterName')]"
+       }
+     },
+-    {
+-      "apiVersion": "[variables('storageApiVersion')]",
+-      "type": "Microsoft.Storage/storageAccounts",
+-      "name": "[variables('uniqueStringArray0')[copyIndex()]]",
+-      "location": "[variables('computeLocation')]",
+-      "dependsOn": [
+-        
+-      ],
+-      "properties": {
+-        
+-      },
+-      "copy": {
+-        "name": "storageLoop",
+-        "count": 5
+-      },
+-      "kind": "Storage",
+-      "sku": {
+-        "name": "[parameters('storageAccountType')]"
+-      },
+-      "tags": {
+-        "resourceType": "Service Fabric",
+-        "clusterName": "[parameters('clusterName')]"
+-      }
+-    },
+     {
+       "apiVersion": "[variables('vmssApiVersion')]",
+       "type": "Microsoft.Compute/virtualMachineScaleSets",
 @@ -482,11 +473,6 @@
        "location": "[variables('computeLocation')]",
        "dependsOn": [
