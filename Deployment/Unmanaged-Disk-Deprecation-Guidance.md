@@ -67,46 +67,53 @@ In [Azure portal](https://ms.portal.azure.com/#view/HubsExtension/BrowseResource
 ### PowerShell
 
 ```powershell
-$scalesets = Get-AzResource -ResourceType 'microsoft.compute/virtualMachineScaleSets'
+import-module az.resources
+import-module az.compute
+
+if (!(get-azResourceGroup)) { connect-azAccount }
+
+$scalesets = get-azResource -ResourceType 'Microsoft.Compute/virtualMachineScaleSets'
 if (!$scalesets) {
     write-error "no scale sets enumerated. if this is in error, try from https://shell.azure.com"
 }
 
 foreach ($scaleset in $scalesets) {
-    $vmss = Get-AzVmss -ResourceGroupName $scaleset.ResourceGroupName -VMScaleSetName $scaleset.Name
+    $vmss = get-azVmss -ResourceGroupName $scaleset.ResourceGroupName -VMScaleSetName $scaleset.Name
     $extensionTypes = $vmss.VirtualMachineProfile.ExtensionProfile.Extensions.type
     $storageProfile = $vmss.VirtualMachineProfile.StorageProfile
+    $scalesetName = $scaleset.Name
+
     write-host "checking scale set:$($vmss.Id)" -ForegroundColor Cyan
-    write-verbose "checking scale set:$($vmss | convertto-json -Depth 99)"
+    write-verbose "checking scale set:$($vmss | convertTo-json -Depth 99)"
 
     if ($extensionTypes -contains 'ServiceFabricNode' -or $extensionTypes -contains 'ServiceFabricLinuxNode') {
-        write-host "`t$($scaleset.Name) is part of a service fabric cluster" -ForegroundColor Yellow
+        write-host "`t$scalesetName is part of a service fabric cluster" -ForegroundColor Yellow
     }
     elseif ($extensionTypes -contains 'ServiceFabricMCNode') {
-        write-host "`t$($scaleset.Name) is part of a service fabric managed cluster"
+        write-host "`t$scalesetName is part of a service fabric managed cluster"
     }
     else {
-        write-host "`t$($scaleset.Name) is not part of a service fabric cluster"
+        write-host "`t$scalesetName is not part of a service fabric cluster"
     }
 
     if ($storageProfile.OsDisk -and !$storageProfile.OsDisk.ManagedDisk) {
-        write-host "`tUNMANAGED DISK: $($scaleset.Name) is not using managed disk for os disk" -ForegroundColor Red
+        write-host "`tUNMANAGED DISK: $scalesetName is not using managed disk for os disk" -ForegroundColor Red
     }
     elseif ($storageProfile.OsDisk -and $storageProfile.OsDisk.ManagedDisk) {
-        write-host "`t$($scaleset.Name) is using managed disk for os disk" -ForegroundColor Green
+        write-host "`t$scalesetName is using managed disk for os disk" -ForegroundColor Green
     }
     else {
-        write-error "$($scaleset.Name) unable to enumerate os disk:$($vmss | convertto-json -Depth 99)"
+        write-error "$scalesetName unable to enumerate os disk:$($vmss | convertTo-json -Depth 99)"
     }
 
     if ($storageProfile.DataDisks -and !$storageProfile.DataDisks.ManagedDisk) {
-        write-host "`tUNMANAGED DISK: $($scaleset.Name) is not using managed disks for data disks" -ForegroundColor Red
+        write-host "`tUNMANAGED DISK: $scalesetName is not using managed disks for data disks" -ForegroundColor Red
     }
     elseif ($storageProfile.DataDisks -and $storageProfile.DataDisks.ManagedDisk) {
-        write-host "`t$($scaleset.Name) is using managed disks for data disks" -ForegroundColor Green
+        write-host "`t$scalesetName is using managed disks for data disks" -ForegroundColor Green
     }
     else {
-        write-host "`t$($scaleset.Name) unable to enumerate / no data disk"
+        write-host "`t$scalesetName unable to enumerate / no data disk"
     }
 }
 ```
@@ -308,7 +315,77 @@ Documentation:
 
 ## Frequently Asked Questions
 
-## Updating ARM Template
+## Updating ARM template
+
+Below is a diff of ARM template changes needed to change provisioning from unmanaged to managed disks for the OS disk. 
+
+> ### :exclamation:NOTE: Additional changes may be necessary for different environments and for additional disk types, for example, 'Data Disks'.
+
+```diff
+diff --git a/sf-1nt-5n-1lb-managed-disks.json b/sf-1nt-5n-1lb-managed-disks.json
+index 3967309..ffd2d1e 100644
+--- a/sf-1nt-5n-1lb-managed-disks.json
++++ b/sf-1nt-5n-1lb-managed-disks.json
+@@ -159,7 +159,6 @@
+   "variables": {
+     "computeLocation": "[parameters('clusterLocation')]",
+     "dnsName": "[parameters('clusterName')]",
+-    "vmStorageAccountName": "[toLower(concat(uniqueString(resourceGroup().id), '1' ))]",
+     "vmName": "vm",
+     "publicIPAddressName": "PublicIP-VM",
+     "publicIPAddressType": "Dynamic",
+@@ -196,15 +195,7 @@
+     "lbHttpProbeID0": "[concat(variables('lbID0'),'/probes/FabricHttpGatewayProbe')]",
+     "lbNatPoolID0": "[concat(variables('lbID0'),'/inboundNatPools/LoadBalancerBEAddressNatPool')]",
+     "vmNodeType0Name": "[toLower(concat('NT1', variables('vmName')))]",
+-    "vmNodeType0Size": "Standard_D2",
+-    "vmStorageAccountName0": "[toLower(concat(uniqueString(resourceGroup().id), '1', '0' ))]",
+-    "uniqueStringArray0": [
+-      "[concat(variables('vmStorageAccountName0'), '0')]",
+-      "[concat(variables('vmStorageAccountName0'), '1')]",
+-      "[concat(variables('vmStorageAccountName0'), '2')]",
+-      "[concat(variables('vmStorageAccountName0'), '3')]",
+-      "[concat(variables('vmStorageAccountName0'), '4')]"
+-    ]
++    "vmNodeType0Size": "Standard_D2"
+   },
+   "resources": [
+     {
+@@ -482,11 +473,6 @@
+       "location": "[variables('computeLocation')]",
+       "dependsOn": [
+         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+-        "[concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[0])]",
+-        "[concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[1])]",
+-        "[concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[2])]",
+-        "[concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[3])]",
+-        "[concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[4])]",
+         "[concat('Microsoft.Network/loadBalancers/', concat('LB','-', parameters('clusterName'),'-',variables('vmNodeType0Name')))]",
+         "[concat('Microsoft.Storage/storageAccounts/', variables('supportLogStorageAccountName'))]",
+         "[concat('Microsoft.Storage/storageAccounts/', variables('applicationDiagnosticsStorageAccountName'))]"
+@@ -633,16 +619,12 @@
+               "version": "[parameters('vmImageVersion')]"
+             },
+             "osDisk": {
+-              "vhdContainers": [
+-                "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[0]), variables('storageApiVersion')).primaryEndpoints.blob, variables('vmStorageAccountContainerName'))]",
+-                "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[1]), variables('storageApiVersion')).primaryEndpoints.blob, variables('vmStorageAccountContainerName'))]",
+-                "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[2]), variables('storageApiVersion')).primaryEndpoints.blob, variables('vmStorageAccountContainerName'))]",
+-                "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[3]), variables('storageApiVersion')).primaryEndpoints.blob, variables('vmStorageAccountContainerName'))]",
+-                "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('uniqueStringArray0')[4]), variables('storageApiVersion')).primaryEndpoints.blob, variables('vmStorageAccountContainerName'))]"
+-              ],
+-              "name": "vmssosdisk",
+               "caching": "ReadOnly",
+-              "createOption": "FromImage"
++              "createOption": "FromImage",
++              "diskSizeGb": 128,
++              "managedDisk": {
++                "storageAccountType": "[parameters('storageAccountType')]"
++              }
+             }
+           }
+         }
+```
 
 ## Reference
 
