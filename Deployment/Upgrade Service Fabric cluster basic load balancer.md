@@ -2,17 +2,19 @@
 
 ## Overview  
 
-This documents the options available to upgrade a basic load balancer sku to standard load balancer sku for a service fabric cluster. Choose one of the options below.
+This documents the options available to upgrade a basic load balancer sku to standard load balancer sku for a Service Fabric cluster. Choose one of the options below based on availability requirements.
+
+### NOTE: This does not apply to [Service Fabric managed clusters](https://learn.microsoft.com/azure/service-fabric/overview-managed-cluster). Service Fabric managed clusters with 'Basic' SKU are provisioned with a 'Basic' load balancer but cannot be upgraded and must be redeployed . Service Fabric managed clusters with 'Standard' SKU have are provisioned with a 'Standard' load balancer and are not impacted.
 
 ## Manual Upgrade Process with no down time
 
-To upgrade basic load balancers in a Service Fabric cluster with no downtime requires the creation of a new scaleset (nodetype), standard load balancer, and standard IP address. The new nodetype is added to the cluster, applications/services are migrated to new nodetype, old nodetype with associated basic load balancer and IP address are deactivated and removed. This process takes multiple hours to complete and is documented in [Scale up a Service Fabric cluster primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-primary-node-type) and [Scale up a Service Fabric cluster non-primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-non-primary-node-type).
+To upgrade basic load balancers in a Service Fabric cluster with no downtime requires the creation of a new scale set (node type), standard load balancer, and standard IP address. The new node type is added to the cluster, applications/services are migrated to new node type, old node type with associated basic load balancer and IP address are deactivated and removed. This process takes multiple hours to complete and is documented in [Scale up a Service Fabric cluster primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-primary-node-type) and [Scale up a Service Fabric cluster non-primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-non-primary-node-type).
 
 ## Automated Upgrade Process with down time
 
 > ### :exclamation:NOTE: While the following process executes, connectivity to the cluster will be unavailable.
 
-[Upgrade a basic load balancer used with Virtual Machine Scale Sets](https://learn.microsoft.com/azure/load-balancer/upgrade-basic-standard-virtual-machine-scale-sets) documents the commands used and detailed information about upgrading the load balancer sku. Upgrading a scaleset / nodetype for a Service Fabric cluster will take longer to complete than documented in link above due to cluster characteristics and requirements. Anticipate a minimum of one hour of downtime for a silver or greater cluster durability and 30 minutes for bronze.
+[Upgrade a basic load balancer used with Virtual Machine Scale Sets](https://learn.microsoft.com/azure/load-balancer/upgrade-basic-standard-virtual-machine-scale-sets) documents the commands used and detailed information about upgrading the load balancer sku. Upgrading a scale set / node type for a Service Fabric cluster will take longer to complete than documented in link above due to cluster characteristics and requirements. Anticipate a minimum of one hour of downtime for a silver or greater cluster durability and 30 minutes for bronze.
 
 ### Process
 
@@ -41,7 +43,7 @@ Below are basic powershell commands assuming Azure 'Az' modules are already inst
 A Warning will be displayed for scale sets that have Service Fabric extension installed:
 
 ```text
-WARNING: 2023-05-08T11:25:49-04 [Warning]:[Test-SupportedMigrationScenario] VMSS appears to be a Service Fabric cluster based on extension profile. SF Clusters experienced potentially significant downtime during migration using this PowerShell module. In testing, a 5-node Bronze cluster was unavailable for about 30 minutes and a 5-node Silver cluster was unavailable for about 45 minutes. Shutting down the cluster VMSS prior to initiating migration will result in a more consistent experience of about 5 minutes to complete the LB migration. For Service Fabric clusters that require minimal / no connectivity downtime, adding a new nodetype with standard load balancer and IP resources is a better solution.
+WARNING: 2023-05-08T11:25:49-04 [Warning]:[Test-SupportedMigrationScenario] VMSS appears to be a Service Fabric cluster based on extension profile. SF Clusters experienced potentially significant downtime during migration using this PowerShell module. In testing, a 5-node Bronze cluster was unavailable for about 30 minutes and a 5-node Silver cluster was unavailable for about 45 minutes. Shutting down the cluster VMSS prior to initiating migration will result in a more consistent experience of about 5 minutes to complete the LB migration. For Service Fabric clusters that require minimal / no connectivity downtime, adding a new node type with standard load balancer and IP resources is a better solution.
 Do you want to proceed with the migration of your Service Fabric Cluster's Load Balancer?
 Do you want to continue? (y/n):
 ```
@@ -60,7 +62,7 @@ Start-AzBasicLoadBalancerUpgrade -ResourceGroupName $resourceGroupName `
 
 ## Updating ARM template with changes
 
-Best practice for Service fabric is to deploy, maintain, and recover clusters using ARM templates. After upgrade completes, update ARM template used for cluster deployment. The following base template was created from the Azure portal using a 'silver' 5 node single nodetype cluster. There are some resources in below diff, for example NSG rules, that may or may not apply or may need the tcp ports modified.
+Best practice for Service fabric is to deploy, maintain, and recover clusters using ARM templates. After upgrade completes, update ARM template used for cluster deployment. The following base template was created from the Azure portal using a 'silver' 5 node single node type cluster. There are some resources in below diff, for example NSG rules, that may or may not apply or may need the tcp ports modified.
 
 ```diff
 diff --git a/c:/configs/arm/sf-1nt-5n-1lb.json b/c:/configs/arm/sf-1nt-5n-1slb.json
