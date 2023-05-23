@@ -66,6 +66,8 @@ In [Azure portal](https://ms.portal.azure.com/#view/HubsExtension/BrowseResource
 
 ### PowerShell
 
+These PowerShell commands will enumerate all the virtual machine scale sets in subscription. Any VMSS with Service Fabric extension will be identified. Both the OS Disk and Data Disk resources are checked for unmanaged disks. Any unmanaged disks detected will be in the console output in red prefaced with 'UNMANAGED DISK:' as shown in Example output below. These commands do require the Azure 'Az' modules or can be run from https://shell.azure.com
+
 ```powershell
 import-module az.resources
 import-module az.compute
