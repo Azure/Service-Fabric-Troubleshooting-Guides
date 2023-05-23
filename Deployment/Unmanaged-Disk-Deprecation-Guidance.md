@@ -6,7 +6,7 @@ Azure unmanaged disks deprecation announced September 2022, will be full retired
 
 ## Determining Impact
 
-This deprecation does not affect [Service Fabric Managed clusters](https://learn.microsoft.com/azure/service-fabric/overview-managed-cluster) as all managed clusters are built with managed disk configuration for provisioned node types. This should also not impact any recently built Service Fabric clusters built from Azure Portal since unmanaged disks have not been used for many years in the Service Fabric portal templates.
+This deprecation does not affect [Service Fabric managed clusters](https://learn.microsoft.com/azure/service-fabric/overview-managed-cluster) as all managed clusters are built with managed disk configuration for provisioned node types. This should also not impact any recently built Service Fabric clusters built from Azure Portal since unmanaged disks have not been used for many years in the Service Fabric portal templates.
 
 To conclusively verify whether there are any scale sets using unmanaged disks, each scale set can be viewed in Azure portal, in ARM template, or using powershell commands as shown in example below:
 
