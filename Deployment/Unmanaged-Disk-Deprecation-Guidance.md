@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Azure unmanaged disks deprecation announced September 2022, will be full retired September 2025. All Service Fabric clusters using node types / virtual machine scale sets (VMSS) will need to have new node types with managed disk configuration added to the cluster before this date. See [Migrate your Azure unmanaged disks by September 30, 2025](https://learn.microsoft.com/azure/virtual-machines/unmanaged-disks-deprecation) for detailed information about unmanaged disk deprecation.
+Azure unmanaged disks deprecation announced September 2022, will be full retired September 2025. However, as of September 30, 2023, subscriptions will not be able to create new unmanaged disks. This means actions such as redeploying or scaling out a cluster will fail. All Service Fabric clusters using node types / virtual machine scale sets (VMSS) will need to have new node types with managed disk configuration added to the cluster before this date. See [Migrate your Azure unmanaged disks by September 30, 2025](https://learn.microsoft.com/azure/virtual-machines/unmanaged-disks-deprecation) for detailed information about unmanaged disk deprecation.
 
 ## Determining Impact
 
