@@ -4,7 +4,7 @@
 
 The following summarizes the steps required to configure a Service Fabric cluster to use only Internal load balancers. Additional information about this configuration is available [Internal-only load balancer](https://learn.microsoft.com/azure/service-fabric/service-fabric-patterns-networking#internal-only-load-balancer). For Service Fabric Managed clusters, refer to [Bring your own Azure Load Balancer](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-azure-load-balancer) documentation for internal load balancer options.
 
-> ### :exclamation:NOTE: Configuring load balancers with only internal ip addresses will prevent management of cluster resources from cluster view in Azure portal. Understand these ramifications before implementing. [Allowing the Service Fabric resource provider to query your cluster](https://learn.microsoft.com/azure/service-fabric/service-fabric-patterns-networking#allowing-the-service-fabric-resource-provider-to-query-your-cluster) describes the limitation.
+> ### :exclamation:NOTE: Configuring load balancers with only internal ip addresses may prevent management of cluster resources from cluster view in Azure portal if Service Fabric Resource Provider (SFRP) does not have access. Understand these ramifications and access required before implementing. [Allowing the Service Fabric resource provider to query your cluster](https://learn.microsoft.com/azure/service-fabric/service-fabric-patterns-networking#allowing-the-service-fabric-resource-provider-to-query-your-cluster) describes the limitation.
 
 ## Steps
 
