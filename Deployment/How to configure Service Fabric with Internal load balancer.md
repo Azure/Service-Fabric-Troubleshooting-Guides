@@ -828,5 +828,3 @@ Example template is based on a secure Service Fabric 5 node, 1 nodetype, Silver 
 }
 
 ```
-
-## Reference
