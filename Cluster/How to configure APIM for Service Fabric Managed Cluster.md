@@ -3,12 +3,12 @@
 The steps below describe how to configure [Azure API Management](https://learn.microsoft.com/azure/api-management/) (APIM) to route traffic to a back-end service in a Service Fabric Managed Cluster using PowerShell. For unmanaged clusters, use [Integrate API Management with Service Fabric in Azure](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-deploy-api-management).
 
 Service Fabric Managed Clusters provision and manage the 'server' certificate including the rollover process before certificate expiration.
-There is currently no notification when this rollover occurs. The 'server' certificate is used for cluster management and is also used for the cluster http endpoint. 
+There is currently no notification when this rollover occurs. The 'server' certificate is used for cluster management and is also used for the cluster http endpoint.
 APIM service connections to a Service Fabric cluster use this X509 Certificate authentication to the cluster http endpoint. This endpoint is by default port 19080 and is the same port used by Service Fabric Explorer (SFX). When this certificate is rolled over, the APIM connection will fail to connect to cluster causing applications to fail. To avoid this, the APIM connection should be configured to use the 'server' certificates' Issuer Thumbprint. This will allow the APIM connection to continue to work after the certificate rollover process.
 
 ## Requirements
 
-- Service Fabric Managed Cluster deployed using an existing external virtual network. This configuration is required for management of network settings that is not available with a default managed cluster deployment. See [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network) in [Configure network settings for Service Fabric Managed Clusters](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking) for additional  information.
+- Service Fabric Managed Cluster deployed using an existing external virtual network. This configuration is required for management of network settings that is not available with a default managed cluster deployment. See [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network) in [Configure network settings for Service Fabric Managed Clusters](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking) for additional information and requirements.
 - [Azure API Management](https://learn.microsoft.com/azure/api-management/).
 - Azure Key vault with certificate.
 
@@ -85,24 +85,25 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
     Add-AzVirtualNetworkSubnetConfig @apimSubnet
     ```
 
-1. Then associate the subnets configuration to the virtual network with Set-AzVirtualNetwork.
+1. Associate the subnets configuration to the virtual network with Set-AzVirtualNetwork.
 
     ```powershell
     $virtualNetwork | Set-AzVirtualNetwork
     ```
 
-1. Prepare the steps for Service Fabric Managed Cluster Bring Your Own Virtual Network (SFMC BYOVNET). See [Requirements](#requirements) above for additional information.
+1. Gather the requirements needed for Service Fabric Managed Cluster Bring Your Own Virtual Network (SFMC BYOVNET) configuration. See [Requirements](#requirements) above for additional information.
 
-    - Get the service Id from your subscription for Service Fabric Resource Provider application:
+    - Enumerate the 'Service Fabric Resource Provider' (SFRP) Principals' from current subscription:
 
       ```powershell
       $sfrpPrincipals = @(Get-AzADServicePrincipal -DisplayName 'Azure Service Fabric Resource Provider')
       ```
 
-    - Obtain the SubnetId from the existing VNet:
+    - Obtain the Subnet Resource Id from the existing VNet created above for the managed cluster:
 
       ```powershell
-      $sfmcSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName).Subnets | Where Name -eq $sfmcSubnet.Name | Select Id).Id
+      $virtualNetwork = Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName
+      $sfmcSubnetID = $virtualNetwork.Subnets | Where-Object Name -eq $sfmcSubnet.Name | Select-Object -ExpandProperty Id
       ```
 
     - Run the following PowerShell command using the principal ID from previous steps, and assignment scope Id obtained above:
@@ -130,12 +131,13 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
     New-AzPublicIpAddress @ip
     ```
 
-1. Create API Management Service with External VNET integration (It takes around 1 hour)
+1. Create API Management Service with External VNET integration. (This can take around 1 hour)
 
     ```powershell
-    $apimSubnetId = ((Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName).Subnets | Where Name -eq $apimSubnet.Name | Select Id).Id
+    $virtualNetwork = Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName
+    $apimSubnetId = $virtualNetwork.Subnets | Where-Object Name -eq $apimSubnet.Name | Select-Object -ExpandProperty Id
     $apimNetwork = New-AzApiManagementVirtualNetwork -SubnetResourceId $apimSubnetId
-    $publicIpAddressId = (Get-AzPublicIpAddress -Name $ip.name -ResourceGroupName $resourceGroupName | Select Id).Id
+    $publicIpAddressId = Get-AzPublicIpAddress -Name $ip.name -ResourceGroupName $resourceGroupName | Select-Object -ExpandProperty Id
     $apimName = 'myApimCloud'
     $adminEmail = 'admin@contoso.com'
     $organization = 'contoso'
@@ -152,7 +154,7 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
     ```
 
 1. Create the SFMC within the VNET previously created.
-    > Example existing vnet Managed Cluster ARM template below: [SFMC ARM deployment template](#sfmc-arm-deployment-template).
+    > Example existing VNET Service Fabric Managed Cluster ARM template below: [SFMC ARM deployment template](#sfmc-arm-deployment-template).
 
     > Multiple nodetype example here: [Standard SKU Service Fabric Managed Cluster, 2 node types, deployed in to existing subnet](https://github.com/Azure-Samples/service-fabric-cluster-templates/tree/master/SF-Managed-Standard-SKU-2-NT-BYOVNET).
 
@@ -211,7 +213,7 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
     $kvcertId = 'apimcloud-com'
     $secretIdentifier = 'https://apimKV.vault.azure.net/secrets/apimcloud-com/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     $apiMgmtContext = New-AzApiManagementContext -ResourceGroupName $resourceGroupName -ServiceName $apimName
-    
+
     $keyvault = New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier
     $keyVaultCertificate = New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault
     ```
@@ -358,7 +360,7 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
   $apiPort = 8080
   Test-NetConnection -ComputerName $clusterEndpoint -Port $apiPort
   Invoke-RestMethod "http://$($clusterEndpoint):$($apiPort)/WeatherForecast"
-  
+
   date                  temperatureC temperatureF summary
   ----                  ------------ ------------ -------
   5/11/2023 10:11:03 AM           54          129 Mild
@@ -495,13 +497,13 @@ sfmc-template.json
                 ],
                 "loadBalancingRules": [
                     {
-                        "frontendPort": 443, 
+                        "frontendPort": 443,
                         "backendPort": 443,
                         "protocol": "tcp",
                         "probeProtocol": "tcp"
                     },
                     {
-                        "frontendPort": 8080, 
+                        "frontendPort": 8080,
                         "backendPort": 8080,
                         "protocol": "tcp",
                         "probeProtocol": "tcp"
@@ -688,7 +690,7 @@ To verify deployment, use Service Fabric Explorer (SFX) to check application con
 
 ![verify deployment](../media/how-to-configure-apim-for-service-fabric-managed-cluster/vs22-weatherforecast-sfx.png)
 
-To verify Api functionality, use PowerShell, Postman, or browser. 
+To verify Api functionality, use PowerShell, Postman, or browser.
 
 NOTE: NSG and Load balancer rules will need to be configured for APIM port 443 and API test port 8080 being used in this example before a connection can be made.
 
