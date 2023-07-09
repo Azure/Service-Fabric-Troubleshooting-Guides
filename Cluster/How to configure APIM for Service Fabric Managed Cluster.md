@@ -3,13 +3,12 @@
 The steps below describe how to configure [Azure API Management](https://learn.microsoft.com/azure/api-management/) (APIM) to route traffic to a back-end service in a Service Fabric Managed Cluster using PowerShell. For unmanaged clusters, use [Integrate API Management with Service Fabric in Azure](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-deploy-api-management).
 
 Service Fabric Managed Clusters provision and manage the 'server' certificate including the rollover process before certificate expiration.
-There is currently no notification when this occurs.
-APIM service connections use X509 Certificate authentication requiring the configuration of the server certificate thumbprint.
-When the certificate is rolled over, the APIM connection will fail to connect to cluster causing applications to fail.
+There is currently no notification when this rollover occurs. The 'server' certificate is used for cluster management and is also used for the cluster http endpoint. 
+APIM service connections to a Service Fabric cluster use this X509 Certificate authentication to the cluster http endpoint. This endpoint is by default port 19080 and is the same port used by Service Fabric Explorer (SFX). When this certificate is rolled over, the APIM connection will fail to connect to cluster causing applications to fail. To avoid this, the APIM connection should be configured to use the 'server' certificates' Issuer Thumbprint. This will allow the APIM connection to continue to work after the certificate rollover process.
 
 ## Requirements
 
-- Service Fabric Managed Cluster deployed using an existing external virtual network. See [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network) in [Configure network settings for Service Fabric Managed Clusters](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking) for additional  information.
+- Service Fabric Managed Cluster deployed using an existing external virtual network. This configuration is required for management of network settings that is not available with a default managed cluster deployment. See [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network) in [Configure network settings for Service Fabric Managed Clusters](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking) for additional  information.
 - [Azure API Management](https://learn.microsoft.com/azure/api-management/).
 - Azure Key vault with certificate.
 
@@ -92,7 +91,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     $virtualNetwork | Set-AzVirtualNetwork
     ```
 
-1. Prepare the steps for SFMC BYOVNET as per [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network)
+1. Prepare the steps for Service Fabric Managed Cluster Bring Your Own Virtual Network (SFMC BYOVNET). See [Requirements](#requirements) above for additional information.
 
     - Get the service Id from your subscription for Service Fabric Resource Provider application:
 
