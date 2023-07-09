@@ -23,13 +23,16 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     New-AzResourceGroup -Name $resourceGroupName -location $location
     ```
 
-1. Create a Network Security Group for APIM
+1. Create an Azure Network Security Group (NSG) for APIM.
 
     ```powershell
-    $networkSecurityGroup = New-AzNetworkSecurityGroup -Name 'vnet-apim-nsg' -ResourceGroupName $resourceGroupName  -Location $location
+    $networkSecurityGroupName = 'vnet-apim-nsg'
+    $networkSecurityGroup = New-AzNetworkSecurityGroup -Name $networkSecurityGroupName `
+        -ResourceGroupName $resourceGroupName `
+        -Location $location
     ```
 
-1. Configure NSG rules for APIM (Management endpoint for Azure portal and PowerShell)
+1. Configure NSG rules for APIM using PowerShell example below or in [Azure portal](https://portal.azure.com).
 
     ```powershell
     Add-AzNetworkSecurityRuleConfig -Name 'AllowManagementEndpoint' `
