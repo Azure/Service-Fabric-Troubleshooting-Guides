@@ -1,6 +1,6 @@
 # How to configure APIM Service Fabric Managed Cluster Service Connection
 
-The steps below describe how to configure [Azure API Management](https://learn.microsoft.com/azure/api-management/) (APIM) to route traffic to a back-end service in a Service Fabric managed cluster using PowerShell. For unmanaged clusters, use [Integrate API Management with Service Fabric in Azure](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-deploy-api-management).
+The steps below describe how to configure [Azure API Management](https://learn.microsoft.com/azure/api-management/) (APIM) to route traffic to a back-end service in a Service Fabric Managed Cluster using PowerShell. For unmanaged clusters, use [Integrate API Management with Service Fabric in Azure](https://learn.microsoft.com/azure/service-fabric/service-fabric-tutorial-deploy-api-management).
 
 Service Fabric Managed Clusters provision and manage the 'server' certificate including the rollover process before certificate expiration.
 There is currently no notification when this occurs.
@@ -9,7 +9,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
 ## Requirements
 
-- Service Fabric managed cluster deployed using an existing external virtual network. See [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network) in [Configure network settings for Service Fabric managed clusters](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking) for additional  information.
+- Service Fabric Managed Cluster deployed using an existing external virtual network. See [Bring your own virtual network](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking#bring-your-own-virtual-network) in [Configure network settings for Service Fabric Managed Clusters](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-networking) for additional  information.
 - [Azure API Management](https://learn.microsoft.com/azure/api-management/).
 - Azure Key vault with certificate.
 
@@ -150,9 +150,9 @@ When the certificate is rolled over, the APIM connection will fail to connect to
     ```
 
 1. Create the SFMC within the VNET previously created.
-    > Example existing vnet managed cluster ARM template below: [SFMC ARM deployment template](#sfmc-arm-deployment-template).
+    > Example existing vnet Managed Cluster ARM template below: [SFMC ARM deployment template](#sfmc-arm-deployment-template).
 
-    > Multiple nodetype example here: [Standard SKU Service Fabric managed cluster, 2 node types, deployed in to existing subnet](https://github.com/Azure-Samples/service-fabric-cluster-templates/tree/master/SF-Managed-Standard-SKU-2-NT-BYOVNET).
+    > Multiple nodetype example here: [Standard SKU Service Fabric Managed Cluster, 2 node types, deployed in to existing subnet](https://github.com/Azure-Samples/service-fabric-cluster-templates/tree/master/SF-Managed-Standard-SKU-2-NT-BYOVNET).
 
     ```powershell
     $templateFile = "$pwd\sfmc-template.json"
