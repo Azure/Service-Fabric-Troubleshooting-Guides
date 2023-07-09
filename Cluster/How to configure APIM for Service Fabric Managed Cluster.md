@@ -15,11 +15,11 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
 ## Process
 
-1. First, use New-AzResourceGroup to create a resource group to host the virtual network. Run the following code to create a resource group named TestRG in the eastus Azure region.
+1. First, use New-AzResourceGroup to create an Azure Resource Group to host the virtual network. Run the following code to create an Azure Resource Group named 'TestRG' in the 'EastUS' Azure region.
 
     ```powershell
-    $resourceGroupName = 'testrg'
-    $location = 'eastus'
+    $resourceGroupName = 'TestRG'
+    $location = 'EastUS'
     New-AzResourceGroup -Name $resourceGroupName -location $location
     ```
 
@@ -50,7 +50,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 
     > Note: Create more rules as needed as per [https://learn.microsoft.com/azure/api-management/virtual-network-reference?tabs=stv2#required-ports](https://learn.microsoft.com/azure/api-management/virtual-network-reference?tabs=stv2#required-ports)
 
-1. Use New-AzVirtualNetwork to create a virtual network named VNet with IP address prefix 10.0.0.0/16 in the TestRG resource group and eastus 2 location.
+1. Use New-AzVirtualNetwork to create Azure Virtual Network (VNET) named VNet with IP address prefix 10.0.0.0/16 in the 'TestRG' resource group and 'EastUS' 2 location.
 
     ```powershell
     $vnet = @{
@@ -329,7 +329,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
   import-module servicefabric
   import-module az.resources
 
-  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com:19000'
+  $clusterEndpoint = 'sfmcapim.'EastUS'.cloudapp.azure.com:19000'
   $clusterName = 'sfmcapim'
 
   $clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'
@@ -344,7 +344,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 - Test network connectivity to cluster management port. Run PowerShell command 'test-netconnection' command to cluster http endpoint, providing tcp port. Default port is 19080.
 
   ```powershell
-  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com'
+  $clusterEndpoint = 'sfmcapim.'EastUS'.cloudapp.azure.com'
   $clusterHttpPort = 19080
   Test-NetConnection -ComputerName $clusterEndpoint -Port $clusterHttpPort
   ```
@@ -352,7 +352,7 @@ When the certificate is rolled over, the APIM connection will fail to connect to
 - Test API response directly from cluster
 
   ```powershell
-  $clusterEndpoint = 'sfmcapim.eastus.cloudapp.azure.com'
+  $clusterEndpoint = 'sfmcapim.'EastUS'.cloudapp.azure.com'
   $apiPort = 8080
   Test-NetConnection -ComputerName $clusterEndpoint -Port $apiPort
   Invoke-RestMethod "http://$($clusterEndpoint):$($apiPort)/WeatherForecast"
