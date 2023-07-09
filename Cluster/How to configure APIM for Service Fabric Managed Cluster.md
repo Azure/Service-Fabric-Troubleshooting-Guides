@@ -131,7 +131,7 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
     New-AzPublicIpAddress @ip
     ```
 
-1. Create API Management Service with External VNET integration. (This can take around 1 hour)
+1. Create API Management Service with external VNET integration. (This can take around 1 hour)
 
     ```powershell
     $virtualNetwork = Get-AzVirtualNetwork -Name $vnet.name -ResourceGroupName $resourceGroupName
@@ -153,10 +153,10 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
       -PublicIpAddressId $publicIpAddressId
     ```
 
-1. Create the SFMC within the VNET previously created.
-    > Example existing VNET Service Fabric Managed Cluster ARM template below: [SFMC ARM deployment template](#sfmc-arm-deployment-template).
+1. Create the Service Fabric Managed Cluster within the existing VNET previously created above.
+    > An example existing VNET Service Fabric Managed Cluster ARM template is provided below: [\sfmc-template.json](#sfmc-arm-deployment-template).
 
-    > Multiple nodetype example here: [Standard SKU Service Fabric Managed Cluster, 2 node types, deployed in to existing subnet](https://github.com/Azure-Samples/service-fabric-cluster-templates/tree/master/SF-Managed-Standard-SKU-2-NT-BYOVNET).
+    > Multiple node type example here: [Standard SKU Service Fabric Managed Cluster, 2 node types, deployed in to existing subnet](https://github.com/Azure-Samples/service-fabric-cluster-templates/tree/master/SF-Managed-Standard-SKU-2-NT-BYOVNET).
 
     ```powershell
     $templateFile = "$pwd\sfmc-template.json"
@@ -207,7 +207,7 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
     Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName -ObjectId $managedIdentityId  -PermissionsToSecrets get,list
     ```
 
-1. Create a keyVault Certificate in APIM
+1. Create a Azure Key Vault certificate in APIM
 
     ```powershell
     $kvcertId = 'apimcloud-com'
@@ -218,7 +218,7 @@ APIM service connections to a Service Fabric cluster use this X509 Certificate a
     $keyVaultCertificate = New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault
     ```
 
-1. Create a Service Fabric Backend in APIM using certificate common name (Get the serverX509Name from the Cluster Manifest)
+1. Create a Service Fabric backend in APIM using certificate common name certificate (get the serverX509Name from the cluster manifest)
 
     > Find the apim-backend.json ARM template below: [APIM ARM deployment template](#apim-arm-deployment-template)
 
