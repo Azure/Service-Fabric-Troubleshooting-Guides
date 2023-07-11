@@ -38,7 +38,7 @@ February 15, 2023
 
 #### Date Validation Starts Applying
 
-March 15, 2023
+September 15, 2023
 
 #### Summary
 
