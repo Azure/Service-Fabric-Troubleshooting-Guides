@@ -19,7 +19,7 @@ To use automatic OS image upgrade, the node type durability tier must be set to 
 
 #### Configure durability tier using ARM template
 
-##### Microsoft.ServiceFabric/clusters/nodeTypes resource
+Microsoft.ServiceFabric/clusters/nodeTypes resource
 
 ```diff
 {
@@ -56,7 +56,7 @@ To use automatic OS image upgrade, the node type durability tier must be set to 
 ...
 ```
 
-##### Microsoft.Compute/virtualMachineScaleSets/extensions resource
+Microsoft.Compute/virtualMachineScaleSets/extensions resource
 
 ```diff
 {
@@ -94,8 +94,6 @@ To use automatic OS image upgrade, the node type durability tier must be set to 
 
 #### Configure durability tier using Azure PowerShell
 
-##### Update the cluster node type using Update-AzServiceFabricNodeType
-
 Uses [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
 
 ```powershell
@@ -114,7 +112,7 @@ Update-AzServiceFabricDurability -ResourceGroupName $resourceGroupName `
     -Verbose
 ```
 
-##### Update the virtual machine scale set using Set-AzResource
+#### Update the virtual machine scale set using Set-AzResource
 
 Uses [Set-AzResource](https://learn.microsoft.com/powershell/module/az.resources/set-azresource) cmdlet to update the durability tier for the node type in the virtual machine scale set resource.
 
@@ -223,9 +221,51 @@ Update-AzVmss -ResourceGroupName $resourceGroupName `
 
 ## Manage OS image upgrade
 
+### Enumerate current OS image SKU's available in Azure
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+Import-Module -Name Az.Compute
+Import-Module -Name Az.Resources
+
+$latestVersion = $null;
+$targetImageReference = $null
+$location = (Get-AzResourceGroup -Name $resourceGroupName).Location
+$vmssHistory = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory
+
+if ($vmssHistory) {
+    $targetImageReference = $vmssHistory.Properties.TargetImageReference
+}
+else {
+    write-warning "vmssHistory not found"
+    $vmssHistory = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName
+    $targetImageReference = $vmssHistory.VirtualMachineProfile.StorageProfile.ImageReference
+}
+
+$publisherName = $targetImageReference.Publisher
+$offer = $targetImageReference.Offer
+$sku = $targetImageReference.Sku
+$runningVersion = $targetImageReference.Version
+
+write-host "Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku"
+$images = Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
+
+foreach ($image in $images) {
+    if ([version]$image.Version -gt [version]$runningVersion) { $latestVersion = $image.Version }
+}
+
+if ($latestVersion -gt $currentVersion) {
+    write-host "latest version published: $latestVersion is newer than current running version: $runningVersion" -ForegroundColor Green
+}
+else {
+    write-host "current running version: $runningVersion is same or newer than latest version: $latestVersion" -ForegroundColor Green
+}
+```
+
 ### Review OS image upgrade status
 
-Uses [Get-AzVmssRollingUpgradeStatus](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgradestatus) cmdlet to enumerate current OS image upgrade status.
+Uses [Get-AzVmssRollingUpgradeStatus](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgradestatus) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgradeStatus output](#example-get-azvmssrollingupgradestatus--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -238,7 +278,7 @@ Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName `
 ```
 ### Review OS image upgrade history
 
-Uses [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss?view=azps-10.1.0)
+Uses [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss output](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -295,7 +335,7 @@ Set-AzVmssRollingUpgradePolicy -VirtualMachineScaleSet $vmss `
 
 ### Manual Upgrade OS image
 
-Uses [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/en-us/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available.
+Uses [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/en-us/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to see if there is a newer OS image version available.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -330,7 +370,7 @@ Update SFRP node type durability level to match VMSS durability level.
 
 ## Examples
 
-### Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $nodeTypeName -Verbose
+### Example Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $nodeTypeName -Verbose
 
 ```powershell
 Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $nodeTypeName | ConvertTo-Json
@@ -366,13 +406,13 @@ Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $node
 }
 ```
 
-### Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory
+### Example Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory
 
 > **Note**
 > An empty result can indicate that node type is not configured for automatic os image upgrade or an upgrade has not taken place yet.
 
 ```powershell
-Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory
+Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory | ConvertTo-Json
 {
   "Properties": {
     "RunningStatus": {
