@@ -203,6 +203,18 @@ Add 'automaticOSUpgradePolicy' to 'upgradePolicy' and disable 'enableAutomaticUp
 ...
 ```
 
+The virtual machine scale set 'version' property in 'imageReference' should be set to 'latest' to enable automatic OS image upgrade. An error similar to below will be returned if 'version' is set to a specifica version.
+
+```diff
+"imageReference": {
+    "publisher": "MicrosoftWindowsServer",
+    "offer": "WindowsServer",
+    "sku": "2022-Datacenter",
+-   "version": "20348.1726.230505"
++   "version": "latest"
+}
+```
+
 #### Configure automatic OS image upgrade using Azure PowerShell
 
 The following example shows how to configure automatic OS image upgrade for node type 'nt0' using an ARM template or using Azure PowerShell.
@@ -265,7 +277,7 @@ else {
 
 ### Review OS image upgrade status
 
-Uses [Get-AzVmssRollingUpgradeStatus](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgradestatus) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgradeStatus output](#example-get-azvmssrollingupgradestatus--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
+Uses [Get-AzVmssRollingUpgradeStatus](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgradestatus) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgradeStatus](#example-get-azvmssrollingupgradestatus--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -278,7 +290,7 @@ Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName `
 ```
 ### Review OS image upgrade history
 
-Uses [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss output](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
+Uses [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -347,7 +359,19 @@ Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName `
     -Verbose
 ```
 
-### Revert OS image upgrade
+### Stop OS image upgrade
+
+Uses [Stop-AzVmssRollingUpgrade](https://learn.microsoft.com/en-us/powershell/module/az.compute/stop-azvmssrollingupgrade) cmdlet to stop OS image upgrade if one is in progress.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+Import-Module -Name Az.Compute
+
+Stop-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
+    -VMScaleSetName $nodeTypeName `
+    -Force
+```
 
 ## Troubleshooting
 
@@ -366,11 +390,29 @@ Resolution:
 
 Update SFRP node type durability level to match VMSS durability level.
 
+### The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest
 
+```powershell
+Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName nt0 | ConvertTo-Json
+Start-AzVmssRollingOSUpgrade: The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest.
+ErrorCode: OperationNotAllowed
+ErrorMessage: The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest.
+ErrorTarget: 
+StatusCode: 409
+ReasonPhrase: Conflict
+OperationID : 90368558-b15f-4aad-aae9-38de2b679f1b
+```
+
+Resolution:
+
+Update VMSS to use 'latest' as the image version.
 
 ## Examples
 
 ### Example Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $nodeTypeName -Verbose
+
+> **Note**
+> RunningStatus information is last time a rolling upgrade was started but not necessarily last time an image was upgraded. Use [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) to get last time an image was upgraded.
 
 ```powershell
 Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $nodeTypeName | ConvertTo-Json
@@ -446,5 +488,22 @@ Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeH
   },
   "Type": "Microsoft.Compute/virtualMachineScaleSets/rollingUpgrades",
   "Location": "eastus"
+}
+```
+
+### Example Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName -Verbose
+
+> **Note**
+> A result similar to below will always be returned regardless of whether there is a newer OS image version available or not.
+
+
+```powershell
+Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName | ConvertTo-Json
+{
+  "Name": "6dd0212d-ff35-4dce-b77e-999a57c1534e",
+  "StartTime": "2023-07-11T19:34:57.7803755-04:00",
+  "EndTime": "2023-07-11T19:35:28.2994743-04:00",
+  "Status": "Succeeded",
+  "Error": null
 }
 ```
