@@ -318,14 +318,14 @@ else {
 
 ### Review OS image upgrade status
 
-Uses [Get-AzVmssRollingUpgradeStatus](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgradestatus) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgradeStatus](#example-get-azvmssrollingupgradestatus--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
+Uses [Get-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgrade) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgrade](#example-Get-AzVmssRollingUpgrade--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
 $nodeTypeName = '<node type name>'
 Import-Module -Name Az.Compute
 
-Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName `
+Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
     -Name $nodeTypeName `
     -Verbose
 ```
@@ -528,13 +528,13 @@ Verify that the node type has at least 5 nodes and that the node type durability
 
 ## Examples
 
-### Example Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $nodeTypeName -Verbose
+### Example Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName -Name $nodeTypeName -Verbose
 
 > **Note**
 > RunningStatus information is last time a rolling upgrade was started but not necessarily last time an image was upgraded. Use [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) to get last time an image was upgraded.
 
 ```powershell
-Get-AzVmssRollingUpgradeStatus -ResourceGroupName $resourceGroupName -Name $nodeTypeName | ConvertTo-Json
+Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName -Name $nodeTypeName | ConvertTo-Json
 {
   "Policy": {
     "MaxBatchInstancePercent": 20,
