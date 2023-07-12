@@ -141,12 +141,40 @@ $vmss | Set-AzResource -Verbose -Force
 
 #### Configure automatic OS image upgrade using ARM template
 
+```diff
+"apiVersion": "[variables('sfApiVersion')]",
+"type": "Microsoft.ServiceFabric/managedclusters",
+"name": "[parameters('clusterName')]",
+"location": "[resourcegroup().location]",
+"sku": {
+    "name" : "[parameters('clusterSku')]"
+},
+"properties": {
+    "dnsName": "[toLower(parameters('clusterName'))]",
+    "adminUserName": "[parameters('adminUserName')]",
+    "adminPassword": "[parameters('adminPassword')]",
+    "allowRdpAccess": true,
+    "clientConnectionPort": 19000,
+-   "enableAutoOSUpgrade": false,
++   "enableAutoOSUpgrade": true,
+    "httpGatewayConnectionPort": 19080,
+
+```
 
 #### Configure automatic OS image upgrade using Azure PowerShell
 
-```powershell
-```
+Uses [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to configure automatic OS image upgrade for Service Fabric managed clusters.
 
+```powershell
+$resourceGroupName = '<resource group name>'
+$clusterName = '<cluster name>'
+Import-Module -Name Az.ServiceFabric
+
+$managedCluster = Get-AzServiceFabricManagedCluster -ResourceGroupName $resourceGroupName -Name $clusterName
+$mangedCluster
+$managedCluster.EnableAutomaticOSUpgrade = $true
+Set-AzServiceFabricManagedCluster -InputObject $managedCluster -Verbose
+```
 
 ### Service Fabric Clusters
 
@@ -233,7 +261,11 @@ Update-AzVmss -ResourceGroupName $resourceGroupName `
 
 ## Manage OS image upgrade
 
+There is no management of Automatic OS Image Upgrade for most configurations. For specific settings or troubleshooting, [Azure Virtual Machine Scale Set automatic OS image upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade) contains configuration details and management of Automatic OS Image Upgrade that is summarized below.
+
 ### Enumerate current OS image SKU's available in Azure
+
+New images are applied based on policy settings. The following example shows how to enumerate current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example Get-AzVmImage](#example-get-azvmimage--location-location--publishername-publishername--offer-offer--sku-sku) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -241,10 +273,10 @@ $nodeTypeName = '<node type name>'
 Import-Module -Name Az.Compute
 Import-Module -Name Az.Resources
 
-$latestVersion = $null;
-$targetImageReference = $null
+$targetImageReference = $latestVersion = $null
+$versionsBack = 0
 $location = (Get-AzResourceGroup -Name $resourceGroupName).Location
-$vmssHistory = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory
+$vmssHistory = @(Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory)[0]
 
 if ($vmssHistory) {
     $targetImageReference = $vmssHistory.Properties.TargetImageReference
@@ -255,23 +287,29 @@ else {
     $targetImageReference = $vmssHistory.VirtualMachineProfile.StorageProfile.ImageReference
 }
 
+write-host "current running image on node type: " -ForegroundColor Green
+$targetImageReference
 $publisherName = $targetImageReference.Publisher
 $offer = $targetImageReference.Offer
 $sku = $targetImageReference.Sku
 $runningVersion = $targetImageReference.Version
 
-write-host "Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku"
+write-host "Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku" -ForegroundColor Cyan
 $images = Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
 
 foreach ($image in $images) {
-    if ([version]$image.Version -gt [version]$runningVersion) { $latestVersion = $image.Version }
+    if ([version]$latestVersion -gt [version]$runningVersion) { $versionsBack++ }
+    if ([version]$latestVersion -lt [version]$image.Version) { $latestVersion = $image.Version }
 }
 
-if ($latestVersion -gt $currentVersion) {
-    write-host "latest version published: $latestVersion is newer than current running version: $runningVersion" -ForegroundColor Green
+if ($versionsBack -gt 1) {
+    write-host "published latest version: $latestVersion is $versionsBack versions newer than current running version: $runningVersion" -ForegroundColor Red
+}
+elseif ($versionsBack -eq 1) {
+    write-host "published latest version: $latestVersion is newer than current running version: $runningVersion" -ForegroundColor Yellow
 }
 else {
-    write-host "current running version: $runningVersion is same or newer than latest version: $latestVersion" -ForegroundColor Green
+    write-host "current running version: $runningVersion is same or newer than published latest version: $latestVersion" -ForegroundColor Green
 }
 ```
 
@@ -380,7 +418,7 @@ Stop-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
 Example error:
 
 ```powershell
-$vmss | Set-AzResource   
+$vmss | Set-AzResource
 
 Confirm
 Set-AzResource: OperationNotAllowed : Durability Mismatch Detected for NodeType nt0. VMSS Durability Silver does not match the current SFRP NodeType durability level Bronze
@@ -397,7 +435,7 @@ Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetNa
 Start-AzVmssRollingOSUpgrade: The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest.
 ErrorCode: OperationNotAllowed
 ErrorMessage: The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest.
-ErrorTarget: 
+ErrorTarget:
 StatusCode: 409
 ReasonPhrase: Conflict
 OperationID : 90368558-b15f-4aad-aae9-38de2b679f1b
@@ -506,4 +544,23 @@ Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetNa
   "Status": "Succeeded",
   "Error": null
 }
+```
+
+### Example Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
+
+```powershell
+Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
+
+current running image on node type:
+Publisher               : MicrosoftWindowsServer
+Offer                   : WindowsServer
+Sku                     : 2022-Datacenter
+Version                 : 20348.1850.230707
+ExactVersion            :
+SharedGalleryImageId    :
+CommunityGalleryImageId :
+Id                      :
+
+Get-AzVmImage -Location eastus -PublisherName MicrosoftWindowsServer -offer WindowsServer -sku 2022-Datacenter
+current running version: 20348.1850.230707 is same or newer than published latest version: 20348.1850.230707
 ```
