@@ -265,7 +265,7 @@ There is no management of Automatic OS Image Upgrade for most configurations. Fo
 
 ### Enumerate current OS image SKU's available in Azure
 
-New images are applied based on policy settings. The following example shows how to enumerate current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example Get-AzVmImage](#example-get-azvmimage--location-location--publishername-publishername--offer-offer--sku-sku) below has expected output.
+New images are applied based on policy settings. The following example shows how to enumerate current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's output](#example-enumerate-current-os-image-skus-output) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -546,11 +546,9 @@ Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetNa
 }
 ```
 
-### Example Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
+### Example enumerate current OS image SKU's output
 
 ```powershell
-Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
-
 current running image on node type:
 Publisher               : MicrosoftWindowsServer
 Offer                   : WindowsServer
