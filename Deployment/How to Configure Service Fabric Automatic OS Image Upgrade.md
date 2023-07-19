@@ -4,7 +4,7 @@ This article describes how to configure Service Fabric Automatic OS Image Upgrad
 
 ## Configure 'Silver' or higher node type durability tier
 
-Configure the durability tier for the node type in the cluster resource and the virtual machine scale set resource. The following example shows how to configure the durability tier for the node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell.
+Configure the durability tier for the node type in the cluster resource and the virtual machine scale set resource. The following example shows how to configure the durability tier for the node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell. If node type runs only stateless workloads and is 'isStateless' is set to true, then the durability tier can be set to 'Bronze'.
 
 ### Service Fabric Managed Clusters
 
@@ -271,12 +271,11 @@ There is no management necessary for Automatic OS Image Upgrade for most configu
 New images are applied based on policy settings. The following example shows how to enumerate current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output.
 
 ```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
 Import-Module -Name Az.Compute
 Import-Module -Name Az.Resources
 
-$targetImageReference = $latestVersion = $null
+$targetImageReference = $latestVersion = [version]::new(0,0,0,0)
+$isLatest = $false
 $versionsBack = 0
 $location = (Get-AzResourceGroup -Name $resourceGroupName).Location
 $vmssHistory = @(Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory)[0]
@@ -296,16 +295,26 @@ $publisherName = $targetImageReference.Publisher
 $offer = $targetImageReference.Offer
 $sku = $targetImageReference.Sku
 $runningVersion = $targetImageReference.Version
+if($runningVersion -ieq 'latest') {
+    write-host "running version is 'latest'"
+    $isLatest = $true
+    $runningVersion = [version]::new(0,0,0,0)
+}
 
 write-host "Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku" -ForegroundColor Cyan
 $images = Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
+write-host "available versions: " -ForegroundColor Green
+$images | format-table -Property Version, Skus, Offer, PublisherName
 
 foreach ($image in $images) {
     if ([version]$latestVersion -gt [version]$runningVersion) { $versionsBack++ }
     if ([version]$latestVersion -lt [version]$image.Version) { $latestVersion = $image.Version }
 }
 
-if ($versionsBack -gt 1) {
+if($isLatest) {
+    write-host "published latest version: $latestVersion running version: 'latest'" -ForegroundColor Cyan
+}
+elseif ($versionsBack -gt 1) {
     write-host "published latest version: $latestVersion is $versionsBack versions newer than current running version: $runningVersion" -ForegroundColor Red
 }
 elseif ($versionsBack -eq 1) {
@@ -413,6 +422,27 @@ Stop-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
     -VMScaleSetName $nodeTypeName `
     -Force
 ```
+
+### Rollback OS image upgrade
+
+Uses [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to disable Automatic OS Image Upgrade and to set older image version. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to enumerate available versions.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+$imageReferenceVersion = '<rollback image version>'
+Import-Module -Name Az.Compute
+
+Update-AzVmss -ResourceGroupName $resourceGroupName `
+    -Name $nodeTypeName `
+    -AutomaticOSUpgrade $false `
+    -EnableAutoUpdate $true `
+    -ImageReferenceVersion $imageReferenceVersion `
+    -ImageReferencePublisher 'MicrosoftWindowsServer' `
+    -ImageReferenceOffer 'WindowsServer' `
+    -ImageReferenceSku '2022-Datacenter' `
+    -Verbose
+``````
 
 ## Troubleshooting
 
@@ -640,5 +670,26 @@ CommunityGalleryImageId :
 Id                      :
 
 Get-AzVmImage -Location eastus -PublisherName MicrosoftWindowsServer -offer WindowsServer -sku 2022-Datacenter
+available versions: 
+
+Version           Skus            Offer         PublisherName
+-------           ----            -----         -------------
+20348.1006.220908 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1129.221007 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1131.221014 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1249.221105 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1366.221207 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1487.230106 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1547.230207 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1607.230310 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1668.230404 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1726.230505 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1787.230607 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1787.230621 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.1850.230707 2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.768.220609  2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.825.220704  2022-Datacenter WindowsServer MicrosoftWindowsServer
+20348.887.220806  2022-Datacenter WindowsServer MicrosoftWindowsServer
+
 current running version: 20348.1850.230707 is same or newer than published latest version: 20348.1850.230707
 ```
