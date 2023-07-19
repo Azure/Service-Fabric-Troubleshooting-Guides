@@ -2,7 +2,7 @@
 
 ## Overview  
 
-This documents the options available to upgrade a basic load balancer sku to standard load balancer sku for a Service Fabric cluster. Choose one of the options below based on availability requirements.
+This documents the options available to upgrade a basic load balancer sku to a standard ip and load balancer sku for a Service Fabric cluster. Choose one of the options below based on availability requirements.
 
 ### NOTE: This does not apply to [Service Fabric managed clusters](https://learn.microsoft.com/azure/service-fabric/overview-managed-cluster). Service Fabric managed clusters with 'Basic' SKU are provisioned with a 'Basic' load balancer but cannot be upgraded and must be redeployed . Service Fabric managed clusters with 'Standard' SKU have are provisioned with a 'Standard' load balancer and are not impacted.
 
