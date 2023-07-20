@@ -4,7 +4,7 @@ This article describes how to configure Service Fabric Automatic OS Image Upgrad
 
 ## Configure 'Silver' or higher node type durability tier
 
-Configure the durability tier for the node type in the cluster resource and the virtual machine scale set resource. The following example shows how to configure the durability tier for the node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell. If node type runs only stateless workloads and is 'isStateless' is set to true, then the durability tier can be set to 'Bronze'.
+Configure the durability tier and Service Fabric extension typeHandlerVersion for the node type in the cluster resource and the virtual machine scale set resource. The following example shows how to configure the durability tier for the node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell. If node type runs only stateless workloads and is 'isStateless' is set to true, then the durability tier can be set to 'Bronze'.
 
 ### Service Fabric Managed Clusters
 
@@ -93,7 +93,7 @@ Microsoft.Compute/virtualMachineScaleSets/extensions resource
 ```
 
 
-#### Configure durability tier using Azure PowerShell
+#### Configure durability tier and typeHandlerVersion using Azure PowerShell
 
 Uses [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
 
@@ -131,7 +131,7 @@ $vmss = Get-AzResource -ResourceGroupName $resourceGroupName `
 $sfExtension = $vmss.Properties.virtualMachineProfile.extensionProfile.extensions `
     | Where-Object {$psitem.properties.publisher -ieq 'Microsoft.Azure.ServiceFabric'}
 $sfExtension.properties.settings.durabilityLevel = $nodeTypeDurability
-
+$sfExtension.properties.typeHandlerVersion = '1.1'
 $vmss | Set-AzResource -Verbose -Force
 ```
 
