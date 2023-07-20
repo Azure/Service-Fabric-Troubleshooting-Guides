@@ -15,9 +15,9 @@ Service fabric managed clusters durability tier is set at  deployment time and c
 > **Note**
 > Changing durability tier requires updating both the virtual machine scale set resource and the nested node type array in the cluster resource.
 
-To use Automatic OS Image Upgrade, the node type durability tier must be set to 'Silver' or higher. This is the default and recommended setting for new clusters. Any node type with a durability of 'Bronze' that will use Automatic OS Image Upgrade will need to have durability tier modified and have a minimum of 5 nodes. See [Service Fabric cluster durability tiers](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-capacity#durability-tiers) for more information.
+To use Automatic OS Image Upgrade, the node type durability tier must be set to 'Silver' or higher and Service Fabric extension 'typeHandlerVersion' must be at least '1.1'. This is the default and recommended setting for new clusters. Any node type with a durability of 'Bronze' that will use Automatic OS Image Upgrade will need to have durability tier modified and have a minimum of 5 nodes. See [Service Fabric cluster durability tiers](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-capacity#durability-tiers) for more information.
 
-#### Configure durability tier using ARM template
+#### Configure durability tier and typeHandlerVersion using ARM template
 
 Microsoft.ServiceFabric/clusters/nodeTypes resource
 
@@ -70,7 +70,8 @@ Microsoft.Compute/virtualMachineScaleSets/extensions resource
     "properties": {
         "publisher": "Microsoft.Azure.ServiceFabric",
         "type": "ServiceFabricNode",
-        "typeHandlerVersion": "1.0",
+-        "typeHandlerVersion": "1.0",
++        "typeHandlerVersion": "1.1",
         "autoUpgradeMinorVersion": true,
         "settings": {
             "clusterEndpoint": "[reference(resourceId('Microsoft.ServiceFabric/clusters', parameters('clusterName')), '2018-02-01-preview').properties.clusterEndpoint]",
@@ -258,7 +259,7 @@ Import-Module -Name Az.Compute
 Update-AzVmss -ResourceGroupName $resourceGroupName `
     -Name $nodeTypeName `
     -AutomaticOSUpgrade $true `
-    -EnableAutoUpdate $false `
+    -EnableAutomaticUpdate $false `
     -Verbose
 ```
 
@@ -436,7 +437,7 @@ Import-Module -Name Az.Compute
 Update-AzVmss -ResourceGroupName $resourceGroupName `
     -Name $nodeTypeName `
     -AutomaticOSUpgrade $false `
-    -EnableAutoUpdate $true `
+    -EnableAutomaticUpdate $true `
     -ImageReferenceVersion $imageReferenceVersion `
     -ImageReferencePublisher 'MicrosoftWindowsServer' `
     -ImageReferenceOffer 'WindowsServer' `
