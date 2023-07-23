@@ -176,7 +176,7 @@ Import-Module -Name Az.ServiceFabric
 
 $managedCluster = Get-AzServiceFabricManagedCluster -ResourceGroupName $resourceGroupName -Name $clusterName
 $mangedCluster
-$managedCluster.EnableAutomaticOSUpgrade = $true
+$managedCluster.EnableAutoOSUpgrade = $true
 Set-AzServiceFabricManagedCluster -InputObject $managedCluster -Verbose
 ```
 
