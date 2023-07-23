@@ -8,7 +8,7 @@ Configure the durability tier and Service Fabric extension typeHandlerVersion fo
 
 ### Service Fabric Managed Clusters
 
-Service fabric managed clusters durability tier is set at  deployment time and cannot be changed after deployment. The default durability tier is 'Silver' for 'Standard' clusters and 'Bronze' for 'Basic' clusters. See [Enable Automatic OS Image Upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) for more information.
+Service fabric managed clusters do not have durability requirements and both the 'Basic' and 'Standard' sku support Automatic OS Image Upgrade. [Enable Automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) has managed cluster specific instructions for enabling Automatic OS Image Upgrade.
 
 ### Service Fabric Clusters
 
@@ -91,7 +91,6 @@ Microsoft.Compute/virtualMachineScaleSets/extensions resource
     }
 }
 ```
-
 
 #### Configure durability tier and typeHandlerVersion using Azure PowerShell
 
@@ -272,6 +271,9 @@ There is no management necessary for Automatic OS Image Upgrade for most configu
 New images are applied based on policy settings. The following example shows how to enumerate current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output.
 
 ```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+
 Import-Module -Name Az.Compute
 Import-Module -Name Az.Resources
 
