@@ -140,8 +140,6 @@ Configure the virtual machine scale set resource to use Automatic OS Image Upgra
 
 ### Service Fabric Managed Clusters
 
-This option is only available for Service Fabric Managed Clusters on 'Standard' tier.
-
 #### Configure Automatic OS Image Upgrade using ARM template
 
 ```diff
@@ -234,7 +232,7 @@ Add 'automaticOSUpgradePolicy' to 'upgradePolicy' and disable 'enableAutomaticUp
 ...
 ```
 
-The virtual machine scale set 'version' property in 'imageReference' should be set to 'latest' to enable Automatic OS Image Upgrade. An error similar to below will be returned if 'version' is set to a specifica version.
+The virtual machine scale set 'version' property in 'imageReference' should be set to 'latest' to enable Automatic OS Image Upgrade. An error similar to below will be returned if 'version' is set to a specific version.
 
 ```diff
 "imageReference": {
@@ -248,7 +246,7 @@ The virtual machine scale set 'version' property in 'imageReference' should be s
 
 #### Configure Automatic OS Image Upgrade using Azure PowerShell
 
-The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell.
+The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell. Uses [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to configure Automatic OS Image Upgrade for Service Fabric clusters.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -262,9 +260,15 @@ Update-AzVmss -ResourceGroupName $resourceGroupName `
     -Verbose
 ```
 
-## Manage OS image upgrade
+## Manage OS Image Upgrade
 
 There is no management necessary for Automatic OS Image Upgrade for most configurations. For specific settings or troubleshooting, [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade) contains configuration details and management of Automatic OS Image Upgrade that is summarized below.
+
+### Scheduling OS Image Upgrade with Maintenance Control
+
+Azure Service Fabric clusters support [Maintenance Control](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-maintenance-control) which allows configuration of when maintenance is performed on the virtual machine scale set including Automatic OS Image Upgrade.
+
+Azure Service Fabric Managed Clusters support for Maintenance Control is currently in preview. See [MaintenanceControl](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-maintenance-control) for configuration and support information as not all regions are currently supported.
 
 ### Enumerate current OS image SKU's available in Azure
 
