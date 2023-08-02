@@ -97,8 +97,6 @@ Microsoft.Compute/virtualMachineScaleSets/extensions resource
 Uses [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
 
 ```powershell
-
-```powershell
 $resourceGroupName = '<resource group name>'
 $nodeTypeName = '<node type name>'
 $nodeTypeDurability = 'Silver'
@@ -262,11 +260,31 @@ Update-AzVmss -ResourceGroupName $resourceGroupName `
 
 ## Manage OS Image Upgrade
 
-There is no management necessary for Automatic OS Image Upgrade for most configurations. For specific settings or troubleshooting, [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade) contains configuration details and management of Automatic OS Image Upgrade that is summarized below.
+There is no management necessary for Automatic OS Image Upgrade for most configurations. For specific settings or troubleshooting, [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade) contains configuration details and management of Automatic OS Image Upgrade that is summarized below. 
+
+If more control is required for image releases than what is available through these configuration settings, Automatic OS Image Upgrade supports the use of custom images. Using custom images from a shared compute gallery provides additional configuration such as image expiration dates and 'latest' version. Setting up custom images with multiple versions can also be used for testing and troubleshooting the upgrade process on demand. See [Tutorial: Create and use a custom image for Virtual Machine Scale Sets with Azure PowerShell](https://learn.microsoft.com/azure/virtual-machine-scale-sets/tutorial-use-custom-image-powershell) for this process.
+
+### Automatic OS Upgrade Process
+
+From [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade), this is the default process Automatic OS Image Upgrade uses for scale sets. To configure additional checks for successful upgrade, a load balancer probe or [Application Health extension](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-health-extension) can be used.
+
+The region of a scale set becomes eligible to get image upgrades either through the availability-first process for platform images or replicating new custom image versions for Share Image Gallery. The image upgrade is then applied to an individual scale set in a batched manner as follows:
+
+1. Before you begin the upgrade process, the orchestrator will ensure that no more than 20% of instances in the entire scale set are unhealthy (for any reason).
+1. The upgrade orchestrator identifies the batch of VM instances to upgrade, with any one batch having a maximum of 20% of the total instance count, subject to a minimum batch size of one virtual machine. There is no minimum scale set size requirement and scale sets with 5 or fewer instances will have 1 VM per upgrade batch (minimum batch size).
+1. The OS disk of every VM in the selected upgrade batch is replaced with a new OS disk created from the latest image. All specified extensions and configurations in the scale set model are applied to the upgraded instance.
+1. For scale sets with configured application health probes or Application Health extension, the upgrade waits up to 5 minutes for the instance to become healthy, before moving on to upgrade the next batch. If an instance does not recover its health in 5 minutes after an upgrade, then by default the previous OS disk for the instance is restored.
+1. The upgrade orchestrator also tracks the percentage of instances that become unhealthy post an upgrade. The upgrade will stop if more than 20% of upgraded instances become unhealthy during the upgrade process.
+1. The above process continues until all instances in the scale set have been upgraded.
+
+### Automatic OS Upgrade Rollback Configuration
 
 ### Scheduling OS Image Upgrade with Maintenance Control
 
 Azure Service Fabric clusters support [Maintenance Control](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-maintenance-control) which allows configuration of when maintenance is performed on the virtual machine scale set including Automatic OS Image Upgrade.
+
+> **Note**
+> Maintenance Control requires a schedule with minimum settings of daily schedule with at least a 5 hour window. Updates not completed in the provided window will resume during next window.
 
 Azure Service Fabric Managed Clusters support for Maintenance Control is currently in preview. See [MaintenanceControl](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-maintenance-control) for configuration and support information as not all regions are currently supported.
 
@@ -345,6 +363,7 @@ Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
     -Name $nodeTypeName `
     -Verbose
 ```
+
 ### Review OS image upgrade history
 
 Uses [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
