@@ -1,7 +1,7 @@
 # Microsoft.ServiceFabricMesh registration is stuck
 
 ## Issue
-Customers using terraform get the error that Microsoft.ServiceFabricMesh can't be registered. This is because ServiceFabricMesh Resource Provider is still within the list of available providers but it has been deprecated. ServiceFabricMesh was part of the list of default providers to register from Terraform. 
+Customers using terraform see Microsoft.ServiceFabricMesh provider get stuck during registration. This is because ServiceFabricMesh Resource Provider is still within the list of available providers but it has been deprecated. ServiceFabricMesh was part of the list of default providers to register from Terraform. 
 
 ## Impact
 Customers that use terraform usually are stuck from deployments because of this error. They should not be trying to manually register this RP. 
