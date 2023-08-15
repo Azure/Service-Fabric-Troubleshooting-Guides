@@ -7,7 +7,14 @@ Customers using terraform see Microsoft.ServiceFabricMesh provider get stuck dur
 Customers that use terraform usually are stuck from deployments because of this error. They should not be trying to manually register this RP either. 
 
 ## Symptoms
-- When deploying using terraform customers will see the process of registering/unregistering Microsoft.ServiceFabricMesh stuck in Azure Portal:
+- When deploying using terraform customers will get the following error:
+
+  ```
+  Cannot register provider Microsoft.ServiceFabricMesh with Azure Resource Manager: resources.ProvidersClient
+  ```
+ 
+- In the Azure Portal the process of registering/unregistering Microsoft.ServiceFabricMesh gets stuck in "registering/unregistering" status:
+  
  ![image](https://github.com/dbucce/Service-Fabric-Troubleshooting-Guides/assets/50681801/8a20f940-e9ba-404c-9909-c8fd1796e374)
 
 - Timeout errors from portal when trying to register/unregister RP:
