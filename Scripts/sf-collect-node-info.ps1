@@ -565,7 +565,8 @@ function process-machine() {
     
         add-job -jobName ".net reg" -scriptBlock {
             param($workdir = $args[0])
-            Invoke-Expression "reg.exe query HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework /s > $($workDir)\dotnet.reg.txt"
+            Get-ChildItem "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP" -Recurse | Get-ItemProperty -Name Version -ErrorAction SilentlyContinue | Select-Object PSChildName, Version | out-file "$($workDir)\dotnet.reg.txt"
+            Invoke-Expression "dotnet.exe --list-runtimes > $($workDir)\dotnet.core.txt"
         } -arguments @($workdir)
     
         write-host "policies"
