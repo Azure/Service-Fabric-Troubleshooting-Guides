@@ -1,13 +1,13 @@
 # Degraded Node Detected
 
-
-A degraded node can potentially cause routing/broadcast to fail and therefore cause problems in the overlying systems.  
+You might see a node health warning being reported in SFX indicating DegradedNodeDetected. If that is the case, you can follow this article. 
+> A degraded node can potentially cause routing/broadcast to fail and therefore cause problems in the overlying systems.  
 This is an indicator that the node is not working properly, resources might not be available and action should be taken.
 
 ## Triage
 
 ### Is the report stale?
-This report is emitted every 30 seconds. If you see the reporting time has not changed in a couple minutes, the issue is not happening anymore and the report will go away once it expires (30 minutes).
+the DegradedNodeDetected health report is emitted every 30 seconds. You can find it in the health evaluations segment of SFX, clicking on the node that is reporting the warning. If you see the reporting time (source utc) has not changed in a couple minutes, the issue is not happening anymore and the report will go away once it expires (30 minutes).
 
 ### The issue is ongoing
 
