@@ -13,7 +13,7 @@ the DegradedNodeDetected health report is emitted every 30 seconds. You can find
 
 The report is periodically emitted. 
 
-- **Network failed:** Indicates the node is unable  to establish new connectinos within itself. Connections made before this point might be able to work, but no new connection can be made.
+- **Network failed:** Indicates the node is unable  to establish new connections within itself. Connections made before this point might be able to work, but no new connection can be made.
 - **Memory failed:** Indicates the node is unable to allocate 1MB of memory. This is a system failure, node should be restarted.
 - **Disk failed:** This indicates the node is unable to read/write into the disk. This could be caused by a faulty disk, an OS problem, the node is unable to flush its data or could also be a side effect of the node consumming too much memory. This problem can make the node bugcheck when the probe goes unresponsive for more than 15 minutes. This can also make the node fail to open the reliability subsystem; if that is the case, you will see a health report indicating so. 
 ## Diagnose
@@ -46,7 +46,7 @@ If the reason for the failure is a rogue process whose behavior is impacting fab
 
 ## Restart the node 
 **WARNING:** Make sure restarting the node won't cause problems to fabric. If the node to restart is a seed node, make sure the remaining count of alive seed nodes is **greater** than the total count of seed nodes divided by two. 
-- Try to restart the node by using Restart-ServiceFabricNode; however, this command could fail to restart the node since it is already in a degraded state.
+- First, Try to restart the node by using Restart-ServiceFabricNode; however, this command could fail to restart the node since it is already in a degraded state. If this approach does not alleviate the issue, you will need to manually restart the machine; for Windows, run `shutdown /r /t 0`. For Linux, run `shutdown -r now`.
 - RDP into the node and manually restart it.
 - If RDP is not an option, you might need to manually restart the node using the compute provider, such as restarting the node from the azure portal.
 
