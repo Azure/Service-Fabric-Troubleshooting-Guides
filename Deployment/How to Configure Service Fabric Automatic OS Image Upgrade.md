@@ -140,6 +140,8 @@ Configure the virtual machine scale set resource to use Automatic OS Image Upgra
 
 #### Configure Automatic OS Image Upgrade using ARM template
 
+To enable automatic OS upgrades in a managed cluster using an ARM template, [Enable automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) section contains detailed information including retry information. In 'managedclusters' resource, set 'enableAutoOSUpgrade' to 'true'. 'vmImageVersion' value is parameterized and defaults to 'latest' if generating a new template from Azure portal. In template parameters section or 'managedclusters/nodetypes' resource, ensure 'vmImageVersion' is set to 'latest'.
+
 ```diff
 "apiVersion": "[variables('sfApiVersion')]",
 "type": "Microsoft.ServiceFabric/managedclusters",
@@ -158,6 +160,23 @@ Configure the virtual machine scale set resource to use Automatic OS Image Upgra
 +   "enableAutoOSUpgrade": true,
     "httpGatewayConnectionPort": 19080,
 
+```
+
+```diff
+"apiVersion": "[variables('sfApiVersion')]",
+"type": "Microsoft.ServiceFabric/managedclusters/nodetypes",
+"name": "[concat(parameters('clusterName'), '/', parameters('nodeTypeName'))]",
+"location": "[resourcegroup().location]",
+"dependsOn": [
+    "[concat('Microsoft.ServiceFabric/managedclusters/', parameters('clusterName'))]"
+],
+"properties": {
+    "isPrimary": true,
+    "vmImagePublisher": "[parameters('vmImagePublisher')]",
+    "vmImageOffer": "[parameters('vmImageOffer')]",
+    "vmImageSku": "[parameters('vmImageSku')]",
+-    "vmImageVersion": "20348.1726.230505",
++    "vmImageVersion": "latest",
 ```
 
 #### Configure Automatic OS Image Upgrade using Azure PowerShell
@@ -197,7 +216,7 @@ Add 'automaticOSUpgradePolicy' to 'upgradePolicy' and disable 'enableAutomaticUp
 +           "mode": "Automatic",
 +           "automaticOSUpgradePolicy": {
 +              "enableAutomaticOSUpgrade": true
-+              "disableAutomaticRollback": false
++              "useRollingUpgradePolicy": false
 +           }
         },
         "virtualMachineProfile": {
@@ -262,11 +281,11 @@ Update-AzVmss -ResourceGroupName $resourceGroupName `
 
 There is no management necessary for Automatic OS Image Upgrade for most configurations. For specific settings or troubleshooting, [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade) contains configuration details and management of Automatic OS Image Upgrade that is summarized below. 
 
-If more control is required for image releases than what is available through these configuration settings, Automatic OS Image Upgrade supports the use of custom images. Using custom images from a shared compute gallery provides additional configuration such as image expiration dates and 'latest' version. Setting up custom images with multiple versions can also be used for testing and troubleshooting the upgrade process on demand. See [Tutorial: Create and use a custom image for Virtual Machine Scale Sets with Azure PowerShell](https://learn.microsoft.com/azure/virtual-machine-scale-sets/tutorial-use-custom-image-powershell) for this process.
+If more control is required for image releases than what is available through these configuration settings, Automatic OS Image Upgrade supports the use of custom images. Using custom images from a shared compute gallery provides additional configuration such as image expiration dates and 'latest' version. See [Tutorial: Create and use a custom image for Virtual Machine Scale Sets with Azure PowerShell](https://learn.microsoft.com/azure/virtual-machine-scale-sets/tutorial-use-custom-image-powershell) for this process.
 
 ### Automatic OS Upgrade Process
 
-From [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade), this is the default process Automatic OS Image Upgrade uses for scale sets. To configure additional checks for successful upgrade, only [Application Health extension](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-health-extension) can be used for Service Fabric clusters. In addition, for Service Fabric clusters, only the 'Bronze' durability *and* 'Stateless' Nodetype be used with Application Health extension. See [Using Application Health Probes](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade#using-application-health-probes) and [Service Fabric requirements](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade#service-fabric-requirements).
+From [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade), below is the default process Automatic OS Image Upgrade uses for scale sets. To configure additional checks for successful upgrade, only [Application Health extension](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-health-extension) can be used for Service Fabric clusters. In addition, for Service Fabric clusters, only the 'Bronze' durability *and* 'Stateless' Nodetype be used with Application Health extension. See [Using Application Health Probes](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade#using-application-health-probes) and [Service Fabric requirements](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade#service-fabric-requirements).
 
 The region of a scale set becomes eligible to get image upgrades either through the availability-first process for platform images or replicating new custom image versions for Share Image Gallery. The image upgrade is then applied to an individual scale set in a batched manner as follows:
 
@@ -394,7 +413,8 @@ Additional configuration for Automatic OS Upgrade can be configured using [Set-A
 +     },
       "automaticOSUpgradePolicy": {
         "enableAutomaticOSUpgrade": true,
-        "disableAutomaticRollback": false
+-       "useRollingUpgradePolicy": false
++       "useRollingUpgradePolicy": true
       }
     },
 ```
