@@ -34,7 +34,7 @@ Update the azurerm provider version in the terraform template
     ```
     terraform {
       required_providers {
-        aurerm = {
+        azurerm = {
         ...
         version = "=3.41.0"
         }
