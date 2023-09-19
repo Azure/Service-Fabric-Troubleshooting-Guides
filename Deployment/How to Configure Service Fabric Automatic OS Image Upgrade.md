@@ -1,21 +1,20 @@
 # How to Configure Service Fabric Automatic OS Image Upgrade
 
-This article describes how to configure Service Fabric Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. This is a best practice for Service Fabric clusters running in production. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and how to configure it if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
+This article describes the best practice of configuring Service Fabric Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
 
 ## Configure 'Silver' or higher node type durability tier
 
-Configure the durability tier and Service Fabric extension typeHandlerVersion for the node type in the cluster resource and the virtual machine scale set resource. The following example shows how to configure the durability tier for the node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell. If node type runs only stateless workloads and is 'isStateless' is set to true, then the durability tier can be set to 'Bronze'.
-
+Configure the durability tier and Service Fabric extension typeHandlerVersion for the node type in the cluster resource and the virtual machine scale set resource. The following examples show how to configure the durability tier for node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell.
 ### Service Fabric Managed Clusters
 
-Service fabric managed clusters do not have durability requirements and both the 'Basic' and 'Standard' sku support Automatic OS Image Upgrade. [Enable Automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) has managed cluster specific instructions for enabling Automatic OS Image Upgrade.
+Service fabric managed clusters do not have durability requirements and both the 'Basic' and 'Standard' sku's support Automatic OS Image Upgrade. [Enable Automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) has managed cluster specific instructions for enabling Automatic OS Image Upgrade.
 
 ### Service Fabric Clusters
 
 > **Note**
 > Changing durability tier requires updating both the virtual machine scale set resource and the nested node type array in the cluster resource.
 
-To use Automatic OS Image Upgrade, the node type durability tier must be set to 'Silver' or higher and Service Fabric extension 'typeHandlerVersion' must be at least '1.1'. This is the default and recommended setting for new clusters. Any node type with a durability of 'Bronze' that will use Automatic OS Image Upgrade will need to have durability tier modified and have a minimum of 5 nodes. See [Service Fabric cluster durability tiers](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-capacity#durability-tiers) for more information.
+To use Automatic OS Image Upgrade, the node type durability tier must be set to 'Silver' or higher and Service Fabric extension 'typeHandlerVersion' must be at least '1.1'. This is the default and recommended setting for new clusters. There is one uncommon scenario where if the node type runs only stateless workloads and is 'isStateless' is set to true, then the durability tier can be set to 'Bronze'. Any node type with a durability of 'Bronze' that will use Automatic OS Image Upgrade will need to have durability tier modified and have a minimum of 5 nodes. See [Service Fabric cluster durability tiers](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-capacity#durability-tiers) for more information.
 
 #### Configure durability tier and typeHandlerVersion using ARM template
 
@@ -94,7 +93,7 @@ Microsoft.Compute/virtualMachineScaleSets/extensions resource
 
 #### Configure durability tier and typeHandlerVersion using Azure PowerShell
 
-Uses [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
+For Service Fabric clusters only, use [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -112,7 +111,7 @@ Update-AzServiceFabricDurability -ResourceGroupName $resourceGroupName `
 
 #### Update the virtual machine scale set using Set-AzResource
 
-Uses [Set-AzResource](https://learn.microsoft.com/powershell/module/az.resources/set-azresource) cmdlet to update the durability tier for the node type in the virtual machine scale set resource.
+Use [Set-AzResource](https://learn.microsoft.com/powershell/module/az.resources/set-azresource) cmdlet to update the durability tier for the node type in the virtual machine scale set resource.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -181,7 +180,7 @@ To enable automatic OS upgrades in a managed cluster using an ARM template, [Ena
 
 #### Configure Automatic OS Image Upgrade using Azure PowerShell
 
-Uses [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to configure Automatic OS Image Upgrade for Service Fabric managed clusters.
+Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to configure Automatic OS Image Upgrade for Service Fabric managed clusters.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -344,23 +343,30 @@ if($runningVersion -ieq 'latest') {
 }
 
 write-host "Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku" -ForegroundColor Cyan
-$images = Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
-write-host "available versions: " -ForegroundColor Green
-$images | format-table -Property Version, Skus, Offer, PublisherName
+$imageSkus = Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
+$orderedSkus = [collections.generic.list[version]]::new()
 
-foreach ($image in $images) {
-    if ([version]$latestVersion -gt [version]$runningVersion) { $versionsBack++ }
-    if ([version]$latestVersion -lt [version]$image.Version) { $latestVersion = $image.Version }
+foreach ($image in $imageSkus) {
+    [void]$orderedSkus.Add([version]::new($image.Version)) 
 }
 
-if($isLatest) {
+$orderedSkus = $orderedSkus | Sort-Object
+write-host "available versions: " -ForegroundColor Green
+$orderedSkus.foreach{ $psitem.ToString() }
+
+foreach ($sku in $orderedSkus) {
+    if ([version]$sku -gt [version]$runningVersion) { $versionsBack++ }
+    if ([version]$latestVersion -lt [version]$sku) { $latestVersion = $sku }
+}
+
+if ($isLatest) {
     write-host "published latest version: $latestVersion running version: 'latest'" -ForegroundColor Cyan
 }
 elseif ($versionsBack -gt 1) {
     write-host "published latest version: $latestVersion is $versionsBack versions newer than current running version: $runningVersion" -ForegroundColor Red
 }
 elseif ($versionsBack -eq 1) {
-    write-host "published latest version: $latestVersion is newer than current running version: $runningVersion" -ForegroundColor Yellow
+    write-host "published latest version: $latestVersion is one version newer than current running version: $runningVersion" -ForegroundColor Yellow
 }
 else {
     write-host "current running version: $runningVersion is same or newer than published latest version: $latestVersion" -ForegroundColor Green
@@ -369,7 +375,7 @@ else {
 
 ### Review OS image upgrade status
 
-Uses [Get-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgrade) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgrade](#example-Get-AzVmssRollingUpgrade--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
+For Service Fabric clusters only, use [Get-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgrade) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgrade](#example-Get-AzVmssRollingUpgrade--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -383,7 +389,7 @@ Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
 
 ### Review OS image upgrade history
 
-Uses [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
+For Service Fabric clusters only, use [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -441,7 +447,7 @@ Set-AzVmssRollingUpgradePolicy -VirtualMachineScaleSet $vmss `
 
 ### Manual Upgrade OS image
 
-Uses [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to see if there is a newer OS image version available.
+For Service Fabric clusters only, use [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to see if there is a newer OS image version available.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -455,7 +461,7 @@ Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName `
 
 ### Stop OS image upgrade
 
-Uses [Stop-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/stop-azvmssrollingupgrade) cmdlet to stop OS image upgrade if one is in progress.
+For Service Fabric clusters only, use [Stop-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/stop-azvmssrollingupgrade) cmdlet to stop OS image upgrade if one is in progress.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -469,7 +475,7 @@ Stop-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
 
 ### Rollback OS image upgrade
 
-Uses [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to disable Automatic OS Image Upgrade and to set older image version. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to enumerate available versions.
+For Service Fabric clusters only, use [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to disable Automatic OS Image Upgrade and to set older image version. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to enumerate available versions.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
