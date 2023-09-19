@@ -1,4 +1,4 @@
-# How to Configure Service Fabric Automatic OS Image Upgrade
+# How to Configure Service Fabric Managed Cluster Automatic OS Image Upgrade
 
 This article describes the best practice of configuring Service Fabric Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
 
