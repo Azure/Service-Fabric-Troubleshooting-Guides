@@ -1,11 +1,12 @@
 # How to Configure Service Fabric Cluster Automatic OS Image Upgrade
 
-This article describes the best practice of configuring Service Fabric cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
+This article describes the best practice of configuring Service Fabric cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) has additional information including Patch Orchestration Application (POA) if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
 
-### Service Fabric Managed Clusters
+## Service Fabric Managed Clusters
 
 Service Fabric Managed clusters ... TODO [How to Configure Service Fabric Managed Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Managed%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
 
+## Configuring Automatic OS Image Upgrade for Service Fabric Clusters
 
 ## Configure 'Silver' or higher node type durability tier
 
@@ -16,7 +17,7 @@ Configure the durability tier and Service Fabric extension typeHandlerVersion fo
 
 To use Automatic OS Image Upgrade, the node type durability tier must be set to 'Silver' or higher and Service Fabric extension 'typeHandlerVersion' must be at least '1.1'. This is the default and recommended setting for new clusters. There is one uncommon scenario where if the node type runs only stateless workloads and is 'isStateless' is set to true, then the durability tier can be set to 'Bronze'. Any node type with a durability of 'Bronze' that will use Automatic OS Image Upgrade will need to have durability tier modified and have a minimum of 5 nodes. See [Service Fabric cluster durability tiers](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-capacity#durability-tiers) for more information.
 
-#### Configure durability tier and typeHandlerVersion using ARM template
+### Configure durability tier and typeHandlerVersion using ARM template
 
 Microsoft.ServiceFabric/clusters/nodeTypes resource
 
@@ -91,7 +92,7 @@ Microsoft.Compute/virtualMachineScaleSets/extensions resource
 }
 ```
 
-#### Configure durability tier and typeHandlerVersion using Azure PowerShell
+### Configure durability tier and typeHandlerVersion using Azure PowerShell
 
 For Service Fabric clusters only, use [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
 
@@ -109,7 +110,7 @@ Update-AzServiceFabricDurability -ResourceGroupName $resourceGroupName `
     -Verbose
 ```
 
-#### Update the virtual machine scale set using Set-AzResource
+### Update the virtual machine scale set using Set-AzResource
 
 Use [Set-AzResource](https://learn.microsoft.com/powershell/module/az.resources/set-azresource) cmdlet to update the durability tier for the node type in the virtual machine scale set resource.
 
@@ -136,7 +137,7 @@ $vmss | Set-AzResource -Verbose -Force
 Configure the virtual machine scale set resource to use Automatic OS Image Upgrade. The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell.
 
 
-#### Configure Automatic OS Image Upgrade using ARM template
+### Configure Automatic OS Image Upgrade using ARM template
 
 Add 'automaticOSUpgradePolicy' to 'upgradePolicy' and disable 'enableAutomaticUpdates' in 'windowsConfiguration' in the virtual machine scale set resource.
 
@@ -200,7 +201,7 @@ The virtual machine scale set 'version' property in 'imageReference' should be s
 }
 ```
 
-#### Configure Automatic OS Image Upgrade using Azure PowerShell
+### Configure Automatic OS Image Upgrade using Azure PowerShell
 
 The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell. Uses [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to configure Automatic OS Image Upgrade for Service Fabric clusters.
 

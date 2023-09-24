@@ -1,18 +1,18 @@
 # How to Configure Service Fabric Managed Cluster Automatic OS Image Upgrade
 
-This article describes the best practice of configuring Service Fabric managed cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
+This article describes the best practice of configuring Service Fabric Managed Cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) has additional information including details about Patch Orchestration Application (POA) if unable to use Automatic OS Image Upgrade, however not all information applies to managed clusters. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
 
-Automatic OS Image Upgrade in Service Fabric managed clusters differs from Service Fabric and default VMSS behavior. Service Fabric managed clusters do not use the VMSS properties and commands. Configuration has to be applied to the managed cluster resource and node type resource. See [Configuring Automatic OS Image Upgrade](#configuring-automatic-os-image-upgrade) for configuration details.
+Automatic OS Image Upgrade in Service Fabric Managed Clusters differs from Service Fabric and default VMSS behavior. Service Fabric Managed Clusters do not use the VMSS properties and commands such as Get-AzVmss -OsUpgradeHistory and Get-AzVmssRollingUpgrade. Configuration has to be applied to the managed cluster resource and node type resource. See [Configuring Automatic OS Image Upgrade](#configuring-automatic-os-image-upgrade) for configuration details. Changes to the managed cluster resource and node type resource will trigger a repair task to upgrade the OS image. See [Manage OS Image Upgrade](#manage-os-image-upgrade) for additional information on managing OS image upgrade.
 
 ## Service Fabric Clusters
 
 For Service Fabric (unmanaged) clusters, use [How to Configure Service Fabric Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
 
-## Configuring Automatic OS Image Upgrade
+## Configuring Automatic OS Image Upgrade for Service Fabric Managed Clusters
 
 Configure the virtual machine scale set resource to use Automatic OS Image Upgrade. The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell.
 
-#### Configure Automatic OS Image Upgrade using ARM template
+### Configure Automatic OS Image Upgrade using ARM template
 
 To enable automatic OS upgrades in a managed cluster using an ARM template, [Enable automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) section contains detailed information including retry information. In 'managedclusters' resource, set 'enableAutoOSUpgrade' to 'true'. 'vmImageVersion' value is parameterized and defaults to 'latest' if generating a new template from Azure portal. In template parameters section or 'managedclusters/nodetypes' resource, ensure 'vmImageVersion' is set to 'latest'.
 
@@ -53,7 +53,7 @@ To enable automatic OS upgrades in a managed cluster using an ARM template, [Ena
 +    "vmImageVersion": "latest",
 ```
 
-#### Configure Automatic OS Image Upgrade using Azure PowerShell
+### Configure Automatic OS Image Upgrade using Azure PowerShell
 
 Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to enable Automatic OS Image Upgrade.
 
