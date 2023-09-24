@@ -1,141 +1,16 @@
 # How to Configure Service Fabric Managed Cluster Automatic OS Image Upgrade
 
-This article describes the best practice of configuring Service Fabric Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
+This article describes the best practice of configuring Service Fabric managed cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
 
-## Configure 'Silver' or higher node type durability tier
+Automatic OS Image Upgrade in Service Fabric managed clusters differs from Service Fabric and default VMSS behavior. Service Fabric managed clusters do not use the VMSS properties and commands. Configuration has to be applied to the managed cluster resource and node type resource. See [Configuring Automatic OS Image Upgrade](#configuring-automatic-os-image-upgrade) for configuration details.
 
-Configure the durability tier and Service Fabric extension typeHandlerVersion for the node type in the cluster resource and the virtual machine scale set resource. The following examples show how to configure the durability tier for node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell.
-### Service Fabric Managed Clusters
+## Service Fabric Clusters
 
-Service fabric managed clusters do not have durability requirements and both the 'Basic' and 'Standard' sku's support Automatic OS Image Upgrade. [Enable Automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) has managed cluster specific instructions for enabling Automatic OS Image Upgrade.
-
-### Service Fabric Clusters
-
-> **Note**
-> Changing durability tier requires updating both the virtual machine scale set resource and the nested node type array in the cluster resource.
-
-To use Automatic OS Image Upgrade, the node type durability tier must be set to 'Silver' or higher and Service Fabric extension 'typeHandlerVersion' must be at least '1.1'. This is the default and recommended setting for new clusters. There is one uncommon scenario where if the node type runs only stateless workloads and is 'isStateless' is set to true, then the durability tier can be set to 'Bronze'. Any node type with a durability of 'Bronze' that will use Automatic OS Image Upgrade will need to have durability tier modified and have a minimum of 5 nodes. See [Service Fabric cluster durability tiers](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-capacity#durability-tiers) for more information.
-
-#### Configure durability tier and typeHandlerVersion using ARM template
-
-Microsoft.ServiceFabric/clusters/nodeTypes resource
-
-```diff
-{
-    "type": "Microsoft.ServiceFabric/clusters",
-    "apiVersion": "2021-06-01",
-    "name": "[parameters('cluster_name')]",
-    "properties": {
-    "managementEndpoint": "[concat('https://', parameters('cluster_name'), '.eastus.cloudapp.azure.com:19080')]",
-    "certificate": {},
-    "clientCertificateThumbprints": [],
-    "clientCertificateCommonNames": [],
-    "fabricSettings": [],
-    "vmImage": "Windows",
-    "reliabilityLevel": "Silver",
-    "nodeTypes": [
-        {
-        "name": "nt0",
-        "clientConnectionEndpointPort": 19000,
-        "httpGatewayEndpointPort": 19080,
-        "applicationPorts": {
-            "startPort": 20000,
-            "endPort": 30000
-        },
-        "ephemeralPorts": {
-            "startPort": 49152,
-            "endPort": 65534
-        },
-        "isPrimary": true,
--        "durabilityLevel": "Bronze",
-+        "durabilityLevel": "Silver",
-        "vmInstanceCount": 5,
-        "isStateless": false
-        },
-...
-```
-
-Microsoft.Compute/virtualMachineScaleSets/extensions resource
-
-```diff
-{
-    "apiVersion": "2022-11-01",
-    "name": "[concat(parameters('vmNodeType0Name'), '/ServiceFabricNode')]",
-    "type": "Microsoft.Compute/virtualMachineScaleSets/extensions",
-    "location": "[parameters('location')]",
-    "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachineScaleSets/', parameters('vmNodeType0Name'))]"
-    ],
-    "properties": {
-        "publisher": "Microsoft.Azure.ServiceFabric",
-        "type": "ServiceFabricNode",
--        "typeHandlerVersion": "1.0",
-+        "typeHandlerVersion": "1.1",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-            "clusterEndpoint": "[reference(resourceId('Microsoft.ServiceFabric/clusters', parameters('clusterName')), '2018-02-01-preview').properties.clusterEndpoint]",
-            "nodeTypeRef": "[parameters('nodeTypeName')]",
-            "dataPath": "D:\\SvcFab",
--            "durabilityLevel": "Bronze",
-+            "durabilityLevel": "Silver",
-            "certificate": {
-                "thumbprint": "[parameters('certificateThumbprint')]",
-                "x509StoreName": "[parameters('certificateStoreValue')]"
-            }
-        },
-        "protectedSettings": {
-            "StorageAccountKey1": "[parameters('storageAccountKey1')]",
-            "StorageAccountKey2": "[parameters('storageAccountKey2')]"
-        }
-    }
-}
-```
-
-#### Configure durability tier and typeHandlerVersion using Azure PowerShell
-
-For Service Fabric clusters only, use [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-$nodeTypeDurability = 'Silver'
-$clusterName = $resourceGroupName
-Import-Module -Name Az.ServiceFabric
-
-Update-AzServiceFabricDurability -ResourceGroupName $resourceGroupName `
-    -Name $clusterName `
-    -NodeType $nodeTypeName `
-    -DurabilityLevel $nodeTypeDurability `
-    -Verbose
-```
-
-#### Update the virtual machine scale set using Set-AzResource
-
-Use [Set-AzResource](https://learn.microsoft.com/powershell/module/az.resources/set-azresource) cmdlet to update the durability tier for the node type in the virtual machine scale set resource.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-$nodeTypeDurability = 'Silver'
-Import-Module -Name Az.Resources
-
-$vmss = Get-AzResource -ResourceGroupName $resourceGroupName `
-    -Name $nodeTypeName `
-    -ResourceType 'Microsoft.Compute/virtualMachineScaleSets' `
-    -ExpandProperties
-
-$sfExtension = $vmss.Properties.virtualMachineProfile.extensionProfile.extensions `
-    | Where-Object {$psitem.properties.publisher -ieq 'Microsoft.Azure.ServiceFabric'}
-$sfExtension.properties.settings.durabilityLevel = $nodeTypeDurability
-$sfExtension.properties.typeHandlerVersion = '1.1'
-$vmss | Set-AzResource -Verbose -Force
-```
+For Service Fabric (unmanaged) clusters, use [How to Configure Service Fabric Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
 
 ## Configuring Automatic OS Image Upgrade
 
 Configure the virtual machine scale set resource to use Automatic OS Image Upgrade. The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell.
-
-### Service Fabric Managed Clusters
 
 #### Configure Automatic OS Image Upgrade using ARM template
 
@@ -180,7 +55,7 @@ To enable automatic OS upgrades in a managed cluster using an ARM template, [Ena
 
 #### Configure Automatic OS Image Upgrade using Azure PowerShell
 
-Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to configure Automatic OS Image Upgrade for Service Fabric managed clusters.
+Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to enable Automatic OS Image Upgrade.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -193,92 +68,22 @@ $managedCluster.EnableAutoOSUpgrade = $true
 Set-AzServiceFabricManagedCluster -InputObject $managedCluster -Verbose
 ```
 
-### Service Fabric Clusters
-
-
-#### Configure Automatic OS Image Upgrade using ARM template
-
-Add 'automaticOSUpgradePolicy' to 'upgradePolicy' and disable 'enableAutomaticUpdates' in 'windowsConfiguration' in the virtual machine scale set resource.
-
-```diff
-{
-    "apiVersion": "[variables('vmssApiVersion')]",
-    "type": "Microsoft.Compute/virtualMachineScaleSets",
-    "name": "[parameters('vmNodeType0Name')]",
-    "location": "[resourceGroup().location]",
-    "dependsOn": [
-    ],
-    "properties": {
-        "overprovision": "[parameters('overProvision')]",
-        "upgradePolicy": {
--           "mode": "Automatic"
-+           "mode": "Automatic",
-+           "automaticOSUpgradePolicy": {
-+              "enableAutomaticOSUpgrade": true
-+              "useRollingUpgradePolicy": false
-+           }
-        },
-        "virtualMachineProfile": {
-            "storageProfile": {
-                "osDisk": {
-                    "caching": "ReadWrite",
-                    "createOption": "FromImage",
-                    "diskSizeGB": "[parameters('osDiskSizeGB')]"
-                },
-                "imageReference": {
-                    "publisher": "[parameters('imagePublisher')]",
-                    "offer": "[parameters('imageOffer')]",
-                    "sku": "[parameters('imageSku')]",
-                    "version": "[parameters('imageVersion')]"
-                }
-            },
-            "osProfile": {
-                "computerNamePrefix": "[parameters('vmNodeType0Name')]",
-                "adminUsername": "[parameters('adminUserName')]",
-                "adminPassword": "[parameters('adminPassword')]",
-                "windowsConfiguration": {
--                   "enableAutomaticUpdates": true,
-+                   "enableAutomaticUpdates": false,
-                    "provisionVMAgent": true,
-                    "patchSettings": {
-                        "patchMode": "AutomaticByOS"
-                    }
-                }
-            },
-...
-```
-
-The virtual machine scale set 'version' property in 'imageReference' should be set to 'latest' to enable Automatic OS Image Upgrade. An error similar to below will be returned if 'version' is set to a specific version.
-
-```diff
-"imageReference": {
-    "publisher": "MicrosoftWindowsServer",
-    "offer": "WindowsServer",
-    "sku": "2022-Datacenter",
--   "version": "20348.1726.230505"
-+   "version": "latest"
-}
-```
-
-#### Configure Automatic OS Image Upgrade using Azure PowerShell
-
-The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell. Uses [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to configure Automatic OS Image Upgrade for Service Fabric clusters.
+Use [Set-AzServiceFabricManagedNodeType](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagednodetype) cmdlet to configure 'vmImageVersion' to 'latest'.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-Import-Module -Name Az.Compute
+$clusterName = '<cluster name>'
+Import-Module -Name Az.ServiceFabric
 
-Update-AzVmss -ResourceGroupName $resourceGroupName `
-    -Name $nodeTypeName `
-    -AutomaticOSUpgrade $true `
-    -EnableAutomaticUpdate $false `
-    -Verbose
+$managedCluster = Get-AzServiceFabricManagedNodeType -ResourceGroupName $resourceGroupName -ClusterName $clusterName
+$mangedCluster
+$managedCluster.VmImageVersion = 'latest'
+Set-AzServiceFabricManagedNodeType -InputObject $managedCluster -Verbose
 ```
 
 ## Manage OS Image Upgrade
 
-There is no management necessary for Automatic OS Image Upgrade for most configurations. For specific settings or troubleshooting, [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade) contains configuration details and management of Automatic OS Image Upgrade that is summarized below. 
+There is no management necessary for Automatic OS Image Upgrade for most configurations. For specific settings or troubleshooting, [Azure Virtual Machine Scale Set Automatic OS Image Upgrades](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade) contains configuration details and management of Automatic OS Image Upgrade that is summarized below.
 
 If more control is required for image releases than what is available through these configuration settings, Automatic OS Image Upgrade supports the use of custom images. Using custom images from a shared compute gallery provides additional configuration such as image expiration dates and 'latest' version. See [Tutorial: Create and use a custom image for Virtual Machine Scale Sets with Azure PowerShell](https://learn.microsoft.com/azure/virtual-machine-scale-sets/tutorial-use-custom-image-powershell) for this process.
 
@@ -297,449 +102,139 @@ The region of a scale set becomes eligible to get image upgrades either through 
 
 ### Scheduling OS Image Upgrade with Maintenance Control
 
-Azure Service Fabric clusters support [Maintenance Control](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-maintenance-control) which allows configuration of when maintenance is performed on the virtual machine scale set including Automatic OS Image Upgrade.
+Azure Service Fabric Managed Clusters support for Maintenance Control is currently in preview. See [MaintenanceControl](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-maintenance-control) for configuration and support information as not all regions are currently supported.
 
 > **Note**
 > Maintenance Control requires a schedule with minimum settings of daily schedule with at least a 5 hour window. Updates not completed in the provided window will resume during next window.
 
-Azure Service Fabric Managed Clusters support for Maintenance Control is currently in preview. See [MaintenanceControl](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-maintenance-control) for configuration and support information as not all regions are currently supported.
 
 ### Enumerate current OS image SKU's available in Azure
 
-New images are applied based on policy settings. The following example shows how to enumerate current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output.
+New images are applied based on policy settings. [enumerate-vmss-image-sku.ps1](../Scripts/enumerate-vmss-image-sku.ps1) enumerates current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output. As soon as the PowerShell commands are executed, the rollback will start.
+
+### Disable OS image upgrade
+
+Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to disable Automatic OS Image Upgrade.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
+$clusterName = '<cluster name>'
+Import-Module -Name Az.ServiceFabric
 
-Import-Module -Name Az.Compute
-Import-Module -Name Az.Resources
-
-$targetImageReference = $latestVersion = [version]::new(0,0,0,0)
-$isLatest = $false
-$versionsBack = 0
-$location = (Get-AzResourceGroup -Name $resourceGroupName).Location
-$vmssHistory = @(Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory)[0]
-
-if ($vmssHistory) {
-    $targetImageReference = $vmssHistory.Properties.TargetImageReference
-}
-else {
-    write-warning "vmssHistory not found"
-    $vmssHistory = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName
-    $targetImageReference = $vmssHistory.VirtualMachineProfile.StorageProfile.ImageReference
-}
-
-write-host "current running image on node type: " -ForegroundColor Green
-$targetImageReference
-$publisherName = $targetImageReference.Publisher
-$offer = $targetImageReference.Offer
-$sku = $targetImageReference.Sku
-$runningVersion = $targetImageReference.Version
-if($runningVersion -ieq 'latest') {
-    write-host "running version is 'latest'"
-    $isLatest = $true
-    $runningVersion = [version]::new(0,0,0,0)
-}
-
-write-host "Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku" -ForegroundColor Cyan
-$imageSkus = Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
-$orderedSkus = [collections.generic.list[version]]::new()
-
-foreach ($image in $imageSkus) {
-    [void]$orderedSkus.Add([version]::new($image.Version)) 
-}
-
-$orderedSkus = $orderedSkus | Sort-Object
-write-host "available versions: " -ForegroundColor Green
-$orderedSkus.foreach{ $psitem.ToString() }
-
-foreach ($sku in $orderedSkus) {
-    if ([version]$sku -gt [version]$runningVersion) { $versionsBack++ }
-    if ([version]$latestVersion -lt [version]$sku) { $latestVersion = $sku }
-}
-
-if ($isLatest) {
-    write-host "published latest version: $latestVersion running version: 'latest'" -ForegroundColor Cyan
-}
-elseif ($versionsBack -gt 1) {
-    write-host "published latest version: $latestVersion is $versionsBack versions newer than current running version: $runningVersion" -ForegroundColor Red
-}
-elseif ($versionsBack -eq 1) {
-    write-host "published latest version: $latestVersion is one version newer than current running version: $runningVersion" -ForegroundColor Yellow
-}
-else {
-    write-host "current running version: $runningVersion is same or newer than published latest version: $latestVersion" -ForegroundColor Green
-}
-```
-
-### Review OS image upgrade status
-
-For Service Fabric clusters only, use [Get-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgrade) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgrade](#example-Get-AzVmssRollingUpgrade--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-Import-Module -Name Az.Compute
-
-Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
-    -Name $nodeTypeName `
-    -Verbose
-```
-
-### Review OS image upgrade history
-
-For Service Fabric clusters only, use [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-Import-Module -Name Az.Compute
-
-Get-AzVmss -ResourceGroupName $resourceGroupName `
-    -Name $nodeTypeName `
-    -OSUpgradeHistory `
-    -Verbose
-```
-
-### Configure Rolling Upgrade Policy
-
-Additional configuration for Automatic OS Upgrade can be configured using [Set-AzVmssRollingUpgradePolicy](https://learn.microsoft.com/powershell/module/az.compute/set-azvmssrollingupgradepolicy?view=azps-10.1.0) cmdlet. The following example shows how to configure rolling upgrade policy for node type 'nt0' using an ARM template or using Azure PowerShell.
-
-```diff
-"properties": {
-    "singlePlacementGroup": true,
-    "upgradePolicy": {
-        "mode": "Automatic",
-+       "rollingUpgradePolicy": {
-+           "maxBatchInstancePercent": 20,
-+           "maxUnhealthyInstancePercent": 20,
-+           "maxUnhealthyUpgradedInstancePercent": 20,
-+           "pauseTimeBetweenBatches": "PT0S"
-+     },
-      "automaticOSUpgradePolicy": {
-        "enableAutomaticOSUpgrade": true,
--       "useRollingUpgradePolicy": false
-+       "useRollingUpgradePolicy": true
-      }
-    },
-```
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-$pauseTimeSeconds = 'PT0S' # ISO 8601 duration format
-$createNewInstancesInsteadOfUpgrading = $false
-Import-Module -Name Az.Compute
-
-$vmss = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName
-
-Set-AzVmssRollingUpgradePolicy -VirtualMachineScaleSet $vmss `
-    -MaxBatchInstancePercent 20 `
-    -MaxUnhealthyInstancePercent 20 `
-    -MaxUnhealthyUpgradedInstancePercent 20 `
-    -PauseTimeBetweenBatches $pauseTimeSeconds `
-    -PrioritizeUnhealthyInstances $true `
-    -EnableCrossZoneUpgrade $true `
-    -MaxSurge $createNewInstancesInsteadOfUpgrading `
-    -Verbose
-```
-
-### Manual Upgrade OS image
-
-For Service Fabric clusters only, use [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to see if there is a newer OS image version available.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-Import-Module -Name Az.Compute
-
-Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName `
-    -VMScaleSetName $nodeTypeName `
-    -Verbose
-```
-
-### Stop OS image upgrade
-
-For Service Fabric clusters only, use [Stop-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/stop-azvmssrollingupgrade) cmdlet to stop OS image upgrade if one is in progress.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-Import-Module -Name Az.Compute
-
-Stop-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
-    -VMScaleSetName $nodeTypeName `
-    -Force
+$managedCluster = Get-AzServiceFabricManagedCluster -ResourceGroupName $resourceGroupName -Name $clusterName
+$mangedCluster
+$managedCluster.EnableAutoOSUpgrade = $false
+Set-AzServiceFabricManagedCluster -InputObject $managedCluster -Verbose
 ```
 
 ### Rollback OS image upgrade
 
-For Service Fabric clusters only, use [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to disable Automatic OS Image Upgrade and to set older image version. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to enumerate available versions.
+Use [Set-AzServiceFabricManagedNodeType](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagednodetype) cmdlet to configure 'vmImageVersion' to an available version to rollback to from Azure gallery.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-$imageReferenceVersion = '<rollback image version>'
-Import-Module -Name Az.Compute
+$clusterName = '<cluster name>'
+$imageVersion = '<image version>'
+Import-Module -Name Az.ServiceFabric
 
-Update-AzVmss -ResourceGroupName $resourceGroupName `
-    -Name $nodeTypeName `
-    -AutomaticOSUpgrade $false `
-    -EnableAutomaticUpdate $true `
-    -ImageReferenceVersion $imageReferenceVersion `
-    -ImageReferencePublisher 'MicrosoftWindowsServer' `
-    -ImageReferenceOffer 'WindowsServer' `
-    -ImageReferenceSku '2022-Datacenter' `
-    -Verbose
-``````
-
-## Troubleshooting
-
-### Durability mismatch
-
-Example error:
-
-```powershell
-$vmss | Set-AzResource
-
-Confirm
-Set-AzResource: OperationNotAllowed : Durability Mismatch Detected for NodeType nt0. VMSS Durability Silver does not match the current SFRP NodeType durability level Bronze
+$managedCluster = Get-AzServiceFabricManagedNodeType -ResourceGroupName $resourceGroupName -ClusterName $clusterName
+$mangedCluster
+$managedCluster.VmImageVersion = $imageVersion
+Set-AzServiceFabricManagedNodeType -InputObject $managedCluster -Verbose
 ```
-
-Resolution:
-
-Update SFRP node type durability level to match VMSS durability level.
-
-### The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest
-
-```powershell
-Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName nt0 | ConvertTo-Json
-Start-AzVmssRollingOSUpgrade: The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest.
-ErrorCode: OperationNotAllowed
-ErrorMessage: The OS Rolling Upgrade API cannot be used on a Virtual Machine Scale Set unless the Virtual Machine Scale Set has some unprotected instances which have imageReference.version set to latest.
-ErrorTarget:
-StatusCode: 409
-ReasonPhrase: Conflict
-OperationID : 90368558-b15f-4aad-aae9-38de2b679f1b
-```
-
-Resolution:
-
-Update VMSS to use 'latest' as the image version.
-
-### Max batch instance percent exceeded before rolling upgrade
-
-Example error:
-
-```powershell
-Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName nt0
-Start-AzVmssRollingOSUpgrade: Long running operation failed with status 'Failed'. Additional Info:'Rolling Upgrade failed due to exceeding the MaxUnhealthyInstancePercent value (defined in the RollingUpgradePolicy) before any batch was attempted. 100% of instances are in an unhealthy state, more than the threshold of 20% configured in the RollingUpgradePolicy. The most impactful error is:  Instance found to be unhealthy or unreachable. For details on rolling upgrades, use http://aka.ms/AzureVMSSRollingUpgrade'
-ErrorCode: MaxUnhealthyInstancePercentExceededBeforeRollingUpgrade
-ErrorMessage: Rolling Upgrade failed due to exceeding the MaxUnhealthyInstancePercent value (defined in the RollingUpgradePolicy) before any batch was attempted. 100% of instances are in an unhealthy state, more than the threshold of 20% configured in the RollingUpgradePolicy. The most impactful error is:  Instance found to be unhealthy or unreachable. For details on rolling upgrades, use http://aka.ms/AzureVMSSRollingUpgrade
-ErrorTarget: 
-StartTime: 7/12/2023 4:40:32 PM
-EndTime: 7/12/2023 4:40:51 PM
-OperationID: 40fb67ad-efa4-478c-bf4c-71806d3ba965
-Status: Failed
-```
-
-Example error:
-
-```powershell
-Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName nt0 | ConvertTo-Json -depth 5
-{
-  "Policy": {
-    "MaxBatchInstancePercent": 20,
-    "MaxUnhealthyInstancePercent": 20,
-    "MaxUnhealthyUpgradedInstancePercent": 20,
-    "PauseTimeBetweenBatches": "PT0S",
-    "EnableCrossZoneUpgrade": null,
-    "PrioritizeUnhealthyInstances": null,
-    "RollbackFailedInstancesOnPolicyBreach": false,
-    "MaxSurge": false
-  },
-  "RunningStatus": {
-    "Code": "Faulted",
-    "StartTime": "2023-07-12T20:20:13.145292Z",
-    "LastAction": "Start",
-    "LastActionTime": "2023-07-12T20:20:13.145292Z"
-  },
-  "Progress": {
-    "SuccessfulInstanceCount": 0,
-    "FailedInstanceCount": 0,
-    "InProgressInstanceCount": 0,
-    "PendingInstanceCount": 0
-  },
-  "Error": {
-    "Details": [
-      {
-        "Code": "RollingUpgradeInstanceUnhealthyError",
-        "Target": "nt1/virtualMachines/0",
-        "Message": "Instance found to be unhealthy or unreachable."
-      },
-      {
-        "Code": "RollingUpgradeInstanceUnhealthyError",
-        "Target": "nt1/virtualMachines/1",
-        "Message": "Instance found to be unhealthy or unreachable."
-      },
-      {
-        "Code": "RollingUpgradeInstanceUnhealthyError",
-        "Target": "nt1/virtualMachines/2",
-        "Message": "Instance found to be unhealthy or unreachable."
-      }
-    ],
-    "Innererror": null,
-    "Code": "MaxUnhealthyInstancePercentExceededBeforeRollingUpgrade",
-    "Target": null,
-    "Message": "Rolling Upgrade failed due to exceeding the MaxUnhealthyInstancePercent value (defined in the RollingUpgradePolicy) before any batch was attempted. 100% of instances are in an unhealthy state, more than the threshold of 20% configured in the RollingUpgradePolicy. The most impactful error is:  Instance found to be unhealthy or unreachable. For details on rolling upgrades, use http://aka.ms/AzureVMSSRollingUpgrade"
-  },
-  "Id": null,
-  "Name": null,
-  "Type": "Microsoft.Compute/virtualMachineScaleSets/rollingUpgrades",
-  "Location": "eastus",
-  "Tags": {}
-}
-```
-
-Resolution:
-
-Verify that the node type has at least 5 nodes and that the node type durability is set to 'Silver' or higher. See [Configure 'Silver' or higher node type durability tier](#configure-silver-or-higher-node-type-durability-tier) for more information.
 
 ## Examples
-
-### Example Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName -Name $nodeTypeName -Verbose
-
-> **Note**
-> RunningStatus information is last time a rolling upgrade was started but not necessarily last time an image was upgraded. Use [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) to get last time an image was upgraded.
-
-```powershell
-Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName -Name $nodeTypeName | ConvertTo-Json
-{
-  "Policy": {
-    "MaxBatchInstancePercent": 20,
-    "MaxUnhealthyInstancePercent": 20,
-    "MaxUnhealthyUpgradedInstancePercent": 20,
-    "PauseTimeBetweenBatches": "PT0S",
-    "EnableCrossZoneUpgrade": null,
-    "PrioritizeUnhealthyInstances": null,
-    "RollbackFailedInstancesOnPolicyBreach": false,
-    "MaxSurge": false
-  },
-  "RunningStatus": {
-    "Code": "Completed",
-    "StartTime": "2023-06-30T19:46:17.2677469Z",
-    "LastAction": "Start",
-    "LastActionTime": "2023-06-30T19:46:17.2208724Z"
-  },
-  "Progress": {
-    "SuccessfulInstanceCount": 0,
-    "FailedInstanceCount": 0,
-    "InProgressInstanceCount": 0,
-    "PendingInstanceCount": 0
-  },
-  "Error": null,
-  "Id": null,
-  "Name": null,
-  "Type": "Microsoft.Compute/virtualMachineScaleSets/rollingUpgrades",
-  "Location": "eastus",
-  "Tags": {}
-}
-```
-
-### Example Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory
-
-> **Note**
-> An empty result can indicate that node type is not configured for Automatic OS Image Upgrade or an upgrade has not taken place yet.
-
-```powershell
-Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory | ConvertTo-Json
-{
-  "Properties": {
-    "RunningStatus": {
-      "Code": "Completed",
-      "StartTime": "2023-06-30T19:46:17.2677469Z",
-      "EndTime": null
-    },
-    "Progress": {
-      "SuccessfulInstanceCount": 0,
-      "FailedInstanceCount": 0,
-      "InProgressInstanceCount": 0,
-      "PendingInstanceCount": 0
-    },
-    "Error": null,
-    "StartedBy": "Platform",
-    "TargetImageReference": {
-      "Publisher": "MicrosoftWindowsServer",
-      "Offer": "WindowsServer",
-      "Sku": "2022-Datacenter",
-      "Version": "20348.1787.230621",
-      "ExactVersion": null,
-      "SharedGalleryImageId": null,
-      "CommunityGalleryImageId": null,
-      "Id": null
-    },
-    "RollbackInfo": {
-      "SuccessfullyRolledbackInstanceCount": 0,
-      "FailedRolledbackInstanceCount": 0,
-      "RollbackError": null
-    }
-  },
-  "Type": "Microsoft.Compute/virtualMachineScaleSets/rollingUpgrades",
-  "Location": "eastus"
-}
-```
-
-### Example Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName -Verbose
-
-> **Note**
-> A result similar to below will always be returned regardless of whether there is a newer OS image version available or not.
-
-```powershell
-Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName | ConvertTo-Json
-{
-  "Name": "6dd0212d-ff35-4dce-b77e-999a57c1534e",
-  "StartTime": "2023-07-11T19:34:57.7803755-04:00",
-  "EndTime": "2023-07-11T19:35:28.2994743-04:00",
-  "Status": "Succeeded",
-  "Error": null
-}
-```
 
 ### Example enumerate current OS image SKU's cmdlet output
 
 ```powershell
-current running image on node type:
+WARNING: vmssHistory not found
+current running image on node type: 
+
 Publisher               : MicrosoftWindowsServer
 Offer                   : WindowsServer
 Sku                     : 2022-Datacenter
-Version                 : 20348.1850.230707
-ExactVersion            :
-SharedGalleryImageId    :
-CommunityGalleryImageId :
-Id                      :
+Version                 : latest
+ExactVersion            : 
+SharedGalleryImageId    : 
+CommunityGalleryImageId : 
+Id                      : 
 
+running version is 'latest'
 Get-AzVmImage -Location eastus -PublisherName MicrosoftWindowsServer -offer WindowsServer -sku 2022-Datacenter
 available versions: 
+20348.825.220704
+20348.887.220806
+20348.1006.220908
+20348.1129.221007
+20348.1131.221014
+20348.1249.221105
+20348.1366.221207
+20348.1487.230106
+20348.1547.230207
+20348.1607.230310
+20348.1668.230404
+20348.1726.230505
+20348.1787.230607
+20348.1787.230621
+20348.1850.230707
+20348.1906.230803
+20348.1970.230905
+published latest version: 20348.1970.230905 running version: 'latest'
+```
 
-Version           Skus            Offer         PublisherName
--------           ----            -----         -------------
-20348.1006.220908 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1129.221007 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1131.221014 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1249.221105 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1366.221207 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1487.230106 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1547.230207 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1607.230310 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1668.230404 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1726.230505 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1787.230607 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1787.230621 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1850.230707 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.768.220609  2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.825.220704  2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.887.220806  2022-Datacenter WindowsServer MicrosoftWindowsServer
+### Example Repair Task in Service Fabric Explorer
 
-current running version: 20348.1850.230707 is same or newer than published latest version: 20348.1850.230707
+![sfx repair task sfrp autoosupgrade](../media/how-to-configure-service-fabric-managed-cluster-automatic-os-image-upgrade/sfx-repair-task-sfrp-autoosupgrade.png)
+
+
+```json
+{
+    "Scope": {
+        "Kind": "Cluster"
+    },
+    "TaskId": "SFRP-cae60004-a106-47d8-8889-b0c9bc06c194-UD-0",
+    "Version": "133395258565988821",
+    "Description": "",
+    "State": "Completed",
+    "Flags": 0,
+    "Action": "SFRP.AutoOSUpgrade",
+    "Target": {
+        "Kind": "Node",
+        "NodeNames": [
+            "nt1_0"
+        ]
+    },
+    "Executor": "SFRP",
+    "ExecutorData": "",
+    "Impact": {
+        "Kind": "Node",
+        "NodeImpactList": [
+            {
+                "NodeName": "nt1_0",
+                "ImpactLevel": "Restart"
+            }
+        ]
+    },
+    "ResultStatus": "Succeeded",
+    "ResultCode": 0,
+    "ResultDetails": "",
+    "History": {
+        "CreatedUtcTimestamp": "2023-09-18T15:50:56.598Z",
+        "ClaimedUtcTimestamp": "2023-09-18T15:50:56.598Z",
+        "PreparingUtcTimestamp": "2023-09-18T15:50:56.598Z",
+        "ApprovedUtcTimestamp": "2023-09-18T15:51:41.941Z",
+        "ExecutingUtcTimestamp": "2023-09-18T15:51:56.692Z",
+        "RestoringUtcTimestamp": "2023-09-18T16:01:28.218Z",
+        "CompletedUtcTimestamp": "2023-09-18T16:01:28.468Z",
+        "PreparingHealthCheckStartUtcTimestamp": "2023-09-18T15:50:56.693Z",
+        "PreparingHealthCheckEndUtcTimestamp": "2023-09-18T15:50:56.740Z",
+        "RestoringHealthCheckStartUtcTimestamp": "2023-09-18T16:01:28.343Z",
+        "RestoringHealthCheckEndUtcTimestamp": "2023-09-18T16:01:28.406Z"
+    },
+    "PreparingHealthCheckState": "Skipped",
+    "RestoringHealthCheckState": "Skipped",
+    "PerformPreparingHealthCheck": false,
+    "PerformRestoringHealthCheck": false
+}
 ```

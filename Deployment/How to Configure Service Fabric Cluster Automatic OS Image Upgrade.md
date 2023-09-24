@@ -1,15 +1,15 @@
 # How to Configure Service Fabric Cluster Automatic OS Image Upgrade
 
-This article describes the best practice of configuring Service Fabric Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
+This article describes the best practice of configuring Service Fabric cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. See [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) for more information including information about Patch Orchestration Application (POA) and configuration if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
+
+### Service Fabric Managed Clusters
+
+Service Fabric Managed clusters ... TODO [How to Configure Service Fabric Managed Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Managed%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
+
 
 ## Configure 'Silver' or higher node type durability tier
 
 Configure the durability tier and Service Fabric extension typeHandlerVersion for the node type in the cluster resource and the virtual machine scale set resource. The following examples show how to configure the durability tier for node type 'nt0' to 'Silver' in the cluster resource and the virtual machine scale set resource using an ARM template or using Azure PowerShell.
-### Service Fabric Managed Clusters
-
-Service fabric managed clusters do not have durability requirements and both the 'Basic' and 'Standard' sku's support Automatic OS Image Upgrade. [Enable Automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) has managed cluster specific instructions for enabling Automatic OS Image Upgrade.
-
-### Service Fabric Clusters
 
 > **Note**
 > Changing durability tier requires updating both the virtual machine scale set resource and the nested node type array in the cluster resource.
@@ -135,66 +135,6 @@ $vmss | Set-AzResource -Verbose -Force
 
 Configure the virtual machine scale set resource to use Automatic OS Image Upgrade. The following example shows how to configure Automatic OS Image Upgrade for node type 'nt0' using an ARM template or using Azure PowerShell.
 
-### Service Fabric Managed Clusters
-
-#### Configure Automatic OS Image Upgrade using ARM template
-
-To enable automatic OS upgrades in a managed cluster using an ARM template, [Enable automatic OS image upgrades](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-modify-node-type#enable-automatic-os-image-upgrades) section contains detailed information including retry information. In 'managedclusters' resource, set 'enableAutoOSUpgrade' to 'true'. 'vmImageVersion' value is parameterized and defaults to 'latest' if generating a new template from Azure portal. In template parameters section or 'managedclusters/nodetypes' resource, ensure 'vmImageVersion' is set to 'latest'.
-
-```diff
-"apiVersion": "[variables('sfApiVersion')]",
-"type": "Microsoft.ServiceFabric/managedclusters",
-"name": "[parameters('clusterName')]",
-"location": "[resourcegroup().location]",
-"sku": {
-    "name" : "[parameters('clusterSku')]"
-},
-"properties": {
-    "dnsName": "[toLower(parameters('clusterName'))]",
-    "adminUserName": "[parameters('adminUserName')]",
-    "adminPassword": "[parameters('adminPassword')]",
-    "allowRdpAccess": true,
-    "clientConnectionPort": 19000,
--   "enableAutoOSUpgrade": false,
-+   "enableAutoOSUpgrade": true,
-    "httpGatewayConnectionPort": 19080,
-
-```
-
-```diff
-"apiVersion": "[variables('sfApiVersion')]",
-"type": "Microsoft.ServiceFabric/managedclusters/nodetypes",
-"name": "[concat(parameters('clusterName'), '/', parameters('nodeTypeName'))]",
-"location": "[resourcegroup().location]",
-"dependsOn": [
-    "[concat('Microsoft.ServiceFabric/managedclusters/', parameters('clusterName'))]"
-],
-"properties": {
-    "isPrimary": true,
-    "vmImagePublisher": "[parameters('vmImagePublisher')]",
-    "vmImageOffer": "[parameters('vmImageOffer')]",
-    "vmImageSku": "[parameters('vmImageSku')]",
--    "vmImageVersion": "20348.1726.230505",
-+    "vmImageVersion": "latest",
-```
-
-#### Configure Automatic OS Image Upgrade using Azure PowerShell
-
-Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to configure Automatic OS Image Upgrade for Service Fabric managed clusters.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$clusterName = '<cluster name>'
-Import-Module -Name Az.ServiceFabric
-
-$managedCluster = Get-AzServiceFabricManagedCluster -ResourceGroupName $resourceGroupName -Name $clusterName
-$mangedCluster
-$managedCluster.EnableAutoOSUpgrade = $true
-Set-AzServiceFabricManagedCluster -InputObject $managedCluster -Verbose
-```
-
-### Service Fabric Clusters
-
 
 #### Configure Automatic OS Image Upgrade using ARM template
 
@@ -306,72 +246,7 @@ Azure Service Fabric Managed Clusters support for Maintenance Control is current
 
 ### Enumerate current OS image SKU's available in Azure
 
-New images are applied based on policy settings. The following example shows how to enumerate current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$nodeTypeName = '<node type name>'
-
-Import-Module -Name Az.Compute
-Import-Module -Name Az.Resources
-
-$targetImageReference = $latestVersion = [version]::new(0,0,0,0)
-$isLatest = $false
-$versionsBack = 0
-$location = (Get-AzResourceGroup -Name $resourceGroupName).Location
-$vmssHistory = @(Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory)[0]
-
-if ($vmssHistory) {
-    $targetImageReference = $vmssHistory.Properties.TargetImageReference
-}
-else {
-    write-warning "vmssHistory not found"
-    $vmssHistory = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName
-    $targetImageReference = $vmssHistory.VirtualMachineProfile.StorageProfile.ImageReference
-}
-
-write-host "current running image on node type: " -ForegroundColor Green
-$targetImageReference
-$publisherName = $targetImageReference.Publisher
-$offer = $targetImageReference.Offer
-$sku = $targetImageReference.Sku
-$runningVersion = $targetImageReference.Version
-if($runningVersion -ieq 'latest') {
-    write-host "running version is 'latest'"
-    $isLatest = $true
-    $runningVersion = [version]::new(0,0,0,0)
-}
-
-write-host "Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku" -ForegroundColor Cyan
-$imageSkus = Get-AzVmImage -Location $location -PublisherName $publisherName -offer $offer -sku $sku
-$orderedSkus = [collections.generic.list[version]]::new()
-
-foreach ($image in $imageSkus) {
-    [void]$orderedSkus.Add([version]::new($image.Version)) 
-}
-
-$orderedSkus = $orderedSkus | Sort-Object
-write-host "available versions: " -ForegroundColor Green
-$orderedSkus.foreach{ $psitem.ToString() }
-
-foreach ($sku in $orderedSkus) {
-    if ([version]$sku -gt [version]$runningVersion) { $versionsBack++ }
-    if ([version]$latestVersion -lt [version]$sku) { $latestVersion = $sku }
-}
-
-if ($isLatest) {
-    write-host "published latest version: $latestVersion running version: 'latest'" -ForegroundColor Cyan
-}
-elseif ($versionsBack -gt 1) {
-    write-host "published latest version: $latestVersion is $versionsBack versions newer than current running version: $runningVersion" -ForegroundColor Red
-}
-elseif ($versionsBack -eq 1) {
-    write-host "published latest version: $latestVersion is one version newer than current running version: $runningVersion" -ForegroundColor Yellow
-}
-else {
-    write-host "current running version: $runningVersion is same or newer than published latest version: $latestVersion" -ForegroundColor Green
-}
-```
+New images are applied based on policy settings. [enumerate-vmss-image-sku.ps1](../Scripts/enumerate-vmss-image-sku.ps1) enumerates current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output. As soon as the PowerShell commands are executed, the rollback will start.
 
 ### Review OS image upgrade status
 
@@ -709,37 +584,36 @@ Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetNa
 ### Example enumerate current OS image SKU's cmdlet output
 
 ```powershell
-current running image on node type:
+current running image on node type: 
+
 Publisher               : MicrosoftWindowsServer
 Offer                   : WindowsServer
 Sku                     : 2022-Datacenter
-Version                 : 20348.1850.230707
-ExactVersion            :
-SharedGalleryImageId    :
-CommunityGalleryImageId :
-Id                      :
+Version                 : latest
+ExactVersion            : 
+SharedGalleryImageId    : 
+CommunityGalleryImageId : 
+Id                      : 
 
+running version is 'latest'
 Get-AzVmImage -Location eastus -PublisherName MicrosoftWindowsServer -offer WindowsServer -sku 2022-Datacenter
 available versions: 
-
-Version           Skus            Offer         PublisherName
--------           ----            -----         -------------
-20348.1006.220908 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1129.221007 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1131.221014 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1249.221105 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1366.221207 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1487.230106 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1547.230207 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1607.230310 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1668.230404 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1726.230505 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1787.230607 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1787.230621 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.1850.230707 2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.768.220609  2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.825.220704  2022-Datacenter WindowsServer MicrosoftWindowsServer
-20348.887.220806  2022-Datacenter WindowsServer MicrosoftWindowsServer
-
-current running version: 20348.1850.230707 is same or newer than published latest version: 20348.1850.230707
-```
+20348.825.220704
+20348.887.220806
+20348.1006.220908
+20348.1129.221007
+20348.1131.221014
+20348.1249.221105
+20348.1366.221207
+20348.1487.230106
+20348.1547.230207
+20348.1607.230310
+20348.1668.230404
+20348.1726.230505
+20348.1787.230607
+20348.1787.230621
+20348.1850.230707
+20348.1906.230803
+20348.1970.230905
+published latest version: 20348.1970.230905 running version: 'latest'
+``````
