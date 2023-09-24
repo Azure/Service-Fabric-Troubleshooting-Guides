@@ -35,8 +35,11 @@ invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubl
 #>
 
 param(
-    $resourceGroupName = '<resource group name>',
-    $nodeTypeName = '<node type name>'
+    [Parameter(Mandatory = $true)]
+    $resourceGroupName,
+    $clusterName = $resourceGroupName,
+    [Parameter(Mandatory = $true)]
+    $nodeTypeName
 )
 
 Import-Module -Name Az.Compute
@@ -46,6 +49,18 @@ $targetImageReference = $latestVersion = [version]::new(0, 0, 0, 0)
 $isLatest = $false
 $versionsBack = 0
 $location = (Get-AzResourceGroup -Name $resourceGroupName).Location
+
+$cluster = Get-AzResource -ResourceGroupName $resourceGroupName -ResourceType Microsoft.ServiceFabric/clusters -ResourceName $clusterName -ErrorAction SilentlyContinue
+
+if(!$cluster) {
+    $cluster = Get-AzResource -ResourceGroupName $resourceGroupName -ResourceType Microsoft.ServiceFabric/managedclusters -ResourceName $clusterName
+    $resourceGroupName = "SFC_$($cluster.Properties.clusterid)"
+} 
+if(!$cluster) {
+    write-error "cluster not found. specify -clusterName`r`n$($error | out-string)"
+    exit
+}
+
 $vmssHistory = @(Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory)[0]
 
 if ($vmssHistory) {
