@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
     This script will check the current and latest versions of the Azure VM Image SKU for a given node type in a given resource group.
+    v 230925
 
 Microsoft Privacy Statement: https://privacy.microsoft.com/en-US/privacystatement
 
@@ -36,10 +37,10 @@ invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubl
 
 param(
     [Parameter(Mandatory = $true)]
-    $resourceGroupName,
-    $clusterName = $resourceGroupName,
-    $nodeTypeName,
-    $instanceId = 0
+    [string]$resourceGroupName,
+    [string]$clusterName = $resourceGroupName,
+    [string]$nodeTypeName,
+    [int]$instanceId = -1
 )
 
 Import-Module -Name Az.Compute
@@ -73,26 +74,27 @@ function main() {
         $targetImageReference = $vmssHistory.Properties.TargetImageReference
     }
     else {
-        write-warning "vmssHistory not found. checking current image reference"
+        write-host "vmssHistory not found. checking current image reference"
         $vmssHistory = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName
         $targetImageReference = $vmssHistory.VirtualMachineProfile.StorageProfile.ImageReference
     }
 
     $targetImageReference = $targetImageReference | convertto-json | convertfrom-json
 
-    if (!$targetImageReference) {
-        write-warning "vmssHistory not found. checking instance $instanceId"
+    if (!$targetImageReference -or $instanceId -gt -1) {
+        write-host "checking instance $instanceId"
         $vmssVmInstance = get-azvmssvm -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName -InstanceId $instanceId
         $targetImageReference = $vmssVmInstance.StorageProfile.ImageReference
     }
     elseif (!$targetImageReference.ExactVersion) {
-        write-warning "targetImageReference ExactVersion not found. checking instance $instanceId"
+        if ($instanceId -lt 0) { $instanceId = 0 }
+        write-host "targetImageReference ExactVersion not found. checking instance $instanceId"
         $vmssVmInstance = get-azvmssvm -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName -InstanceId $instanceId
         $targetImageReference.ExactVersion = @($vmssVmInstance.StorageProfile.ImageReference.ExactVersion)[0]
     }
 
     if (!$targetImageReference) {
-        write-error "current vm image version not found. exiting"
+        write-error "current vm image version not found."
         #return
     }
     else {
@@ -126,6 +128,8 @@ function main() {
         if ([version]$latestVersion -lt [version]$sku) { $latestVersion = $sku }
     }
 
+    write-host
+    
     if ($isLatest) {
         write-host "published latest version: $latestVersion running version: 'latest'" -ForegroundColor Cyan
     }
