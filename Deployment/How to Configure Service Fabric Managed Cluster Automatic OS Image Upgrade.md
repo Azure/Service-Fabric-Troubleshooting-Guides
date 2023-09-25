@@ -2,11 +2,9 @@
 
 This article describes the best practice of configuring Service Fabric Managed Cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) has additional information including details about Patch Orchestration Application (POA) if unable to use Automatic OS Image Upgrade, however not all information applies to managed clusters. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
 
-Automatic OS Image Upgrade in Service Fabric Managed Clusters differs from Service Fabric and default VMSS behavior. Service Fabric Managed Clusters do not use the VMSS properties and commands such as Get-AzVmss -OsUpgradeHistory and Get-AzVmssRollingUpgrade. Configuration has to be applied to the managed cluster resource and node type resource. See [Configuring Automatic OS Image Upgrade](#configuring-automatic-os-image-upgrade) for configuration details. Changes to the managed cluster resource and node type resource will trigger a repair task to upgrade the OS image. See [Manage OS Image Upgrade](#manage-os-image-upgrade) for additional information on managing OS image upgrade.
+Automatic OS Image Upgrade in Service Fabric Managed Clusters differs from Service Fabric Clusters and default VMSS behavior. Service Fabric Managed Clusters do not use the VMSS properties and PowerShell commands such as Get-AzVmss -OsUpgradeHistory and Get-AzVmssRollingUpgrade. Configuration has to be applied to the managed cluster and node type resources. See [Configuring Automatic OS Image Upgrade](#configuring-automatic-os-image-upgrade) for configuration details. Changes to the managed cluster resource and node type resource will trigger a repair task to upgrade the OS image. See [Manage OS Image Upgrade](#manage-os-image-upgrade) for additional information on managing OS image upgrade.
 
-## Service Fabric Clusters
-
-For Service Fabric (unmanaged) clusters, use [How to Configure Service Fabric Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
+For unmanaged Service Fabric Clusters, use [How to Configure Service Fabric Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
 
 ## Configuring Automatic OS Image Upgrade for Service Fabric Managed Clusters
 
@@ -107,48 +105,13 @@ Azure Service Fabric Managed Clusters support for Maintenance Control is current
 > **Note**
 > Maintenance Control requires a schedule with minimum settings of daily schedule with at least a 5 hour window. Updates not completed in the provided window will resume during next window.
 
-
 ### Enumerate current OS image SKU's available in Azure
 
-New images are applied based on policy settings. [enumerate-vmss-image-sku.ps1](../Scripts/enumerate-vmss-image-sku.ps1) enumerates current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output. As soon as the PowerShell commands are executed, the rollback will start.
-
-### Disable OS image upgrade
-
-Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to disable Automatic OS Image Upgrade.
+New images are applied based on policy settings. [enumerate-vmss-image-sku.ps1](../Scripts/enumerate-vmss-image-sku.ps1) enumerates current OS image SKU's available in Azure to verify if node type is running the latest OS image version. Below example has expected output.
 
 ```powershell
-$resourceGroupName = '<resource group name>'
-$clusterName = '<cluster name>'
-Import-Module -Name Az.ServiceFabric
-
-$managedCluster = Get-AzServiceFabricManagedCluster -ResourceGroupName $resourceGroupName -Name $clusterName
-$mangedCluster
-$managedCluster.EnableAutoOSUpgrade = $false
-Set-AzServiceFabricManagedCluster -InputObject $managedCluster -Verbose
-```
-
-### Rollback OS image upgrade
-
-Use [Set-AzServiceFabricManagedNodeType](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagednodetype) cmdlet to configure 'vmImageVersion' to an available version to rollback to from Azure gallery.
-
-```powershell
-$resourceGroupName = '<resource group name>'
-$clusterName = '<cluster name>'
-$imageVersion = '<image version>'
-Import-Module -Name Az.ServiceFabric
-
-$managedCluster = Get-AzServiceFabricManagedNodeType -ResourceGroupName $resourceGroupName -ClusterName $clusterName
-$mangedCluster
-$managedCluster.VmImageVersion = $imageVersion
-Set-AzServiceFabricManagedNodeType -InputObject $managedCluster -Verbose
-```
-
-## Examples
-
-### Example enumerate current OS image SKU's cmdlet output
-
-```powershell
-WARNING: vmssHistory not found
+>.\enumerate-vmss-image-sku.ps1 -resourceGroupName $resourceGroupName
+vmssHistory not found
 current running image on node type: 
 
 Publisher               : MicrosoftWindowsServer
@@ -183,10 +146,48 @@ available versions:
 published latest version: 20348.1970.230905 running version: 'latest'
 ```
 
-### Example Repair Task in Service Fabric Explorer
+### Disable OS image upgrade
+
+Use [Set-AzServiceFabricManagedCluster](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagedcluster) cmdlet to disable Automatic OS Image Upgrade.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$clusterName = '<cluster name>'
+Import-Module -Name Az.ServiceFabric
+
+$managedCluster = Get-AzServiceFabricManagedCluster -ResourceGroupName $resourceGroupName -Name $clusterName
+$mangedCluster
+$managedCluster.EnableAutoOSUpgrade = $false
+Set-AzServiceFabricManagedCluster -InputObject $managedCluster -Verbose
+```
+
+### Rollback OS image upgrade
+
+Use [Set-AzServiceFabricManagedNodeType](https://learn.microsoft.com/powershell/module/az.servicefabric/set-azservicefabricmanagednodetype) cmdlet to configure 'vmImageVersion' to an available version to rollback to from Azure gallery. As soon as the PowerShell commands are executed, the rollback will start.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$clusterName = '<cluster name>'
+$imageVersion = '<image version>'
+Import-Module -Name Az.ServiceFabric
+
+$managedCluster = Get-AzServiceFabricManagedNodeType -ResourceGroupName $resourceGroupName -ClusterName $clusterName
+$mangedCluster
+$managedCluster.VmImageVersion = $imageVersion
+Set-AzServiceFabricManagedNodeType -InputObject $managedCluster -Verbose
+```
+
+### Monitoring OS image upgrade
+
+#### Using Service Fabric Explorer (SFX) to monitor OS image upgrade
+
+Service Fabric Managed Cluster OS upgrades are managed by Service Fabric Resource Provider (SFRP) and applied as repair jobs/tasks, with an 'Action' of 'SFRP.AutoOsUpgrade'. The tasks are viewable from 'Cluster' view 'Repair Jobs' tab in Service Fabric Explorer (SFX).
+
+Repair Jobs
 
 ![sfx repair task sfrp autoosupgrade](../media/how-to-configure-service-fabric-managed-cluster-automatic-os-image-upgrade/sfx-repair-task-sfrp-autoosupgrade.png)
 
+Repair Task
 
 ```json
 {
@@ -237,4 +238,51 @@ published latest version: 20348.1970.230905 running version: 'latest'
     "PerformPreparingHealthCheck": false,
     "PerformRestoringHealthCheck": false
 }
+```
+
+#### Using PowerShell with Servic Fabric SDK to monitor OS image upgrade
+
+PowerShell can also be used to view repair tasks. From a machine that has Service Fabric SDK installed or from a Service Fabric node, use [Get-ServiceFabricRepairTask](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricrepairtask) cmdlet to view repair tasks. There may be many tasks returned. Using -State or -TaskId can be used to filter results.
+
+```powershell
+Import-Module servicefabric
+Connect-ServiceFabricCluster -ConnectionEndpoint localhost:19000
+Get-ServiceFabricRepairTask
+```
+
+Example:
+
+```json
+>Get-ServiceFabricRepairTask | ConvertTo-Json
+  {
+    "Scope": "Cluster",
+    "TaskId": "SFRP-cae60004-a106-47d8-8889-b0c9bc06c194-UD-0",
+    "Version": 133395258565988821,
+    "Description": "",
+    "State": "Completed",
+    "Flags": "None",
+    "Action": "SFRP.AutoOSUpgrade",
+    "Target": "",
+    "Executor": "SFRP",
+    "ExecutorData": "",
+    "Impact": "",
+    "ResultStatus": "Succeeded",
+    "ResultCode": 0,
+    "ResultDetails": "Job step completed with status Executed",
+    "CreatedTimestamp": "2023-09-18T15:50:56.598Z",
+    "ClaimedTimestamp": "2023-09-18T15:50:56.598Z",
+    "PreparingTimestamp": "2023-09-18T15:50:56.598Z",
+    "ApprovedTimestamp": "2023-09-18T15:51:41.941Z",
+    "ExecutingTimestamp": "2023-09-18T15:51:56.692Z",
+    "RestoringTimestamp": "2023-09-18T16:01:28.218Z",
+    "CompletedTimestamp": "2023-09-18T16:01:28.468Z",
+    "PreparingHealthCheckStartUtcTimestamp": "2023-09-18T15:50:56.693Z",
+    "PreparingHealthCheckEndUtcTimestamp": "2023-09-18T15:50:56.740Z",
+    "RestoringHealthCheckStartUtcTimestamp": "2023-09-18T16:01:28.343Z",
+    "RestoringHealthCheckEndUtcTimestamp": "2023-09-18T16:01:28.406Z",
+    "PreparingHealthCheckState": "Skipped",
+    "RestoringHealthCheckState": "Skipped",
+    "PerformPreparingHealthCheck": false,
+    "PerformRestoringHealthCheck": false
+  }
 ```

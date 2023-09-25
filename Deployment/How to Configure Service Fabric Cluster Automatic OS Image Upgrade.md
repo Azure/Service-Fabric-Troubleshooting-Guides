@@ -2,9 +2,7 @@
 
 This article describes the best practice of configuring Service Fabric cluster Automatic OS Image Upgrade for management of Windows OS hotfixes and security updates. [Automatic OS Image Upgrade](https://learn.microsoft.com/azure/service-fabric/how-to-patch-cluster-nodes-windows) has additional information including Patch Orchestration Application (POA) if unable to use Automatic OS Image Upgrade. Failure to configure Automatic OS Image Upgrade or POA can result in Service Fabric cluster downtime due to default OS hotfix patching configuration which will randomly restart nodes without warning or coordination with Service Fabric Resource Provider.
 
-## Service Fabric Managed Clusters
-
-Service Fabric Managed clusters ... TODO [How to Configure Service Fabric Managed Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Managed%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
+For Service Fabric Managed clusters, use [How to Configure Service Fabric Managed Cluster Automatic OS Image Upgrade](./How%20to%20Configure%20Service%20Fabric%20Managed%20Cluster%20Automatic%20OS%20Image%20Upgrade.md)
 
 ## Configuring Automatic OS Image Upgrade for Service Fabric Clusters
 
@@ -247,7 +245,44 @@ Azure Service Fabric Managed Clusters support for Maintenance Control is current
 
 ### Enumerate current OS image SKU's available in Azure
 
-New images are applied based on policy settings. [enumerate-vmss-image-sku.ps1](../Scripts/enumerate-vmss-image-sku.ps1) enumerates current OS image SKU's available in Azure to verify if node type is running the latest OS image version. [Example enumerate current OS image SKU's cmdlet output](#example-enumerate-current-os-image-skus-cmdlet-output) below has expected output. As soon as the PowerShell commands are executed, the rollback will start.
+New images are applied based on policy settings. [enumerate-vmss-image-sku.ps1](../Scripts/enumerate-vmss-image-sku.ps1) enumerates current OS image SKU's available in Azure to verify if node type is running the latest OS image version.
+
+```powershell
+>.\enumerate-vmss-image-sku.ps1 -resourceGroupName $resourceGroupName
+targetImageReference ExactVersion not found. checking instance 0
+current running image on node type: 
+
+Publisher               : MicrosoftWindowsServer
+Offer                   : WindowsServer
+Sku                     : 2022-Datacenter
+Version                 : 20348.1970.230905
+ExactVersion            : 20348.1970.230905
+SharedGalleryImageId    : 
+CommunityGalleryImageId : 
+Id                      : 
+
+Get-AzVmImage -Location eastus -PublisherName MicrosoftWindowsServer -offer WindowsServer -sku 2022-Datacenter
+available versions: 
+20348.825.220704
+20348.887.220806
+20348.1006.220908
+20348.1129.221007
+20348.1131.221014
+20348.1249.221105
+20348.1366.221207
+20348.1487.230106
+20348.1547.230207
+20348.1607.230310
+20348.1668.230404
+20348.1726.230505
+20348.1787.230607
+20348.1787.230621
+20348.1850.230707
+20348.1906.230803
+20348.1970.230905
+
+current running version: 20348.1970.230905 is same or newer than published latest version: 20348.1970.230905
+```
 
 ### Review OS image upgrade status
 
@@ -369,6 +404,120 @@ Update-AzVmss -ResourceGroupName $resourceGroupName `
     -ImageReferenceSku '2022-Datacenter' `
     -Verbose
 ``````
+
+### Monitoring OS image upgrade
+
+#### Using Service Fabric Explorer (SFX) to monitor OS image upgrade
+
+Service Fabric Cluster OS upgrades are managed by ARM and applied as infrastructure jobs containing repair jobs/tasks, with an 'Action' of 'OSUpdate'. The tasks will be 'TenantUpdate' with 'Action' 'System.Azure.Job.TenantUpdate' and are viewable from 'Repair Jobs' tab in Service Fabric Explorer (SFX). For Bronze stateless clusters, only 'Repair Jobs' are used.
+
+Infrastructure Jobs
+
+![sfx infrastructure task autoosupgrade](../media/how-to-configure-service-fabric-cluster-automatic-os-image-upgrade/sfx-infrastructure-task-autoosupgrade.png)
+
+Repair Jobs
+
+![sfx repair task autoosupgrade](../media/how-to-configure-service-fabric-cluster-automatic-os-image-upgrade/sfx-repair-task-autoosupgrade.png)
+
+Repair Task
+
+```json
+{
+    "Scope": {
+        "Kind": "Cluster"
+    },
+    "TaskId": "Azure/TenantUpdate/5bec9ec2-ff53-44bd-94c2-480ca7959397/0/5",
+    "Version": "133401307470604598",
+    "Description": "",
+    "State": "Executing",
+    "Flags": 0,
+    "Action": "System.Azure.Job.TenantUpdate",
+    "Target": {
+        "Kind": "Node",
+        "NodeNames": [
+            "_nt0_0"
+        ]
+    },
+    "Executor": "fabric:/System/InfrastructureService/nt0",
+    "ExecutorData": "{\r\n  \"JobId\": \"5bec9ec2-ff53-44bd-94c2-480ca7959397\",\r\n  \"UD\": 0,\r\n  \"StepId\": \"_nt0_0\"\r\n}",
+    "Impact": {
+        "Kind": "Node",
+        "NodeImpactList": [
+            {
+                "NodeName": "_nt0_0",
+                "ImpactLevel": "Restart"
+            }
+        ]
+    },
+    "ResultStatus": "Pending",
+    "ResultCode": 0,
+    "ResultDetails": "",
+    "History": {
+        "CreatedUtcTimestamp": "2023-09-25T15:52:27.060Z",
+        "ClaimedUtcTimestamp": "2023-09-25T15:52:27.060Z",
+        "PreparingUtcTimestamp": "2023-09-25T15:52:27.060Z",
+        "ApprovedUtcTimestamp": "2023-09-25T15:53:05.976Z",
+        "ExecutingUtcTimestamp": "2023-09-25T15:53:07.968Z",
+        "RestoringUtcTimestamp": "0001-01-01T00:00:00.000Z",
+        "CompletedUtcTimestamp": "0001-01-01T00:00:00.000Z",
+        "PreparingHealthCheckStartUtcTimestamp": "2023-09-25T15:52:27.154Z",
+        "PreparingHealthCheckEndUtcTimestamp": "2023-09-25T15:52:27.201Z",
+        "RestoringHealthCheckStartUtcTimestamp": "0001-01-01T00:00:00.000Z",
+        "RestoringHealthCheckEndUtcTimestamp": "0001-01-01T00:00:00.000Z"
+    },
+    "PreparingHealthCheckState": "Skipped",
+    "RestoringHealthCheckState": "NotStarted",
+    "PerformPreparingHealthCheck": false,
+    "PerformRestoringHealthCheck": false
+}
+```
+
+#### Using PowerShell with Servic Fabric SDK to monitor OS image upgrade
+
+PowerShell can also be used to view repair tasks. From a machine that has Service Fabric SDK installed or from a Service Fabric node, use [Get-ServiceFabricRepairTask](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricrepairtask) cmdlet to view repair tasks. There may be many tasks returned. Using -State or -TaskId can be used to filter results.
+
+```powershell
+Import-Module servicefabric
+Connect-ServiceFabricCluster -ConnectionEndpoint localhost:19000
+Get-ServiceFabricRepairTask
+```
+
+Example:
+
+```json
+>Get-ServiceFabricRepairTask | ConvertTo-Json
+  {
+    "Scope": "Cluster",
+    "TaskId": "Azure/TenantUpdate/5bec9ec2-ff53-44bd-94c2-480ca7959397/-/20",
+    "Version": 133401334981899652,
+    "Description": "",
+    "State": "Completed",
+    "Flags": "None",
+    "Action": "System.Azure.Job.TenantUpdate",
+    "Target": "",
+    "Executor": "fabric:/System/InfrastructureService/nt0",
+    "ExecutorData": "{\r\n  \"JobId\": \"5bec9ec2-ff53-44bd-94c2-480ca7959397\",\r\n  \"StepId\": \"-\"\r\n}",
+    "Impact": "",
+    "ResultStatus": "Succeeded",
+    "ResultCode": 0,
+    "ResultDetails": "Job step completed with status Executed",
+    "CreatedTimestamp": "2023-09-25T16:38:18.1899638Z",
+    "ClaimedTimestamp": "2023-09-25T16:38:18.1899638Z",
+    "PreparingTimestamp": "2023-09-25T16:38:18.1899638Z",
+    "ApprovedTimestamp": "2023-09-25T16:38:18.3931969Z",
+    "ExecutingTimestamp": "2023-09-25T16:38:33.2963184Z",
+    "RestoringTimestamp": "2023-09-25T16:39:48.8104708Z",
+    "CompletedTimestamp": "2023-09-25T16:39:49.0088904Z",
+    "PreparingHealthCheckStartTimestamp": "2023-09-25T16:38:18.2837935Z",
+    "PreparingHealthCheckEndTimestamp": "2023-09-25T16:38:18.3306519Z",
+    "RestoringHealthCheckStartTimestamp": "2023-09-25T16:39:48.8883748Z",
+    "RestoringHealthCheckEndTimestamp": "2023-09-25T16:39:48.9353141Z",
+    "PreparingHealthCheckState": "Skipped",
+    "RestoringHealthCheckState": "Skipped",
+    "PerformPreparingHealthCheck": false,
+    "PerformRestoringHealthCheck": false
+  }
+```
 
 ## Troubleshooting
 
@@ -581,40 +730,3 @@ Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetNa
   "Error": null
 }
 ```
-
-### Example enumerate current OS image SKU's cmdlet output
-
-```powershell
-current running image on node type: 
-
-Publisher               : MicrosoftWindowsServer
-Offer                   : WindowsServer
-Sku                     : 2022-Datacenter
-Version                 : latest
-ExactVersion            : 
-SharedGalleryImageId    : 
-CommunityGalleryImageId : 
-Id                      : 
-
-running version is 'latest'
-Get-AzVmImage -Location eastus -PublisherName MicrosoftWindowsServer -offer WindowsServer -sku 2022-Datacenter
-available versions: 
-20348.825.220704
-20348.887.220806
-20348.1006.220908
-20348.1129.221007
-20348.1131.221014
-20348.1249.221105
-20348.1366.221207
-20348.1487.230106
-20348.1547.230207
-20348.1607.230310
-20348.1668.230404
-20348.1726.230505
-20348.1787.230607
-20348.1787.230621
-20348.1850.230707
-20348.1906.230803
-20348.1970.230905
-published latest version: 20348.1970.230905 running version: 'latest'
-``````
