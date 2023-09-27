@@ -92,7 +92,7 @@ Microsoft.Compute/virtualMachineScaleSets/extensions resource
 
 ### Configure durability tier and typeHandlerVersion using Azure PowerShell
 
-For Service Fabric clusters only, use [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
+Use [Update-AzServiceFabricDurability](https://learn.microsoft.com/powershell/module/az.servicefabric/update-azservicefabricdurability) cmdlet to update the durability tier for the node type in the cluster resource.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -286,7 +286,7 @@ current running version: 20348.1970.230905 is same or newer than published lates
 
 ### Review OS image upgrade status
 
-For Service Fabric clusters only, use [Get-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgrade) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgrade](#example-Get-AzVmssRollingUpgrade--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
+Use [Get-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgrade) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgrade](#example-Get-AzVmssRollingUpgrade--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -300,7 +300,7 @@ Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
 
 ### Review OS image upgrade history
 
-For Service Fabric clusters only, use [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
+Use [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -358,7 +358,7 @@ Set-AzVmssRollingUpgradePolicy -VirtualMachineScaleSet $vmss `
 
 ### Manual Upgrade OS image
 
-For Service Fabric clusters only, use [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to see if there is a newer OS image version available.
+Use [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to see if there is a newer OS image version available.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -372,7 +372,7 @@ Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName `
 
 ### Stop OS image upgrade
 
-For Service Fabric clusters only, use [Stop-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/stop-azvmssrollingupgrade) cmdlet to stop OS image upgrade if one is in progress.
+Use [Stop-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/stop-azvmssrollingupgrade) cmdlet to stop OS image upgrade if one is in progress.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -386,7 +386,7 @@ Stop-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
 
 ### Rollback OS image upgrade
 
-For Service Fabric clusters only, use [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to disable Automatic OS Image Upgrade and to set older image version. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to enumerate available versions.
+Use [Update-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/update-azvmss) cmdlet to disable Automatic OS Image Upgrade and to set older image version. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to enumerate available versions.
 
 ```powershell
 $resourceGroupName = '<resource group name>'
@@ -413,11 +413,11 @@ Service Fabric Cluster OS upgrades are managed by Azure Compute and applied as i
 
 Infrastructure Jobs
 
-![sfx infrastructure task autoosupgrade](../media/how-to-configure-service-fabric-cluster-automatic-os-image-upgrade/sfx-infrastructure-task-autoosupgrade.png)
+![sfx infrastructure task autoOsUpgrade](../media/how-to-configure-service-fabric-cluster-automatic-os-image-upgrade/sfx-infrastructure-task-autoosupgrade.png)
 
 Repair Jobs
 
-![sfx repair task autoosupgrade](../media/how-to-configure-service-fabric-cluster-automatic-os-image-upgrade/sfx-repair-task-autoosupgrade.png)
+![sfx repair task autoOsUpgrade](../media/how-to-configure-service-fabric-cluster-automatic-os-image-upgrade/sfx-repair-task-autoosupgrade.png)
 
 Repair Task
 
