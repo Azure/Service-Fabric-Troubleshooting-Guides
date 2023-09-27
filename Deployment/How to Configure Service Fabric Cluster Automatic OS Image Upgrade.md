@@ -409,7 +409,7 @@ Update-AzVmss -ResourceGroupName $resourceGroupName `
 
 #### Using Service Fabric Explorer (SFX) to monitor OS image upgrade
 
-Service Fabric Cluster OS upgrades are managed by ARM and applied as infrastructure jobs containing repair jobs/tasks, with an 'Action' of 'OSUpdate'. The tasks will be 'TenantUpdate' with 'Action' 'System.Azure.Job.TenantUpdate' and are viewable from 'Repair Jobs' tab in Service Fabric Explorer (SFX). For Bronze stateless clusters, only 'Repair Jobs' are used.
+Service Fabric Cluster OS upgrades are managed by Azure Compute and applied as infrastructure jobs containing repair jobs/tasks, with an 'Action' of 'OSUpdate'. The tasks will be 'TenantUpdate' with 'Action' 'System.Azure.Job.TenantUpdate' and are viewable from 'Repair Jobs' tab in Service Fabric Explorer (SFX). For Bronze stateless clusters, only 'Repair Jobs' are used.
 
 Infrastructure Jobs
 
