@@ -1,23 +1,48 @@
-# How to configure Azure Devops Service Fabric Cluster Service Connection
+# How to configure Azure Devops for a Service Fabric Cluster
 
-The steps below describe how to configure the ADO service connection for Service Fabric clusters with Azure Active Directory (AAD / Azure AD). Using AAD for the Service Fabric service connection 
+The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric Managed clusters, refer to this article [How to configure Azure Devops Service Fabric Managed Cluster connection](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20Managed%20Cluster.md).  
 
-Service Fabric Managed Clusters provision and manage the 'server' certificate including the rollover process before certificate expiration.
-There is currently no notification when this occurs.
-Azure Devops (ADO) service connections that use X509 Certificate authentication requires the configuration of the server certificate thumbprint.
-When the certificate is rolled over, the Service Fabric service connection will fail to connect to cluster causing pipelines to fail.
+There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover the recommended approach when using a Service Fabric service connection. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
+
+For Service Fabric service connection configurations, the recommended approach is to use Azure Active Directory (AAD) for authentication and certificate common name for server certificate lookup. This approach is maintenance free and provides the best security. This is the only configuration that supports parallel deployments per agent host. See [Agent limitations](#agent-limitations).
+
+## Azure Devops Service Connection with Azure Active Directory (AAD / Entra)
+
+Using AAD for the Service Fabric service connection is considered a best practice for security and maintenance. This is the recommended approach for Service Fabric clusters or applications that are not deployed and maintained via ARM templates.
+
+## Azure Devops Service Connection with Certificate Common Name
+
+If AAD is not an option, the next best approach is to use the certificate common name for server certificate lookup. This approach is maintenance free, but does not provide the same level of security as AAD. This configuration is not supported for parallel deployments per agent host.
+
+## Azure Devops Service Connection with Certificate Thumbprint
+
+This configuration should only be used if above configuration is not possible. This configuration requires the certificate to be in base64 encoded format. This configuration is not supported for parallel deployments per agent host. When certificate expires, it must be updated in ADO.
+
+## Agent Configuration
+
+Ensure agent is configured with the latest version of the [Service Fabric SDK](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools). This is required for the Service Fabric tasks to work correctly.
+
+## Agent limitations
+
+Any Service Fabric service connection configuration that requires the certificate in base64 encoded format is not supported for parallel deployments per agent host. For security reasons, at start of deployment, the certificate is installed onto the agent host. At end of deployment, the certificate is removed. Any other deployments that are running on the same agent host using this certificate may fail.
+
+Mitigation options:
+
+- Use a Service Fabric service connection with AAD as described [above](#azure-devops-service-connection-with-azure-active-directory-aad--entra).
+
+- Use one agent host per parallel deployment.
+
+- Use ARM templates for cluster or application deployments.
+
+<!-- todo insert base64 pic -->
 
 ## Requirements
 
-- Service Fabric managed cluster security with Azure Active Directory enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure) and [Service Fabric Azure Active Directory configuration in Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for additional information.
+- Service Fabric Cluster with Azure Active Directory enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure) and [Service Fabric Azure Active Directory configuration in Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for additional information.
 
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-enable-aad.png)
+  ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/sfmc-enable-aad.png)
 
-- Azure Devops user configured to use the 'Cluster' App Registration that is configured for the managed cluster.
-
-- Azure Devops build agent with 'Hosted' (not 'Self-Hosted') pool type. For hosted, 'Azure virtual machine scale set' is the pool type to be used.
-
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-pool-type.png)
+- Azure Devops user configured to use the 'Cluster' App Registration that is configured for the cluster.
 
 ## Process
 
