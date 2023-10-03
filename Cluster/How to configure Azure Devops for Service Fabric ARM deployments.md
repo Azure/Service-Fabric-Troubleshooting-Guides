@@ -16,5 +16,12 @@ For unmanaged clusters deployments not using ARM templates, see [How to configur
 
 <!-- todo -->
 
+<!-- tsg source info reference -->
+ado arm deployment task:
+https://github.com/microsoft/azure-pipelines-tasks/blob/master/Tasks/AzureResourceManagerTemplateDeploymentV3/README.md
 
+arm cluster deployment:
 https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-cluster-template
+
+arm application deployment:
+https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-application-arm-resource

@@ -2,15 +2,11 @@
 
 The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric Managed clusters, refer to this article [How to configure Azure Devops Service Fabric Managed Cluster connection](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20Managed%20Cluster.md).  
 
-There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover the recommended approach when using a Service Fabric service connection. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
+There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover the recommended approach when using a Service Fabric service connection. Service Fabric cluster and application deployment best practice is to use ARM templates. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
 
 ## Azure Devops Service Connection Options
 
 For Service Fabric service connection configurations, the recommended approach is to use Azure Active Directory (AAD) for authentication and certificate common name for server certificate lookup. This approach is maintenance free and provides the best security. This is the only configuration that supports parallel deployments per agent host. See [Agent limitations](#agent-limitations).
-
-## Agent Configuration
-
-Ensure agent is configured with the latest version of the [Service Fabric SDK](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools). This is required for the Service Fabric tasks to work correctly.
 
 ## Agent limitations
 
@@ -36,24 +32,47 @@ Mitigation options:
 
   ![portal cluster security](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-sfc-security.png)
 
-- Azure Devops user and password configured to use the AAD 'Cluster' App Registration 'Admin' Role for administrative access to cluster. The 'Cluster' App Registration 'Admin' Role allows read and write access to cluster which is necessary for deployments.
-  <!-- todo confirm if mfa needs to be disabled -->
-  
-  ![portal cluster user overview](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-overview.png)
+- AAD user and password configured to use the AAD 'Cluster' App Registration 'Admin' Role for administrative access to cluster. The 'Cluster' App Registration 'Admin' Role allows read and write access to cluster which is necessary for deployments. See [AAD User Configuration](#aad-user-configuration) for detailed steps.
 
-  ![portal cluster user applications](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-applications.png)
-
-  ![portal cluster app registration users](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration-users.png)
+- ADO agent configured with the latest version of the [Service Fabric SDK](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools). This is required for the Service Fabric tasks to work correctly.
 
 ## Recommended
 
 - Certificate Authority (CA) certificate for cluster. This is a best practice and is required for any certificate based authentication using common name.
 
-## Process
+## AAD User Configuration
 
-- Verify [Requirements](#requirements).
-- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
-- [Test](#test) connection.
+The AAD user must be added to the 'Cluster' App Registration in the 'Admin' role. This is required for deployments to cluster. The 'Cluster' App Registration is created when AAD is enabled for the cluster. See [Set up Azure Active Directory for client authentication in the Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for detailed steps on how to enable AAD for cluster or [Set up Azure Active Directory for client authentication](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-aad) for an automated process.
+
+### AAD User Configuration Role configuration
+
+- In Azure portal, navigate to the 'Cluster' [App Registrations](https://portal.azure.com/?feature.msaljs=true#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps).
+  ![portal cluster app registration](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration.png)
+- Select 'Api Permissions' from the left menu, then 'Enterprise Applications' link.
+  ![portal cluster api permissions](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-api-permissions.png)
+  
+- Select 'Users and groups' from the left menu.
+  ![portal cluster user overview](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-overview.png)
+  ![portal cluster app registration users](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration-users.png)
+
+- Select 'Add user' from the top menu.
+- Select 'Users and groups in my organization' from the 'Assign access to' dropdown.
+- Enter the AAD user in the 'Select' field.
+- Select 'Cluster' from the 'Select role' dropdown.
+- Select 'Admin' from the 'Select role' dropdown.
+- Select 'Assign' from the bottom menu.
+
+  
+  ![portal cluster user applications](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-applications.png)
+
+
+### AAD User Configuration Multi-Factor Authentication (MFA)
+
+If MFA is enabled for the AAD user, it must be disabled for deployments to cluster. This can be done by creating a new AAD user with MFA disabled or by disabling MFA for the existing AAD user.
+
+### AAD User Configuration Password
+
+If the AAD user account is new, ensure the account is not prompting for a password change. This can be tested by connecting to Service Fabric Explorer (SFX) as the AAD user. When the password expires, the account will need to be updated in ADO.
 
 ### Service Fabric Service Connection
 
@@ -86,7 +105,7 @@ Using AAD for the Service Fabric service connection is considered a best practic
 
 If AAD is not an option, the next best approach is to use the certificate common name for server certificate lookup. This approach is maintenance free, but does not provide the same level of security as AAD. This configuration is not supported for parallel deployments per agent host.
 
-- **Authentication method:** Select 'Azure Active Directory credential'.
+- **Authentication method:** Select 'Certificate Based'.
 - **Server Certificate Lookup (optional):** Select 'Common Name'.
 - **Server Common Name** Enter the cluster server certificate common name. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
   - Example: sfcluster.contoso.com
@@ -99,7 +118,7 @@ If AAD is not an option, the next best approach is to use the certificate common
 
 This configuration should only be used if above configuration is not possible. This configuration requires the certificate to be in base64 encoded format. This configuration is not supported for parallel deployments per agent host. When certificate expires, it must be updated in ADO.
 
-- **Authentication method:** Select 'Azure Active Directory credential'.
+- **Authentication method:** Select 'Certificate Based'.
 - **Server Certificate Lookup (optional):** Select 'Thumbprint'.
 - **Server Certificate Thumbprint(s)** Enter the cluster or server certificate thumbprint. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
   - Example: sfcluster.contoso.com
@@ -116,6 +135,12 @@ This configuration should only be used if above configuration is not possible. T
 - **Password (optional):** Enter client certificate password if there is one.
 
   ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-certificate-thumbprint-connection.png)
+
+## Process
+
+- Verify [Requirements](#requirements).
+- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
+- [Test](#test) connection.
 
 ## Test
 
