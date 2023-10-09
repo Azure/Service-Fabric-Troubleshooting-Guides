@@ -40,23 +40,28 @@ param(
     [string]$resourceGroupName,
     [string]$clusterName = $resourceGroupName,
     [string]$nodeTypeName,
+    [string]$publisherName = 'MicrosoftWindowsServer',
+    [string]$offer = 'WindowsServer',
+    [string]$sku,
     [int]$instanceId = -1
 )
 
-Import-Module -Name Az.Compute
-Import-Module -Name Az.Resources
-
 function main() {
+    if (!(check-module)) { return }
+
     $targetImageReference = $latestVersion = [version]::new(0, 0, 0, 0)
     $isLatest = $false
     $versionsBack = 0
-    $location = (Get-AzResourceGroup -Name $resourceGroupName).Location
 
-    $cluster = Get-AzResource -ResourceGroupName $resourceGroupName -ResourceType Microsoft.ServiceFabric/clusters -ResourceName $clusterName -ErrorAction SilentlyContinue
+    $location = (Get-AzResourceGroup -Name $resourceGroupName).Location
+    $cluster = Get-AzResource -ResourceGroupName $resourceGroupName -ResourceType Microsoft.ServiceFabric/clusters -ResourceName $clusterName -ExpandProperties -ErrorAction SilentlyContinue
 
     if (!$cluster) {
-        $cluster = Get-AzResource -ResourceGroupName $resourceGroupName -ResourceType Microsoft.ServiceFabric/managedclusters -ResourceName $clusterName
+        write-host "checking for managed cluster"
+        $cluster = Get-AzResource -ResourceGroupName $resourceGroupName -ResourceType Microsoft.ServiceFabric/managedclusters -ResourceName $clusterName -ExpandProperties
         $resourceGroupName = "SFC_$($cluster.Properties.clusterid)"
+        $nodeTypes = Get-AzResource -ResourceGroupName $resourceGroupName -ResourceType Microsoft.Compute/virtualMachineScaleSets -ExpandProperties
+        $cluster.Properties | Add-Member -MemberType NoteProperty -Name 'nodeTypes' -Value $nodeTypes
     } 
     if (!$cluster) {
         write-error "cluster not found. specify -clusterName`r`n$($error | out-string)"
@@ -142,6 +147,44 @@ function main() {
     else {
         write-host "current running version: $runningVersion is same or newer than published latest version: $latestVersion" -ForegroundColor Green
     }
+}
+
+function check-module() {
+    $error.clear()
+    get-command Connect-AzAccount -ErrorAction SilentlyContinue
+    
+    if ($error) {
+        $error.clear()
+        write-warning "azure module for Connect-AzAccount not installed."
+
+        if ((read-host "is it ok to install latest azure az module?[y|n]") -imatch "y") {
+            $error.clear()
+            install-module az.accounts
+            install-module az.compute
+            install-module az.resources
+
+            import-module az.accounts
+            import-module az.compute
+            import-module az.resources
+        }
+        else {
+            return $false
+        }
+
+        if ($error) {
+            return $false
+        }
+    }
+
+    if(!(get-azResourceGroup)){
+        Connect-AzAccount
+    }
+
+    if(!@(get-azResourceGroup).Count -gt 0){
+        return $false
+    }
+
+    return $true
 }
 
 main
