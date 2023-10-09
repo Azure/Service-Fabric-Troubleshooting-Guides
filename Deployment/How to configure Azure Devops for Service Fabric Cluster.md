@@ -14,15 +14,11 @@ Any Service Fabric service connection configuration that requires the 'Client Ce
 
 Mitigation options:
 
-- Use a Service Fabric service connection with AAD as described [above](#azure-devops-service-connection-with-azure-active-directory-aad--entra).
+- Use a Service Fabric service connection with AAD as described [below](#azure-devops-service-connection-with-azure-active-directory-aad--entra).
 
 - Use one agent host per parallel deployment.
 
-- Use ARM templates for cluster or application deployments.
-
-<!-- todo insert base64 pic -->
-
-<!-- todo review all below -->
+- Use ARM templates for cluster or application deployments. See [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
 
 ## Requirements
 
@@ -38,7 +34,7 @@ Mitigation options:
 
 ## Recommended
 
-- Certificate Authority (CA) certificate for cluster. This is a best practice and is required for any certificate based authentication using common name.
+- Certificate Authority (CA) certificate for cluster connection. This is a best practice and is required for any certificate based authentication using common name.
 
 ## AAD User Configuration
 
@@ -61,10 +57,8 @@ The AAD user must be added to the 'Cluster' App Registration in the 'Admin' role
 - Select 'Cluster' from the 'Select role' dropdown.
 - Select 'Admin' from the 'Select role' dropdown.
 - Select 'Assign' from the bottom menu.
-
   
   ![portal cluster user applications](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-applications.png)
-
 
 ### AAD User Configuration Multi-Factor Authentication (MFA)
 
