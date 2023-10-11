@@ -1,8 +1,8 @@
-# Installation of Service Fabric 10.0 SDK fails with error code 0x8013141A
+# Installation of Service Fabric 10.0 SDK (7.0.1816) fails with error code 0x8013141A
 
 ## Problem
 
-- Installation of Service Fabric 10.0 SDK fails with error code 0x8013141A
+- Installation of [Service Fabric 10.0 SDK (7.0.1816)](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools) fails with error code 0x8013141A
 
 ## Symptoms
 
