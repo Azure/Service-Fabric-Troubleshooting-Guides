@@ -1,4 +1,4 @@
-# Installation of Service Fabric 10.0 SDK (7.0.1816) fails with error code 0x8013141A
+# Installation of Service Fabric 10.0 SDK version 7.0.1816 fails with error code 1603
 
 ## Problem
 
@@ -8,9 +8,9 @@
 
 - Installation Error is shown
 
-    ![Installation Error](../media/service-fabric-10.0-sdk-installation-failure-0x8013141a/installation-error.png)
+    ![Installation Error](../media/service-fabric-10.0-sdk-7.0.1816-installation-failure/installation-error.png)
 - In MSI installation log file, the following error will be logged:
-    -  to capture: msiexec /package $pwd\MicrosoftServiceFabricSDK.7.0.1816.msi /log $pwd\install.log
+    -  To capture MSI log: msiexec /package $pwd\MicrosoftServiceFabricSDK.7.0.1816.msi /log $pwd\install.log
 
     ```powershell
     Error: could not load custom action class Microsoft.ServiceFabric.SdkRuntimeCompatibilityCheck.CompatibilityCheckCA from assembly: SdkRuntimeCompatibilityCheck
@@ -26,7 +26,9 @@
     at System.AppDomain.Load(String assemblyString)
     at Microsoft.Deployment.WindowsInstaller.CustomActionProxy.GetCustomActionMethod(Session session, String assemblyName, String className, String methodName)
     ```
+
 - In Windows Event Viewer Application Logs, the following error will be logged:
+
     ```
     Log Name:      Application
     Source:        MsiInstaller
@@ -76,10 +78,11 @@
 ## Mitigation
 
 - Install Service Fabric 9.1 CU6 SDK
-    - [release notes](https://github.com/microsoft/service-fabric/blob/master/release_notes/Service_Fabric_ReleaseNotes_91CU6.md)
-    - [runtime download](https://download.microsoft.com/download/b/8/a/b8a2fb98-0ec1-41e5-be98-9d8b5abf7856/MicrosoftServiceFabric.9.1.1851.9590.exe)
-    - [sdk download](https://download.microsoft.com/download/b/8/a/b8a2fb98-0ec1-41e5-be98-9d8b5abf7856/MicrosoftServiceFabricSDK.6.1.1851.msi)
+
+  - [9.1 CU6 SDK release notes](https://github.com/microsoft/service-fabric/blob/master/release_notes/Service_Fabric_ReleaseNotes_91CU6.md)
+  - [9.1 CU6 SDK runtime download](https://download.microsoft.com/download/b/8/a/b8a2fb98-0ec1-41e5-be98-9d8b5abf7856/MicrosoftServiceFabric.9.1.1851.9590.exe)
+  - [9.1 CU6 SDK sdk download](https://download.microsoft.com/download/b/8/a/b8a2fb98-0ec1-41e5-be98-9d8b5abf7856/MicrosoftServiceFabricSDK.6.1.1851.msi)
 
 ## Resolution
 
-The Service Fabric team is planning to fix this in next 10.x Cumulative Update.
+The Service Fabric team will be releasing a fix this in next 10.x Cumulative Update.
