@@ -1,6 +1,6 @@
 # How to configure Azure Devops for a Service Fabric Cluster
 
-The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric Managed clusters, refer to this article [How to configure Azure Devops Service Fabric Managed Cluster connection](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20Managed%20Cluster.md).  
+The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric clusters, refer to this article [How to configure Azure Devops Service Fabric cluster connection](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20Managed%20Cluster.md).  
 
 There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover different configurations when using a Service Fabric service connection. Service Fabric cluster and application deployment best practice is to use ARM templates. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
 
@@ -8,37 +8,60 @@ There are multiple ways to configure Azure Devops for connectivity to Service Fa
 
 For Service Fabric service connection configurations, it is recommended to use Entra (Azure Active Directory / AAD) for authentication and certificate common name for server certificate lookup. This configuration is maintenance free and provides the best security. This is the only service connection configuration that supports parallel deployments per agent host. See [Agent limitations](#agent-limitations).
 
-## Agent limitations
+## Process
 
-Any Service Fabric service connection configuration that requires the 'Client Certificate' in base64 encoded format is not supported for parallel deployments per agent host. For security reasons, at start of deployment, the certificate is installed onto the agent host. At end of deployment, the certificate is removed. Any other deployments that are running on the same agent host using this certificate may fail.
+- Verify [Requirements](#requirements) and implement [Recommended](#recommended) configurations where possible.
+- Configure cluster for [Entra cluster configuration](#entra-cluster-configuration) (AAD) authentication. 
+- Configure [Entra user configuration](#entra-user-configuration) for cluster access.
+- Test Entra user configuration by connecting to [Service Fabric Explorer (SFX) user test](#service-fabric-explorer-sfx-user-test) as Entra user.
+- In Azure Devops, create / modify the [Service Fabric Service Connection](#service-fabric-service-connection) to be used with the build / release pipelines for the cluster.
+- [Test](#azure-devops-pipeline-test) connection.
 
-Mitigation options:
-
-- Use a Service Fabric service connection with Entra as described [below](#azure-devops-service-connection-with-entra-azure-active-directory).
-
-- Use one agent host per parallel deployment.
-
-- Use ARM templates for cluster or application deployments. See [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
 
 ## Requirements
 
 - Secure Service Fabric Cluster. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security).
-
 - ADO agent configured with the latest version of the [Service Fabric SDK](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools). This is required for the Service Fabric tasks to work correctly.
 
 ## Recommended
 
 - Secure Service Fabric Cluster with Entra (AAD) enabled.  See [Entra Cluster Configuration](#entra-cluster-configuration) for detailed steps.
-
 - Entra user and password configured to use the Entra 'Cluster' App Registration 'Admin' Role for administrative access to cluster. The 'Cluster' App Registration 'Admin' Role allows read and write access to cluster which is necessary for deployments. See [Entra User Configuration](#entra-user-configuration) for detailed steps.
-
 - Certificate Authority (CA) certificate for cluster connection. This is a best practice and is required for any certificate based authentication using common name.
 
 ## Entra Cluster Configuration
 
-Entra configuration for a Service Fabric cluster can be configured either during initial or post cluster deployment. See [Set up Microsoft Entra ID for client authentication in the Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for detailed steps on how to enable Entra for cluster or [Set up Microsoft Entra ID for client authentication](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-aad) for an automated process.
+Entra configuration for a Service Fabric cluster can be configured either during initial or post cluster deployment. To setup Entra configuration for use with Service Fabric, see [Set up Microsoft Entra ID for client authentication in the Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for detailed steps on how to enable Entra for cluster or [Set up Microsoft Entra ID for client authentication](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-aad) for an automated process.
+
+### Entra Cluster Configuration in Azure Portal
+
+Entra Cluster configuration can viewed in [Azure portal](https://portal.azure.com) by navigating to the cluster and selecting 'Security' from the left menu. The 'Azure Active Directory' section will show the Entra configuration.
 
 ![portal cluster security](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-sfc-security.png)
+
+### Entra Cluster ARM Template Configuration
+
+Below is an example of adding / modifying Entra configuration Service Fabric cluster ARM template after Entra configuration is complete. The 'azureActiveDirectory' object is added to the 'properties' section of the 'Microsoft.ServiceFabric/clusters' resource. See [Service Fabric cluster template reference](https://docs.microsoft.com/azure/templates/microsoft.servicefabric/clusters) for more information on cluster template configuration.
+
+```diff
+{
+    "apiVersion": "2021-06-01",
+    "type": "Microsoft.ServiceFabric/clusters",
+    "name": "[parameters('clusterName')]",
+    "location": "[parameters('clusterLocation')]",
+    "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName'))]"
+    ],
+    "properties": {
+        "addOnFeatures": [
+            "DnsService"
+        ],
++       "azureActiveDirectory": {
++         "tenantId":"<tenant id>",
++         "clusterApplication":"<cluster application id>",
++         "clientApplication":"<client application id>"
++       },
+```
 
 ## Entra User Configuration
 
@@ -66,15 +89,18 @@ The Entra user must be added to the 'Cluster' App Registration in the 'Admin' ro
 
 ### Entra User Configuration Multi-Factor Authentication (MFA)
 
-If MFA is enabled for the Entra user, it must be disabled for deployments to cluster. This can be done by creating a new Entra user with MFA disabled or by disabling MFA for the existing Entra user.
+If MFA is enabled for the Entra user, it must be disabled for deployments to cluster from ADO. This can be done by creating a new Entra user with MFA disabled, disabling MFA for the existing Entra user, or through MFA policy configuration. See [Microsoft Entra Conditional Access](https://docs.microsoft.com/azure/active-directory/conditional-access/) for more information on MFA policy configuration. In Azure portal, select the Entra user and view the 'Authentication methods' to check MFA configuration for user. MFA configuration can be tested by connecting to Service Fabric Explorer (SFX) as the Entra user. See [Service Fabric Explorer User Test](#service-fabric-explorer-sfx-user-test) for more information.
 
 ### Entra User Configuration Password
 
-If the Entra user account is new, ensure the account is not prompting for a password change. This can be tested by connecting to Service Fabric Explorer (SFX) as the Entra user. When the password expires, the account will need to be updated in ADO.
+If the Entra user account is new, ensure the account is not prompting for a password change. This can be tested by connecting to Service Fabric Explorer (SFX) as the Entra user. See [Service Fabric Explorer User Test](#service-fabric-explorer-sfx-user-test) for more information.
 
-### Service Fabric Service Connection
+> **Note**
+> When user password expires, the account will need to be updated in ADO.
 
-Create / Modify the Service Fabric Service Connection to provide connectivity to Service Fabric managed cluster from ADO pipelines.
+## Service Fabric Service Connection
+
+Create / Modify the Service Fabric Service Connection to provide connectivity to Service Fabric cluster from ADO pipelines.
 For maintenance free configuration, only 'Azure Active Directory credential' authentication  and 'Common Name' server certificate lookup is supported.
 
 ### Service Fabric Service Connection Common Properties
@@ -92,7 +118,7 @@ Using Entra for the Service Fabric service connection is considered a best pract
 
 - **Authentication method:** Select 'Azure Active Directory credential'.
 - **Server Certificate Lookup (optional):** Select 'Common Name'.
-- **Server Common Name** Enter the managed cluster server certificate common name. The common name format is {{cluster guid id with no dashes}}.sfmc.azclient.ms. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
+- **Server Common Name** Enter the cluster server certificate common name. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
   - Example: sfcluster.contoso.com
 - **Username:** Enter an Entra user that has been added to the clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Entra user.
 - **Password:** Enter Entra users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Entra user.
@@ -134,13 +160,28 @@ This configuration should only be used if above configuration is not possible. T
 
   ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-certificate-thumbprint-connection.png)
 
-## Process
+## Agent limitations
 
-- Verify [Requirements](#requirements).
-- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
-- [Test](#test) connection.
+Any Service Fabric service connection configuration that requires the 'Client Certificate' in base64 encoded format is not supported for parallel deployments per agent host. For security reasons, at start of deployment, the certificate is installed onto the agent host. At end of deployment, the certificate is removed. Any other deployments that are running on the same agent host using this certificate may fail.
 
-## Test
+Mitigation options:
+
+- Use a Service Fabric service connection with Entra as described [below](#azure-devops-service-connection-with-entra-azure-active-directory).
+
+- Use one agent host per parallel deployment.
+
+- Use ARM templates for cluster or application deployments. See [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
+
+## Service Fabric Explorer (SFX) user test
+
+Use Entra user to connect to Service Fabric Explorer (SFX) to test Entra user configuration. This will verify Entra user has access to cluster and is not prompted for a password change or MFA.
+
+- Open a browser and navigate to the cluster endpoint.
+  - Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
+- When prompted, enter Entra user credentials.
+- Upon successful login, SFX will be displayed for cluster.
+
+## Azure Devops pipeline test
 
 Use builtin task 'Service Fabric PowerShell' in pipeline to test connection.
 
