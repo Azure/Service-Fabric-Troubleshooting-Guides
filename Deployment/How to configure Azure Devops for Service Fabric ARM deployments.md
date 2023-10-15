@@ -14,13 +14,22 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 
 ## Process
 
-- Open the Azure Devops project and create a [New pipeline](#new-pipeline).
-
+- Open the Azure Devops project and create a [New YAML pipeline](#new-yaml-pipeline).
+- Add [ARM template deployment task](#add-arm-template-deployment-task) to the pipeline.
+- [Test](#testing) the pipeline.
 <!-- todo -->
 
 ## Service Fabric ARM templates
 
 ### Service Fabric Cluster ARM template
+
+There are different options available to create an ARM template for a Service Fabric cluster. The following are some of the options available.
+
+Learn Documentation: To create a Service Fabric cluster using an ARM template, see [Create a Service Fabric cluster Resource Manager template](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-creation-create-template).
+
+Azure Quickstart Templates:
+
+Azure Portal: To create a Service Fabric cluster using the Azure Portal, see [Create a Service Fabric cluster using the Azure portal](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-creation-via-portal).
 
 ### Service Fabric Managed Cluster ARM template
 
@@ -144,10 +153,37 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
 ### Template validation
 
+```powershell
+Test-AzResourceGroupDeployment -ResourceGroupName "myresourcegroup" -TemplateFile .\azuredeploy.json -TemplateParameterFile .\azuredeploy.parameters.json -Debug
+```
+
 ### Devops pipeline validation
 
 
 ## Troubleshooting
+
+Test network connectivity. Add a powershell task to pipeline to run 'test-netconnection' command to cluster endpoint, providing tcp port. Default port is 19000.
+
+  - Example:
+  
+  ```yaml
+  - powershell: |
+      $psversiontable
+      [environment]::getenvironmentvariables().getenumerator()|sort Name
+      $publicIp = (Invoke-RestMethod https://ipinfo.io/json).ip
+      write-host "---`r`ncurrent public ip:$publicIp" -ForegroundColor Green
+      write-host "test-netconnection $env:clusterEndpoint -p $env:clusterPort"
+      $result = test-netconnection $env:clusterEndpoint -p $env:clusterPort
+      write-host "test net connection result: $($result | fl * | out-string)"
+      if(!($result.TcpTestSucceeded)) { throw }
+    errorActionPreference: stop
+    displayName: "PowerShell Troubleshooting Script"
+    failOnStderr: true
+    ignoreLASTEXITCODE: false
+    env:  
+      clusterPort: 19000
+      clusterEndpoint: xxxxxx.xxxxx.cloudapp.azure.com
+  ```
 
 
 <!-- tsg source info reference -->
