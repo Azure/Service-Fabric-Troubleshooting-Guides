@@ -1,8 +1,8 @@
 # How to configure Azure Devops for a Service Fabric Cluster
 
-The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric clusters, refer to this article [How to configure Azure Devops Service Fabric cluster connection](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20Managed%20Cluster.md).  
+The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric managed clusters, refer to this article [How to configure Azure Devops Service Fabric Managed Cluster](./how-to-configure-azure-devops-for-service-fabric-managed-cluster.md).  
 
-There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover different configurations when using a Service Fabric service connection. Service Fabric cluster and application deployment best practice is to use ARM templates. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
+There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover different configurations when using a Service Fabric service connection. Service Fabric cluster and application deployment best practice is to use ARM templates. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./how-to-configure-azure-devops-for-service-fabric-arm-deployments.md).
 
 ## Azure Devops Service Connection Options
 
@@ -178,7 +178,7 @@ Mitigation options:
 
 - Use one agent host per parallel deployment.
 
-- Use ARM templates for cluster or application deployments. See [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
+- Use ARM templates for cluster or application deployments. See [How to configure Azure Devops for Service Fabric ARM deployments](./how-to-configure-azure-devops-for-service-fabric-arm-deployments.md).
 
 ## Service Fabric Explorer (SFX) user test
 
