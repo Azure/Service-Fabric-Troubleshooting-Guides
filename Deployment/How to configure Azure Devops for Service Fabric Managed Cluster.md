@@ -7,6 +7,11 @@ There is currently no notification when this occurs.
 Azure Devops (ADO) service connections that use X509 Certificate authentication requires the configuration of the server certificate thumbprint.
 When the certificate is rolled over, the Service Fabric service connection will fail to connect to cluster causing pipelines to fail.
 
+## Process
+
+- Verify [Requirements](#requirements).
+- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
+- [Test](#test) connection.
 
 ## Requirements
 
@@ -20,11 +25,13 @@ When the certificate is rolled over, the Service Fabric service connection will 
 
   ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-pool-type.png)
 
-## Process
+- Connectivity from ADO agent to cluster. This can be done by adding the ADO agent IP address to the cluster Network Security Group (NSG) inbound rule for the cluster endpoint port. See [Azure Network Security Group (NSG) Configuration](#azure-network-security-group-nsg-configuration) for more information.
 
-- Verify [Requirements](#requirements).
-- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
-- [Test](#test) connection.
+## Azure Network Security Group (NSG) Configuration
+
+Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
+
+![nsg inbound rule](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
 
 ### Service Fabric Service Connection
 
@@ -75,9 +82,12 @@ steps:
 ```
 
 ## Troubleshooting
+
 - Error: ##[debug]System.AggregateException: One or more errors occurred. ---> System.Fabric.FabricTransientException: Could not ping any of the provided Service Fabric gateway endpoints. ---> System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x80071C49
 - Test network connectivity. Add a powershell task to pipeline to run 'test-netconnection' command to cluster endpoint, providing tcp port. Default port is 19000.
+
   - Example:
+
   ```yaml
   - powershell: |
       $psversiontable

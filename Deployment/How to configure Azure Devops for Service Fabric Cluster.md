@@ -17,7 +17,6 @@ For Service Fabric service connection configurations, it is recommended to use E
 - In Azure Devops, create / modify the [Service Fabric Service Connection](#service-fabric-service-connection) to be used with the build / release pipelines for the cluster.
 - [Test](#azure-devops-pipeline-test) connection.
 
-
 ## Requirements
 
 - Secure Service Fabric Cluster. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security).
@@ -34,7 +33,7 @@ For Service Fabric service connection configurations, it is recommended to use E
 
 ## Azure Network Security Group (NSG) Configuration
 
-Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a standalone ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
+Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
 
 ![nsg inbound rule](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
 
