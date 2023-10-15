@@ -2,11 +2,11 @@
 
 The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric Managed clusters, refer to this article [How to configure Azure Devops Service Fabric Managed Cluster connection](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20Managed%20Cluster.md).  
 
-There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover the recommended approach when using a Service Fabric service connection. Service Fabric cluster and application deployment best practice is to use ARM templates. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
+There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover different configurations when using a Service Fabric service connection. Service Fabric cluster and application deployment best practice is to use ARM templates. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./How%20to%20configure%20Azure%20Devops%20for%20Service%20Fabric%20ARM%20deployments.md).
 
 ## Azure Devops Service Connection Options
 
-For Service Fabric service connection configurations, the recommended approach is to use Azure Active Directory (AAD) for authentication and certificate common name for server certificate lookup. This approach is maintenance free and provides the best security. This is the only configuration that supports parallel deployments per agent host. See [Agent limitations](#agent-limitations).
+For Service Fabric service connection configurations, it is recommended to use Entra (Azure Active Directory / AAD) for authentication and certificate common name for server certificate lookup. This configuration is maintenance free and provides the best security. This is the only service connection configuration that supports parallel deployments per agent host. See [Agent limitations](#agent-limitations).
 
 ## Agent limitations
 
@@ -14,7 +14,7 @@ Any Service Fabric service connection configuration that requires the 'Client Ce
 
 Mitigation options:
 
-- Use a Service Fabric service connection with AAD as described [below](#azure-devops-service-connection-with-azure-active-directory-aad--entra).
+- Use a Service Fabric service connection with Entra as described [below](#azure-devops-service-connection-with-entra-azure-active-directory).
 
 - Use one agent host per parallel deployment.
 
@@ -22,25 +22,29 @@ Mitigation options:
 
 ## Requirements
 
-- Secure Service Fabric Cluster with AAD enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure).
-
-- AAD enabled for Service Fabric Cluster. [Set up Azure Active Directory for client authentication in the Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for detailed steps on how to enable AAD for cluster or [Set up Azure Active Directory for client authentication](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-aad) for an automated process.
-
-  ![portal cluster security](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-sfc-security.png)
-
-- AAD user and password configured to use the AAD 'Cluster' App Registration 'Admin' Role for administrative access to cluster. The 'Cluster' App Registration 'Admin' Role allows read and write access to cluster which is necessary for deployments. See [AAD User Configuration](#aad-user-configuration) for detailed steps.
+- Secure Service Fabric Cluster. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security).
 
 - ADO agent configured with the latest version of the [Service Fabric SDK](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools). This is required for the Service Fabric tasks to work correctly.
 
 ## Recommended
 
+- Secure Service Fabric Cluster with Entra (AAD) enabled.  See [Entra Cluster Configuration](#entra-cluster-configuration) for detailed steps.
+
+- Entra user and password configured to use the Entra 'Cluster' App Registration 'Admin' Role for administrative access to cluster. The 'Cluster' App Registration 'Admin' Role allows read and write access to cluster which is necessary for deployments. See [Entra User Configuration](#entra-user-configuration) for detailed steps.
+
 - Certificate Authority (CA) certificate for cluster connection. This is a best practice and is required for any certificate based authentication using common name.
 
-## AAD User Configuration
+## Entra Cluster Configuration
 
-The AAD user must be added to the 'Cluster' App Registration in the 'Admin' role. This is required for deployments to cluster. The 'Cluster' App Registration is created when AAD is enabled for the cluster. See [Set up Azure Active Directory for client authentication in the Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for detailed steps on how to enable AAD for cluster or [Set up Azure Active Directory for client authentication](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-aad) for an automated process.
+Entra configuration for a Service Fabric cluster can be configured either during initial or post cluster deployment. See [Set up Microsoft Entra ID for client authentication in the Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for detailed steps on how to enable Entra for cluster or [Set up Microsoft Entra ID for client authentication](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-aad) for an automated process.
 
-### AAD User Configuration Role configuration
+![portal cluster security](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-sfc-security.png)
+
+## Entra User Configuration
+
+The Entra user must be added to the 'Cluster' App Registration in the 'Admin' role. This is required for deployments to cluster. The 'Cluster' App Registration is created when Entra is enabled for the cluster. See [Set up Microsoft Entra ID for client authentication in the Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for detailed steps on how to enable Entra for cluster or [Set up Microsoft Entra ID for client authentication](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-aad) for an automated process.
+
+### Entra User Configuration Role configuration
 
 - In Azure portal, navigate to the 'Cluster' [App Registrations](https://portal.azure.com/?feature.msaljs=true#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps).
   ![portal cluster app registration](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration.png)
@@ -53,20 +57,20 @@ The AAD user must be added to the 'Cluster' App Registration in the 'Admin' role
 
 - Select 'Add user' from the top menu.
 - Select 'Users and groups in my organization' from the 'Assign access to' dropdown.
-- Enter the AAD user in the 'Select' field.
+- Enter the Entra user in the 'Select' field.
 - Select 'Cluster' from the 'Select role' dropdown.
 - Select 'Admin' from the 'Select role' dropdown.
 - Select 'Assign' from the bottom menu.
   
   ![portal cluster user applications](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-applications.png)
 
-### AAD User Configuration Multi-Factor Authentication (MFA)
+### Entra User Configuration Multi-Factor Authentication (MFA)
 
-If MFA is enabled for the AAD user, it must be disabled for deployments to cluster. This can be done by creating a new AAD user with MFA disabled or by disabling MFA for the existing AAD user.
+If MFA is enabled for the Entra user, it must be disabled for deployments to cluster. This can be done by creating a new Entra user with MFA disabled or by disabling MFA for the existing Entra user.
 
-### AAD User Configuration Password
+### Entra User Configuration Password
 
-If the AAD user account is new, ensure the account is not prompting for a password change. This can be tested by connecting to Service Fabric Explorer (SFX) as the AAD user. When the password expires, the account will need to be updated in ADO.
+If the Entra user account is new, ensure the account is not prompting for a password change. This can be tested by connecting to Service Fabric Explorer (SFX) as the Entra user. When the password expires, the account will need to be updated in ADO.
 
 ### Service Fabric Service Connection
 
@@ -82,29 +86,29 @@ These properties are common to all Service Fabric service connection configurati
 - **Service connection name:** Enter a descriptive name of connection.
 - **Description:** Optionally enter a descriptive name of connection.
 
-### Azure Devops Service Connection with Azure Active Directory (AAD / Entra)
+### Azure Devops Service Connection with Entra (Azure Active Directory)
 
-Using AAD for the Service Fabric service connection is considered a best practice for security and maintenance. This is the recommended approach for Service Fabric clusters or applications that are not deployed and maintained via ARM templates.
+Using Entra for the Service Fabric service connection is considered a best practice for security and maintenance. This is the recommended approach for Service Fabric clusters or applications that are not deployed and maintained via ARM templates.
 
 - **Authentication method:** Select 'Azure Active Directory credential'.
 - **Server Certificate Lookup (optional):** Select 'Common Name'.
 - **Server Common Name** Enter the managed cluster server certificate common name. The common name format is {{cluster guid id with no dashes}}.sfmc.azclient.ms. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
   - Example: sfcluster.contoso.com
-- **Username:** Enter an Azure AD user that has been added to the clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Azure AD user.
-- **Password:** Enter Azure AD users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Azure AD user.
+- **Username:** Enter an Entra user that has been added to the clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Entra user.
+- **Password:** Enter Entra users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Entra user.
 
   ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-aad-common-connection.png)
 
 ### Azure Devops Service Connection with Certificate Common Name
 
-If AAD is not an option, the next best approach is to use the certificate common name for server certificate lookup. This approach is maintenance free, but does not provide the same level of security as AAD. This configuration is not supported for parallel deployments per agent host.
+If Entra is not an option, the next best approach is to use the certificate common name for server certificate lookup. This approach is maintenance free, but does not provide the same level of security as Entra. This configuration is not supported for parallel deployments per agent host.
 
 - **Authentication method:** Select 'Certificate Based'.
 - **Server Certificate Lookup (optional):** Select 'Common Name'.
 - **Server Common Name** Enter the cluster server certificate common name. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
   - Example: sfcluster.contoso.com
-- **Username:** Enter an Azure AD user that has been added to the clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Azure AD user.
-- **Password:** Enter Azure AD users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Azure AD user.
+- **Username:** Enter an Entra user that has been added to the clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Entra user.
+- **Password:** Enter Entra users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Entra user.
 
   ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-certificate-common-connection.png)
 
@@ -187,7 +191,7 @@ steps:
       clusterEndpoint: xxxxxx.xxxxx.cloudapp.azure.com
   ```
 
-- Verify configured Azure AD user is able to logon successfully to cluster using SFX or powershell. The 'servicefabric' module is installed as part of Service Fabric SDK.
+- Verify configured Entra user is able to logon successfully to cluster using SFX or powershell. The 'servicefabric' module is installed as part of Service Fabric SDK.
 
   ```powershell
   import-module servicefabric
@@ -205,4 +209,3 @@ steps:
 
 - Use logging from task to assist with issues.
 - Enabling System.Debug in build yaml or in release variables will provide additional output.
-
