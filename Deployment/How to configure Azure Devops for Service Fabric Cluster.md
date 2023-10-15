@@ -21,13 +21,22 @@ For Service Fabric service connection configurations, it is recommended to use E
 ## Requirements
 
 - Secure Service Fabric Cluster. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security).
+
 - ADO agent configured with the latest version of the [Service Fabric SDK](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools). This is required for the Service Fabric tasks to work correctly.
+
+- Connectivity from ADO agent to cluster. This can be done by adding the ADO agent IP address to the cluster Network Security Group (NSG) inbound rule for the cluster endpoint port. See [Azure Network Security Group (NSG) Configuration](#azure-network-security-group-nsg-configuration) for more information.
 
 ## Recommended
 
 - Secure Service Fabric Cluster with Entra (AAD) enabled.  See [Entra Cluster Configuration](#entra-cluster-configuration) for detailed steps.
 - Entra user and password configured to use the Entra 'Cluster' App Registration 'Admin' Role for administrative access to cluster. The 'Cluster' App Registration 'Admin' Role allows read and write access to cluster which is necessary for deployments. See [Entra User Configuration](#entra-user-configuration) for detailed steps.
 - Certificate Authority (CA) certificate for cluster connection. This is a best practice and is required for any certificate based authentication using common name.
+
+## Azure Network Security Group (NSG) Configuration
+
+Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a standalone ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
+
+![nsg inbound rule](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
 
 ## Entra Cluster Configuration
 
