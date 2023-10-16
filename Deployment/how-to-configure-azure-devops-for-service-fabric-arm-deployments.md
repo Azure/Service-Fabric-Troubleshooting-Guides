@@ -23,15 +23,37 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 
 ### Service Fabric Cluster ARM template
 
-There are different options available to create an ARM template for a Service Fabric cluster. The following are some of the options available.
+There are different options available to create an ARM template for a Service Fabric cluster. ['Microsoft.ServiceFabric/clusters'](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters?pivots=deployment-language-arm-template) is the ARM resource used for cluster deployment. The following are some of the options available.
 
-Learn Documentation: To create a Service Fabric cluster using an ARM template, see [Create a Service Fabric cluster Resource Manager template](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-creation-create-template).
+- Learn Documentation: To create a Service Fabric cluster using an ARM template, see [Create a Service Fabric cluster Resource Manager template](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-creation-create-template).
 
-Azure Quickstart Templates:
+- Azure Samples Service Fabric Cluster Templates: https://github.com/Azure-Samples/service-fabric-cluster-templates
 
-Azure Portal: To create a Service Fabric cluster using the Azure Portal, see [Create a Service Fabric cluster using the Azure portal](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-creation-via-portal).
+- Azure Portal: See [Create a Service Fabric cluster using the Azure portal](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-creation-via-portal). Using [Azure portal](https://ms.portal.azure.com/#create/Microsoft.ServiceFabricCluster) will create a Service Fabric cluster ARM template that can be downloaded and used for future deployments. This template will include the 'Microsoft.ServiceFabric/clusters' resource and all other resources that were created as part of the cluster deployment. After configuration of template settings, instead of deploying the template, select 'Download a  template for automation' link.
+
+    > **Note:**
+    > This template should be saved and not deployed.
+
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/arm-portal-new-cluster-save-template.png)
+
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/arm-portal-new-cluster-download-template.png)
 
 ### Service Fabric Managed Cluster ARM template
+
+For Service Fabric Managed Cluster templates, similar to Service Fabric Cluster templates, there are different options available to create an ARM template for a Service Fabric managed cluster. However, the ARM resource used for managed cluster deployment is ['Microsoft.ServiceFabric/managedClusters'](https://docs.microsoft.com/en-us/azure/templates/microsoft.servicefabric/managedclusters?pivots=deployment-language-arm-template). Managed clusters can also use a template generated from an existing cluster. The following are some of the options available.
+
+- Existing cluster: To create a Service Fabric managed cluster using an ARM template, see [How to Export Service Fabric Managed Cluster Configuration](../how-to-export-service-fabric-managed-cluster-configuration.md).
+
+- Learn Documentation:
+
+- Azure Samples Service Fabric Cluster Templates:
+
+- Azure Samples Service Fabric Cluster Templates: https://github.com/Azure-Samples/service-fabric-cluster-templates
+
+- Azure Portal: See [Create a Service Fabric cluster using the Azure portal](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-creation-via-portal). Using [Azure portal](https://ms.portal.azure.com/#create/Microsoft.ServiceFabricCluster) will create a Service Fabric cluster ARM template that can be downloaded and used for future deployments. This template will include the 'Microsoft.ServiceFabric/clusters' resource and all other resources that were created as part of the cluster deployment. After configuration of template settings, instead of deploying the template, select 'Download a  template for automation' link.
+
+    > **Note:**
+    > This template should be saved and not deployed.
 
 ### Service Fabric Application ARM template
 
@@ -41,19 +63,19 @@ Azure Portal: To create a Service Fabric cluster using the Azure Portal, see [Cr
 
 1. Open the Azure Devops project and create a new pipeline.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline.png)
 
 1. Select the repository where the ARM template is located.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-repo.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-repo.png)
 
 1. Configure the pipeline to use 'Starter pipeline' YAML file.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml.png)
 
 1. Review the pipeline YAML file.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml-review.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml-review.png)
 
     - set the 'pool' 'vmImage:' to 'windows-latest' and remove all lines below 'steps:'.
     
@@ -84,19 +106,19 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
 1. Select 'Show assistant' in top right to open the pipeline assistant.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant.png)
 
 1. Search for 'ARM template deployment' and select.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm.png)
 
 1. Select 'Resource group' for 'Deployment scope'.
 
 1. Select existing Service connection for 'Azure Resource Manager connection' or select the Subscription Name to create a new connection. If creating a new connection, select 'Authorize' to create. The same connection can be created / managed in the projects 'Service connections' settings.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-connection.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-connection.png)
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-service-connection.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-service-connection.png)
 
 1. Select Subscription Name for 'Subscription'.
 
@@ -121,7 +143,7 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
 1. Leave the default 'Deployment mode' of 'Incremental'.
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-template-settings.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-template-settings.png)
 
 1. When complete, select 'Add' to add the task to the pipeline.
 
@@ -153,8 +175,13 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
 ### Template validation
 
+Validate the ARM template using Azure PowerShell.
+
 ```powershell
-Test-AzResourceGroupDeployment -ResourceGroupName "myresourcegroup" -TemplateFile .\azuredeploy.json -TemplateParameterFile .\azuredeploy.parameters.json -Debug
+Test-AzResourceGroupDeployment -ResourceGroupName "myresourcegroup" `
+    -TemplateFile .\azuredeploy.json `
+    -TemplateParameterFile .\azuredeploy.parameters.json `
+    -Debug
 ```
 
 ### Devops pipeline validation
@@ -164,7 +191,7 @@ Test-AzResourceGroupDeployment -ResourceGroupName "myresourcegroup" -TemplateFil
 
 Test network connectivity. Add a powershell task to pipeline to run 'test-netconnection' command to cluster endpoint, providing tcp port. Default port is 19000.
 
-  - Example:
+Example:
   
   ```yaml
   - powershell: |

@@ -35,7 +35,7 @@ For Service Fabric service connection configurations, it is recommended to use E
 
 Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
 
-![nsg inbound rule](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
+![nsg inbound rule](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
 
 ## Entra Cluster Configuration
 
@@ -45,7 +45,7 @@ Entra configuration for a Service Fabric cluster can be configured either during
 
 Entra Cluster configuration can viewed in [Azure portal](https://portal.azure.com) by navigating to the cluster and selecting 'Security' from the left menu. The 'Azure Active Directory' section will show the Entra configuration.
 
-![portal cluster security](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-sfc-security.png)
+![portal cluster security](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-sfc-security.png)
 
 ### Entra Cluster ARM Template Configuration
 
@@ -78,13 +78,13 @@ The Entra user must be added to the 'Cluster' App Registration in the 'Admin' ro
 ### Entra User Configuration Role configuration
 
 - In Azure portal, navigate to the 'Cluster' [App Registrations](https://portal.azure.com/?feature.msaljs=true#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps).
-  ![portal cluster app registration](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration.png)
+  ![portal cluster app registration](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration.png)
 - Select 'Api Permissions' from the left menu, then 'Enterprise Applications' link.
-  ![portal cluster api permissions](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-api-permissions.png)
+  ![portal cluster api permissions](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-api-permissions.png)
   
 - Select 'Users and groups' from the left menu.
-  ![portal cluster user overview](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-overview.png)
-  ![portal cluster app registration users](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration-users.png)
+  ![portal cluster user overview](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-overview.png)
+  ![portal cluster app registration users](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration-users.png)
 
 - Select 'Add user' from the top menu.
 - Select 'Users and groups in my organization' from the 'Assign access to' dropdown.
@@ -93,7 +93,7 @@ The Entra user must be added to the 'Cluster' App Registration in the 'Admin' ro
 - Select 'Admin' from the 'Select role' dropdown.
 - Select 'Assign' from the bottom menu.
   
-  ![portal cluster user applications](../media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-applications.png)
+  ![portal cluster user applications](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-applications.png)
 
 ### Entra User Configuration Multi-Factor Authentication (MFA)
 
@@ -131,7 +131,7 @@ Using Entra for the Service Fabric service connection is considered a best pract
 - **Username:** Enter an Entra user that has been added to the clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Entra user.
 - **Password:** Enter Entra users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Entra user.
 
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-aad-common-connection.png)
+  ![](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-aad-common-connection.png)
 
 ### Azure Devops Service Connection with Certificate Common Name
 
@@ -144,7 +144,7 @@ If Entra is not an option, the next best approach is to use the certificate comm
 - **Username:** Enter an Entra user that has been added to the clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Entra user.
 - **Password:** Enter Entra users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Entra user.
 
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-certificate-common-connection.png)
+  ![](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-certificate-common-connection.png)
 
 ### Azure Devops Service Connection with Certificate Thumbprint
 
@@ -166,7 +166,7 @@ This configuration should only be used if above configuration is not possible. T
 
 - **Password (optional):** Enter client certificate password if there is one.
 
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-certificate-thumbprint-connection.png)
+  ![](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-certificate-thumbprint-connection.png)
 
 ## Agent limitations
 

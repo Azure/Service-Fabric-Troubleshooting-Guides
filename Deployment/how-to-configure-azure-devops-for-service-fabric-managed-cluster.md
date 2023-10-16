@@ -17,13 +17,13 @@ When the certificate is rolled over, the Service Fabric service connection will 
 
 - Service Fabric managed cluster security with Azure Active Directory enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure) and [Service Fabric Azure Active Directory configuration in Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for additional information.
 
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-enable-aad.png)
+  ![](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-enable-aad.png)
 
 - Azure Devops user configured to use the 'Cluster' App Registration that is configured for the managed cluster.
 
 - Azure Devops build agent with 'Hosted' (not 'Self-Hosted') pool type. For hosted, 'Azure virtual machine scale set' is the pool type to be used.
 
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-pool-type.png)
+  ![](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-pool-type.png)
 
 - Connectivity from ADO agent to cluster. This can be done by adding the ADO agent IP address to the cluster Network Security Group (NSG) inbound rule for the cluster endpoint port. See [Azure Network Security Group (NSG) Configuration](#azure-network-security-group-nsg-configuration) for more information.
 
@@ -31,7 +31,7 @@ When the certificate is rolled over, the Service Fabric service connection will 
 
 Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
 
-![nsg inbound rule](../media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
+![nsg inbound rule](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
 
 ### Service Fabric Service Connection
 
@@ -47,13 +47,13 @@ For maintenance free configuration, only 'Azure Active Directory credential' aut
 - **Server Common Name** Enter the managed cluster server certificate common name. The common name format is {{cluster guid id with no dashes}}.sfmc.azclient.ms. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
   - Example: d3cfe121611d4c178f75821596a37056.sfmc.azclient.ms
 
-    ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-cluster-id.png)
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-cluster-id.png)
 
 - **Username:** Enter an Azure AD user that has been added to the managed clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Azure AD user.
 - **Password:** Enter Azure AD users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Azure AD user.
 - **Service connection name:** Enter a descriptive name of connection.
 
-  ![](../media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-service-connection.png)
+  ![](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-service-connection.png)
 
 ## Test
 
