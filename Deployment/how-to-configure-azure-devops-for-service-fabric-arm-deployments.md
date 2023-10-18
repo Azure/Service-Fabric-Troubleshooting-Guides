@@ -10,6 +10,10 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 
 - Existing Azure Devops project.
 
+- For Service Fabric application deployments, an accessible URL location for the application package. This can be a public URL or a URL that is accessible from the pipeline.
+
+- Access to Azure Resource Manager (ARM) endpoint from Azure Devops.
+
 <!-- todo -->
 
 ## Process
@@ -45,8 +49,6 @@ For Service Fabric Managed Cluster templates, similar to Service Fabric Cluster 
 - Existing cluster: To create a Service Fabric managed cluster using an ARM template, see [How to Export Service Fabric Managed Cluster Configuration](../how-to-export-service-fabric-managed-cluster-configuration.md).
 
 - Learn Documentation:
-
-- Azure Samples Service Fabric Cluster Templates:
 
 - Azure Samples Service Fabric Cluster Templates: https://github.com/Azure-Samples/service-fabric-cluster-templates
 

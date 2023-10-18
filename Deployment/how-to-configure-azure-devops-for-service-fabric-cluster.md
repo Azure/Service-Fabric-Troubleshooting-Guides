@@ -35,7 +35,23 @@ For Service Fabric service connection configurations, it is recommended to use E
 
 Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
 
+- Source: Service Tag
+- Source service tag: AzureCloud
+- Source port ranges: *
+- Destination: Any
+- Service: Custom
+- Destination port ranges: 19000
+- Protocol: TCP
+- Action: Allow
+- Priority: 110
+- Name: AzureDevopsDeployment
+
 ![nsg inbound rule](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
+
+> **Important**
+> If using a Service Tag for Azure Devops access to cluster, ensure the NSG inbound rule is using service tag 'AzureCloud' (not 'AzureDevops') and is at minimum configured for the cluster gateway endpoint port. The default port is 19000.
+
+If not using a Service Tag for Azure Devops access to cluster, the ADO agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port. A list of ip ranges being used by ADO can be found [here](https://docs.microsoft.com/azure/devops/organizations/security/allow-list-ip-url?view=azure-devops#ip-ranges).
 
 ## Entra Cluster Configuration
 
