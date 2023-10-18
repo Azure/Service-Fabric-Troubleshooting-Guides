@@ -1,6 +1,6 @@
 # How to configure Azure Devops for a Service Fabric Cluster
 
-The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric managed clusters, refer to this article [How to configure Azure Devops Service Fabric Managed Cluster](./how-to-configure-azure-devops-for-service-fabric-managed-cluster.md).  
+The steps below describe how to configure and Azure Devops (ADO) for Service Fabric clusters. For Service Fabric managed clusters, refer to this article [How to configure Azure Devops Service Fabric Managed Cluster](./how-to-configure-azure-devops-for-service-fabric-managed-cluster.md).
 
 There are multiple ways to configure Azure Devops for connectivity to Service Fabric clusters. This article will cover different configurations when using a Service Fabric service connection. Service Fabric cluster and application deployment best practice is to use ARM templates. For ARM template deployments in ADO, see [How to configure Azure Devops for Service Fabric ARM deployments](./how-to-configure-azure-devops-for-service-fabric-arm-deployments.md).
 
@@ -11,7 +11,7 @@ For Service Fabric service connection configurations, it is recommended to use E
 ## Process
 
 - Verify [Requirements](#requirements) and implement [Recommended](#recommended) configurations where possible.
-- Configure cluster for [Entra cluster configuration](#entra-cluster-configuration) (AAD) authentication. 
+- Configure cluster for [Entra cluster configuration](#entra-cluster-configuration) (AAD) authentication.
 - Configure [Entra user configuration](#entra-user-configuration) for cluster access.
 - Test Entra user configuration by connecting to [Service Fabric Explorer (SFX) user test](#service-fabric-explorer-sfx-user-test) as Entra user.
 - In Azure Devops, create / modify the [Service Fabric Service Connection](#service-fabric-service-connection) to be used with the build / release pipelines for the cluster.
@@ -33,7 +33,10 @@ For Service Fabric service connection configurations, it is recommended to use E
 
 ## Azure Network Security Group (NSG) Configuration
 
-Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) name of 'AzureDevops' that can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port.
+The 'AzureCloud' [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port. A list of IP ranges being used by ADO can be found [here](https://docs.microsoft.com/azure/devops/organizations/security/allow-list-ip-url?view=azure-devops#ip-ranges).
+
+> **Important**
+> If using a Service Tag for Azure Devops access to cluster, ensure the NSG inbound rule is using service tag 'AzureCloud' (not 'AzureDevops') and is at minimum configured for the cluster gateway endpoint port. The default port is 19000.
 
 - Source: Service Tag
 - Source service tag: AzureCloud
@@ -47,11 +50,6 @@ Azure Devops has a [Service Tag](https://learn.microsoft.com/azure/virtual-netwo
 - Name: AzureDevopsDeployment
 
 ![nsg inbound rule](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
-
-> **Important**
-> If using a [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) for Azure Devops access to cluster, ensure the NSG inbound rule is using service tag 'AzureCloud' (not 'AzureDevops') and is at minimum configured for the cluster gateway endpoint port. The default port is 19000.
-
-If not using a Service Tag for Azure Devops access to cluster, the ADO agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port. A list of ip ranges being used by ADO can be found [here](https://docs.microsoft.com/azure/devops/organizations/security/allow-list-ip-url?view=azure-devops#ip-ranges).
 
 ## Entra Cluster Configuration
 
@@ -97,7 +95,7 @@ The Entra user must be added to the 'Cluster' App Registration in the 'Admin' ro
   ![portal cluster app registration](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration.png)
 - Select 'Api Permissions' from the left menu, then 'Enterprise Applications' link.
   ![portal cluster api permissions](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-api-permissions.png)
-  
+
 - Select 'Users and groups' from the left menu.
   ![portal cluster user overview](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-overview.png)
   ![portal cluster app registration users](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-app-registration-users.png)
@@ -108,7 +106,7 @@ The Entra user must be added to the 'Cluster' App Registration in the 'Admin' ro
 - Select 'Cluster' from the 'Select role' dropdown.
 - Select 'Admin' from the 'Select role' dropdown.
 - Select 'Assign' from the bottom menu.
-  
+
   ![portal cluster user applications](/media/how-to-configure-azure-devops-for-service-fabric-cluster/portal-cluster-user-applications.png)
 
 ### Entra User Configuration Multi-Factor Authentication (MFA)
@@ -236,7 +234,7 @@ steps:
 - Error: ##[debug]System.AggregateException: One or more errors occurred. ---> System.Fabric.FabricTransientException: Could not ping any of the provided Service Fabric gateway endpoints. ---> System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x80071C49
 - Test network connectivity. Add a powershell task to pipeline to run 'test-netconnection' command to cluster endpoint, providing tcp port. Default port is 19000.
   - Example:
-  
+
   ```yaml
   - powershell: |
       $psVersionTable
@@ -251,7 +249,7 @@ steps:
     displayName: "PowerShell Troubleshooting Script"
     failOnStderr: true
     ignoreLASTEXITCODE: false
-    env:  
+    env:
       clusterPort: 19000
       clusterEndpoint: xxxxxx.xxxxx.cloudapp.azure.com
   ```
