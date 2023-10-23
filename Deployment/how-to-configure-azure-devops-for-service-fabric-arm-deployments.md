@@ -19,7 +19,6 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 - Create or use an existing [Azure Devops project](#requirements).
 - In ADO create a [New YAML pipeline](#new-yaml-pipeline).
 - Add [ARM template deployment task](#add-arm-template-deployment-task) to the pipeline.
-- [Test](#testing) the pipeline.
 - Deploy the pipeline.
 - Verify / [Troubleshoot](#troubleshooting) the deployment.
 
@@ -59,7 +58,7 @@ For Service Fabric Managed Cluster templates, similar to Service Fabric Cluster 
 
 ### Service Fabric Application ARM template
 
-There are different options available to create an ARM template for a Service Fabric application. ['Microsoft.ServiceFabric/clusters/applications'](https://docs.microsoft.com/en-us/azure/templates/microsoft.servicefabric/clusters/applications?pivots=deployment-language-arm-template) is the ARM resource used for application deployment. 
+There are different options available to create an ARM template for a Service Fabric application. ['Microsoft.ServiceFabric/clusters/applications'](https://docs.microsoft.com/en-us/azure/templates/microsoft.servicefabric/clusters/applications?pivots=deployment-language-arm-template) is the ARM resource used for application deployment.
 
 #### Service Fabric Application Sfpkg Package
 
@@ -71,23 +70,23 @@ To create an sfpkg package for a Service Fabric application, see [Package an app
 
 1. Open the Azure Devops project and create a new pipeline.
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline.png)
+    ![ado new pipeline](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline.png)
 
 1. Select the repository where the ARM template is located.
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-repo.png)
+    ![ado new pipeline repo](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-repo.png)
 
 1. Configure the pipeline to use 'Starter pipeline' YAML file.
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml.png)
+    ![ado new pipeline yaml](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml.png)
 
 1. Review the pipeline YAML file.
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml-review.png)
+    ![ado new pipeline yaml review](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-yaml-review.png)
 
     - set the 'pool' 'vmImage:' to 'windows-latest' and remove all lines below 'steps:'.
-    
-        ```yaml
+
+    ```yaml
         # Starter pipeline
         # Start with a minimal pipeline that you can customize to build and deploy your code.
         # Add steps that build, run tests, deploy, and more:
@@ -100,13 +99,13 @@ To create an sfpkg package for a Service Fabric application, see [Package an app
         vmImage: windows-latest
 
         steps:
-        ```
+    ```
 
 1. Save the pipeline.
 
 ### Add ARM template deployment task
 
-Below adds an ARM template deployment. All variables for this task are listed in [AzureResourceManagerTemplateDeployment@ - ARM template deployment task](https://learn.microsoft.com/azure/devops/pipelines/tasks/reference/azure-resource-manager-template-deployment-v3?view=azure-pipelines). 
+Below adds an ARM template deployment. All variables for this task are listed in [AzureResourceManagerTemplateDeployment@ - ARM template deployment task](https://learn.microsoft.com/azure/devops/pipelines/tasks/reference/azure-resource-manager-template-deployment-v3?view=azure-pipelines).
 
 #### Azure Details
 
@@ -135,7 +134,6 @@ Below adds an ARM template deployment. All variables for this task are listed in
 1. Select the 'Resource group' to deploy to.
 
 1. Select the 'Location' to deploy to.
-
 
 #### Template
 
@@ -206,8 +204,7 @@ Validate the ARM template using Azure PowerShell [Test-AzResourceGroupDeployment
 ```powershell
 Test-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
     -TemplateFile .\azuredeploy.json `
-    -TemplateParameterFile .\azuredeploy.parameters.json `
-    -Debug
+    -TemplateParameterFile .\azuredeploy.parameters.json
 ```
 
 ### Template deployment with PowerShell
@@ -216,8 +213,10 @@ Deploy the ARM template using Azure PowerShell [New-AzResourceGroupDeployment](h
 
 ```powershell
 New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
+    -DeploymentDebugLogLevel All `
     -TemplateFile .\azuredeploy.json `
     -TemplateParameterFile .\azuredeploy.parameters.json `
+    -Verbose `
     -Debug
 ```
 
@@ -229,13 +228,3 @@ Enable debug logging for the pipeline to view additional details in log output f
 variables:
   System.Debug: true
 ```
-
-<!-- tsg source info reference -->
-ado arm deployment task:
-https://github.com/microsoft/azure-pipelines-tasks/blob/master/Tasks/AzureResourceManagerTemplateDeploymentV3/README.md
-
-arm cluster deployment:
-https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-cluster-template
-
-arm application deployment:
-https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-application-arm-resource
