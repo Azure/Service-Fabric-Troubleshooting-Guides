@@ -135,7 +135,7 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
 1. Select the 'Location' to deploy to.
 
-#### Template
+#### Cluster Template
 
 1. In this example, for 'Template Location' select 'URL of the existing template file'.
 
@@ -146,6 +146,71 @@ Below adds an ARM template deployment. All variables for this task are listed in
 1. For 'Template parameters', enter the parameters for the ARM template. This can be a public URL or a URL that is accessible from the pipeline.
 
     - Example: https://raw.githubusercontent.com/Azure-Samples/service-fabric-cluster-templates/master/5-VM-Windows-1-NodeTypes-Secure-NSG/azuredeploy.parameters.json
+
+1. Leave the default 'Deployment mode' of 'Incremental'.
+
+    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-template-settings.png)
+
+1. When complete, select 'Add' to add the task to the pipeline.
+
+    ```yaml
+    trigger:
+    - main
+
+    pool:
+      vmImage: windows-latest
+
+    variables:
+      System.Debug: true
+      resource_group_name: sf-test-cluster
+      cluster_name: sf-test-cluster
+      #deployment_name: $[format('{1}-{0:yyyy}{0:MM}{0:dd}-{0:HH}{0:mm}{0:ss}', pipeline.startTime, variables['cluster_name'])]
+      location: eastus
+      template_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-cluster-templates/master/5-VM-Windows-1-NodeTypes-Secure-NSG/azuredeploy.json
+      template_parameters_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-cluster-templates/master/5-VM-Windows-1-NodeTypes-Secure-NSG/azuredeploy.parameters.json
+      arm_connection_name: ARM service connection
+      subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx # or store in azure pipeline variable
+      admin_username: cloudadmin # or store in azure pipeline variable
+      admin_password: password # or store in azure pipeline variable
+      certificate_thumbprint: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx # or store in azure pipeline variable
+      source_vault: /subscriptions/$(subscription_id)/resourceGroups/<resource group>/providers/Microsoft.KeyVault/vaults/<vault name> # or store in azure pipeline variable
+
+    steps:
+    - task: AzureResourceManagerTemplateDeployment@3
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: $(arm_connection_name)
+        subscriptionId: $(subscription_id)
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: $(resource_group_name)
+        location: $(location)
+        templateLocation: 'URL of the file'
+        csmFileLink: $(template_url)
+        csmParametersFileLink: $(template_parameters_url)
+        overrideParameters: |
+            -clusterLocation $(location)
+            -clusterName $(cluster_name)
+            -adminUserName $(admin_username)
+            -adminPassword (ConvertTo-SecureString -String '$(admin_password)' -AsPlainText -Force)
+            -certificateThumbprint $(certificate_thumbprint)
+            -sourceVaultValue $(source_vault)
+        deploymentMode: 'Incremental'
+        deploymentName: $(deployment_name)
+    ```
+
+1. Add any pipeline variables and tasks as needed and save.
+
+#### Cluster Application Template
+
+1. In this example, for 'Template Location' select 'URL of the existing template file'.
+
+1. For 'Template link', enter the URL of the ARM template to deploy. This can be a public URL or a URL that is accessible from the pipeline.
+
+    - Example: https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.json
+
+1. For 'Template parameters', enter the parameters for the ARM template. This can be a public URL or a URL that is accessible from the pipeline.
+
+    - Example: https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.Parameters.json
 
 1. Leave the default 'Deployment mode' of 'Incremental'.
 
