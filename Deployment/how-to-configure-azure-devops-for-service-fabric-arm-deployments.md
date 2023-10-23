@@ -1,27 +1,27 @@
 # How to configure Azure Devops for Service Fabric ARM template deployments
 
-This guide documents the process to configure Azure Devops (ADO) for Service Fabric ARM template deployments. This can be used for both cluster and application deployments. This is valid for both unmanaged and managed clusters deployments.
+This guide documents the process to configure Azure Devops (ADO) for Service Fabric ARM template deployments. This can be used for both cluster and application deployments and is considered a best practice. This process is valid for both Service Fabric Cluster and Service Fabric Managed Cluster deployments. ARM ADO deployments do not require cluster certificate configuration, cluster connection configuration, or Network Security Group (NSG) configuration. For this reason, ADO ARM deployments support parallel deployments, which can be used to deploy multiple clusters or applications at the same time from same deployment agent.
 
 For Service Fabric Managed Cluster deployments not using ARM templates, see [How to configure Azure Devops for Service Fabric Managed Cluster](./how-to-configure-azure-devops-for-service-fabric-managed-cluster.md). For Service Fabric Cluster deployments not using ARM templates, see [How to configure Azure Devops for Service Fabric Cluster](./how-to-configure-azure-devops-for-service-fabric-cluster.md).
 
 ## Requirements
 
-- Existing ARM template for cluster or application deployment. See [Service Fabric ARM templates](#service-fabric-arm-templates) for more information.
-
-- Existing Azure Devops project.
-
-- For Service Fabric application deployments, an accessible URL location for the application package. This can be a public URL or a URL that is accessible from the pipeline.
-
-- Access to Azure Resource Manager (ARM) endpoint from Azure Devops.
-
-<!-- todo -->
+- ARM template for cluster or application deployment. See [Service Fabric ARM templates](#service-fabric-arm-templates) for more information.
+- Azure Devops project.
+- For Service Fabric application deployments:
+  - Sfpkg package for the application.
+  - Accessible URL location for the application package. This can be a public URL or a URL that is accessible from the pipeline.
 
 ## Process
 
-- Open the Azure Devops project and create a [New YAML pipeline](#new-yaml-pipeline).
+- Create or use an existing [ARM template](#service-fabric-arm-templates) for cluster or application deployment.
+- For Service Fabric application deployments, create an sfpkg package for the application and upload to an accessible URL location.
+- Create or use an existing [Azure Devops project](#requirements).
+- In ADO create a [New YAML pipeline](#new-yaml-pipeline).
 - Add [ARM template deployment task](#add-arm-template-deployment-task) to the pipeline.
 - [Test](#testing) the pipeline.
-<!-- todo -->
+- Deploy the pipeline.
+- Verify / [Troubleshoot](#troubleshooting) the deployment.
 
 ## Service Fabric ARM templates
 
@@ -58,6 +58,12 @@ For Service Fabric Managed Cluster templates, similar to Service Fabric Cluster 
     > This template should be saved and not deployed.
 
 ### Service Fabric Application ARM template
+
+There are different options available to create an ARM template for a Service Fabric application. ['Microsoft.ServiceFabric/clusters/applications'](https://docs.microsoft.com/en-us/azure/templates/microsoft.servicefabric/clusters/applications?pivots=deployment-language-arm-template) is the ARM resource used for application deployment. 
+
+#### Service Fabric Application Sfpkg Package
+
+To create an sfpkg package for a Service Fabric application, see [Package an application](https://learn.microsoft.com/azure/service-fabric/service-fabric-package-apps). After creation, upload the sfpkg package to the sfpkg package URL being used as a parameter for the ARM template deployment task.
 
 ## Azure Devops YAML pipeline
 
@@ -151,69 +157,78 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
     ```yaml
     trigger:
-    - master
+    - main
 
     pool:
-    vmImage: windows-latest
+      vmImage: windows-latest
+
+    variables:
+      System.Debug: true
+      resource_group_name: sf-test-cluster
+      cluster_name: sf-test-cluster
+      #deployment_name: $[format('{1}-{0:yyyy}{0:MM}{0:dd}-{0:HH}{0:mm}{0:ss}', pipeline.startTime, variables['cluster_name'])]
+      location: eastus
+      template_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.json
+      template_parameters_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.Parameters.json
+      package_url: https://raw.githubusercontent.com/<owner>/<repository>/master/serviceFabric/sfpackages/Voting.1.0.0.sfpkg
+      arm_connection_name: ARM service connection
+      subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx # or store in azure pipeline variable
 
     steps:
     - task: AzureResourceManagerTemplateDeployment@3
       inputs:
         deploymentScope: 'Resource Group'
-        azureResourceManagerConnection: '<service connection name>'
-        subscriptionId: '<subscription id>'
+        azureResourceManagerConnection: $(arm_connection_name)
+        subscriptionId: $(subscription_id)
         action: 'Create Or Update Resource Group'
-        resourceGroupName: '<resource group name>'
-        location: '<location>'
+        resourceGroupName: $(resource_group_name)
+        location: $(location)
         templateLocation: 'URL of the file'
-        csmFileLink: '<url to arm template>'
-        csmParametersFileLink: '<url to arm template parameters>'
+        csmFileLink: $(template_url)
+        csmParametersFileLink: $(template_parameters_url)
+        overrideParameters: '-appPackageUrl $(package_url) -clusterName $(cluster_name)'
         deploymentMode: 'Incremental'
+        deploymentName: $(deployment_name)
     ```
 
-1. Add any additional tasks to the pipeline as needed and save.
+1. Add any pipeline variables and tasks as needed and save.
 
-## Testing
+### First Run
 
-### Template validation
+Run the pipeline manually and validate the deployment. There may be one-time configuration settings or approvals required.
 
-Validate the ARM template using Azure PowerShell.
+## Troubleshooting
+
+### Template validation with PowerShell
+
+Validate the ARM template using Azure PowerShell [Test-AzResourceGroupDeployment](https://learn.microsoft.com/powershell/module/az.resources/test-azresourcegroupdeployment) cmdlet.
 
 ```powershell
-Test-AzResourceGroupDeployment -ResourceGroupName "myresourcegroup" `
+Test-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
     -TemplateFile .\azuredeploy.json `
     -TemplateParameterFile .\azuredeploy.parameters.json `
     -Debug
 ```
 
-### Devops pipeline validation
+### Template deployment with PowerShell
 
+Deploy the ARM template using Azure PowerShell [New-AzResourceGroupDeployment](https://learn.microsoft.com/powershell/module/az.resources/new-azresourcegroupdeployment) cmdlet.
 
-## Troubleshooting
+```powershell
+New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
+    -TemplateFile .\azuredeploy.json `
+    -TemplateParameterFile .\azuredeploy.parameters.json `
+    -Debug
+```
 
-Test network connectivity. Add a powershell task to pipeline to run 'test-netconnection' command to cluster endpoint, providing tcp port. Default port is 19000.
+### Enable debug logging
 
-Example:
-  
-  ```yaml
-  - powershell: |
-      $psversiontable
-      [environment]::getenvironmentvariables().getenumerator()|sort Name
-      $publicIp = (Invoke-RestMethod https://ipinfo.io/json).ip
-      write-host "---`r`ncurrent public ip:$publicIp" -ForegroundColor Green
-      write-host "test-netconnection $env:clusterEndpoint -p $env:clusterPort"
-      $result = test-netconnection $env:clusterEndpoint -p $env:clusterPort
-      write-host "test net connection result: $($result | fl * | out-string)"
-      if(!($result.TcpTestSucceeded)) { throw }
-    errorActionPreference: stop
-    displayName: "PowerShell Troubleshooting Script"
-    failOnStderr: true
-    ignoreLASTEXITCODE: false
-    env:  
-      clusterPort: 19000
-      clusterEndpoint: xxxxxx.xxxxx.cloudapp.azure.com
-  ```
+Enable debug logging for the pipeline to view additional details in log output for the tasks in pipeline.
 
+```yaml
+variables:
+  System.Debug: true
+```
 
 <!-- tsg source info reference -->
 ado arm deployment task:
