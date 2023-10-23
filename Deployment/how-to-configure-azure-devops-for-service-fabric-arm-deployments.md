@@ -162,6 +162,7 @@ Below adds an ARM template deployment. All variables for this task are listed in
     ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-template-settings.png)
 
 1. When complete, select 'Add' to add the task to the pipeline.
+    Example Service Fabric Cluster ARM template deployment task with variables:
 
     ```yaml
     trigger:
@@ -222,6 +223,7 @@ Below adds an ARM template deployment. All variables for this task are listed in
     ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-template-settings.png)
 
 1. When complete, select 'Add' to add the task to the pipeline.
+    Example Service Fabric Application ARM template deployment task with variables:
 
     ```yaml
     trigger:
@@ -277,8 +279,8 @@ $templateUrl = 'https://raw.githubusercontent.com/Azure-Samples/service-fabric-d
 $templateParametersUrl = 'https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.Parameters.json'
 
 Test-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
-    -TemplateFileUri $templateUrl `
-    -TemplateParameterFileUri $templateParametersUrl
+    -TemplateUri $templateUrl `
+    -TemplateParameterUri $templateParametersUrl
 ```
 
 ### Template deployment with PowerShell
@@ -292,8 +294,8 @@ $templateParametersUrl = 'https://raw.githubusercontent.com/Azure-Samples/servic
 
 New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
     -DeploymentDebugLogLevel All `
-    -TemplateFileUri $templateUrl `
-    -TemplateParameterFileUri $templateParametersUrl `
+    -TemplateUri $templateUrl `
+    -TemplateParameterUri $templateParametersUrl `
     -Verbose `
     -Debug
 ```
