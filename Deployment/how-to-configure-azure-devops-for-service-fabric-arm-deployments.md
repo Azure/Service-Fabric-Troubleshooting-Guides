@@ -160,20 +160,21 @@ Below adds an ARM template deployment. All variables for this task are listed in
     pool:
       vmImage: windows-latest
 
-    variables:
+    variables: # or store in azure pipeline variable
       System.Debug: true
       resource_group_name: sf-test-cluster
       cluster_name: sf-test-cluster
-      #deployment_name: $[format('{1}-{0:yyyy}{0:MM}{0:dd}-{0:HH}{0:mm}{0:ss}', pipeline.startTime, variables['cluster_name'])]
+      deployment_name: $[format('{1}-{0:yyyy}{0:MM}{0:dd}-{0:HH}{0:mm}{0:ss}', pipeline.startTime, variables['cluster_name'])]
       location: eastus
       template_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-cluster-templates/master/5-VM-Windows-1-NodeTypes-Secure-NSG/azuredeploy.json
       template_parameters_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-cluster-templates/master/5-VM-Windows-1-NodeTypes-Secure-NSG/azuredeploy.parameters.json
       arm_connection_name: ARM service connection
-      subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx # or store in azure pipeline variable
-      admin_username: cloudadmin # or store in azure pipeline variable
-      admin_password: password # or store in azure pipeline variable
-      certificate_thumbprint: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx # or store in azure pipeline variable
-      source_vault: /subscriptions/$(subscription_id)/resourceGroups/<resource group>/providers/Microsoft.KeyVault/vaults/<vault name> # or store in azure pipeline variable
+      subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx 
+      admin_username: cloudadmin 
+      admin_password: password 
+      certificate_thumbprint: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+      source_vault: /subscriptions/$(subscription_id)/resourceGroups/<resource group>/providers/Microsoft.KeyVault/vaults/<vault name> 
+      certificate_url: https://<vault name>.vault.azure.net/secrets/<certificate name>/<version>
 
     steps:
     - task: AzureResourceManagerTemplateDeployment@3
@@ -187,13 +188,7 @@ Below adds an ARM template deployment. All variables for this task are listed in
         templateLocation: 'URL of the file'
         csmFileLink: $(template_url)
         csmParametersFileLink: $(template_parameters_url)
-        overrideParameters: |
-            -clusterLocation $(location)
-            -clusterName $(cluster_name)
-            -adminUserName $(admin_username)
-            -adminPassword (ConvertTo-SecureString -String '$(admin_password)' -AsPlainText -Force)
-            -certificateThumbprint $(certificate_thumbprint)
-            -sourceVaultValue $(source_vault)
+        overrideParameters: -clusterLocation $(location) -clusterName $(cluster_name) -adminUserName $(admin_username) -adminPassword (ConvertTo-SecureString -String '$(admin_password)' -AsPlainText -Force) -certificateThumbprint $(certificate_thumbprint) -certificateUrlValue $(certificate_url) -sourceVaultValue $(source_vault)
         deploymentMode: 'Incremental'
         deploymentName: $(deployment_name)
     ```
@@ -225,17 +220,17 @@ Below adds an ARM template deployment. All variables for this task are listed in
     pool:
       vmImage: windows-latest
 
-    variables:
+    variables: # or store in azure pipeline variable
       System.Debug: true
       resource_group_name: sf-test-cluster
       cluster_name: sf-test-cluster
-      #deployment_name: $[format('{1}-{0:yyyy}{0:MM}{0:dd}-{0:HH}{0:mm}{0:ss}', pipeline.startTime, variables['cluster_name'])]
+      deployment_name: $[format('{1}-{0:yyyy}{0:MM}{0:dd}-{0:HH}{0:mm}{0:ss}', pipeline.startTime, variables['cluster_name'])]
       location: eastus
       template_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.json
       template_parameters_url: https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.Parameters.json
       package_url: https://raw.githubusercontent.com/<owner>/<repository>/master/serviceFabric/sfpackages/Voting.1.0.0.sfpkg
       arm_connection_name: ARM service connection
-      subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx # or store in azure pipeline variable
+      subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx 
 
     steps:
     - task: AzureResourceManagerTemplateDeployment@3
@@ -249,7 +244,7 @@ Below adds an ARM template deployment. All variables for this task are listed in
         templateLocation: 'URL of the file'
         csmFileLink: $(template_url)
         csmParametersFileLink: $(template_parameters_url)
-        overrideParameters: '-appPackageUrl $(package_url) -clusterName $(cluster_name)'
+        overrideParameters: -appPackageUrl $(package_url) -clusterName $(cluster_name)
         deploymentMode: 'Incremental'
         deploymentName: $(deployment_name)
     ```
