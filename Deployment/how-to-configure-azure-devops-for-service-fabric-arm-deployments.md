@@ -7,20 +7,30 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 ## Requirements
 
 - ARM template for cluster or application deployment. See [Service Fabric ARM templates](#service-fabric-arm-templates) for more information.
+- Template storage location. See [Storage locations](#storage-locations) for more information.
 - Azure Devops project.
 - For Service Fabric application deployments:
   - Sfpkg package for the application.
-  - Accessible URL location for the application package. This can be a public URL or a URL that is accessible from the pipeline.
+  - Sfpkg storage location. See [Storage locations](#storage-locations) for more information.
 
 ## Process
 
-- Create or use an existing [ARM template](#service-fabric-arm-templates) for cluster or application deployment.
+- Create or use an existing [ARM template](#service-fabric-arm-templates) for cluster or application deployment and upload to accessible location.
 - For Service Fabric application deployments, create an sfpkg package for the application and upload to an accessible URL location.
 - Create or use an existing [Azure Devops project](#requirements).
 - In ADO create a [New YAML pipeline](#new-yaml-pipeline).
 - Add [ARM template deployment task](#add-arm-template-deployment-task) to the pipeline.
 - Deploy the pipeline.
 - Verify / [Troubleshoot](#troubleshooting) the deployment.
+
+## Storage locations
+
+The following are some of the options available for storage locations for ARM templates and sfpkg packages. The azure storage account and github repository options are the most common. If using an Azure storage account, a SAS token can be appended to url for secure access. The deployment agent will need access to the storage location to download the ARM template and sfpkg package. The storage location can be a public URL or a URL that is accessible from the pipeline.
+
+- Azure Storage Account. See [How to deploy private ARM template with SAS token](https://learn.microsoft.com/azure/azure-resource-manager/templates/secure-template-with-sas-token?tabs=azure-powershell).
+- github repository.
+- Azure Devops repository.
+- Azure Devops pipeline artifact.
 
 ## Service Fabric ARM templates
 
@@ -113,19 +123,19 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
 1. Select 'Show assistant' in top right to open the pipeline assistant.
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant.png)
+    ![ado new pipeline assistant](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant.png)
 
 1. Search for 'ARM template deployment' and select.
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm.png)
+    ![ado new pipeline assistant arm](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm.png)
 
 1. Select 'Resource group' for 'Deployment scope'.
 
 1. Select existing Service connection for 'Azure Resource Manager connection' or select the Subscription Name to create a new connection. If creating a new connection, select 'Authorize' to create. The same connection can be created / managed in the projects 'Service connections' settings.
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-connection.png)
+    ![ado new pipeline assistant arm connection](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-connection.png)
 
-    ![](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-service-connection.png)
+    ![ado new pipeline assistant arm service connection](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-new-pipeline-assistant-arm-service-connection.png)
 
 1. Select Subscription Name for 'Subscription'.
 
@@ -262,9 +272,13 @@ Run the pipeline manually and validate the deployment. There may be one-time con
 Validate the ARM template using Azure PowerShell [Test-AzResourceGroupDeployment](https://learn.microsoft.com/powershell/module/az.resources/test-azresourcegroupdeployment) cmdlet.
 
 ```powershell
+$resourceGroupName = 'sf-test-cluster'
+$templateUrl = 'https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.json'
+$templateParametersUrl = 'https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.Parameters.json'
+
 Test-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
-    -TemplateFile .\azuredeploy.json `
-    -TemplateParameterFile .\azuredeploy.parameters.json
+    -TemplateFileUri $templateUrl `
+    -TemplateParameterFileUri $templateParametersUrl
 ```
 
 ### Template deployment with PowerShell
@@ -272,17 +286,21 @@ Test-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
 Deploy the ARM template using Azure PowerShell [New-AzResourceGroupDeployment](https://learn.microsoft.com/powershell/module/az.resources/new-azresourcegroupdeployment) cmdlet.
 
 ```powershell
+$resourceGroupName = 'sf-test-cluster'
+$templateUrl = 'https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.json'
+$templateParametersUrl = 'https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.Parameters.json'
+
 New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
     -DeploymentDebugLogLevel All `
-    -TemplateFile .\azuredeploy.json `
-    -TemplateParameterFile .\azuredeploy.parameters.json `
+    -TemplateFileUri $templateUrl `
+    -TemplateParameterFileUri $templateParametersUrl `
     -Verbose `
     -Debug
 ```
 
 ### Enable debug logging
 
-Enable debug logging for the pipeline to view additional details in log output for the tasks in pipeline.
+Enable debug logging for the pipeline to view additional details in log output for the tasks in pipeline by setting the 'System.Debug' variable to 'true'.
 
 ```yaml
 variables:
