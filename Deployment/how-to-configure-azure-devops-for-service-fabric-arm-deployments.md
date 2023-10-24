@@ -17,7 +17,7 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 
 - Create or use an existing [ARM template](#service-fabric-arm-templates) for cluster or application deployment and upload to accessible location.
 - For Service Fabric application deployments, create an sfpkg package for the application and upload to an accessible URL location.
-- Create or use an existing [Azure Devops project](#requirements).
+- Create or use an existing [Azure Devops project](https://learn.microsoft.com/azure/devops/organizations/projects/create-project?view=azure-devops&tabs=browser).
 - In ADO create a [New YAML pipeline](#new-yaml-pipeline).
 - Add [ARM template deployment task](#add-arm-template-deployment-task) to the pipeline.
 - Deploy the pipeline.
@@ -55,7 +55,7 @@ There are different options available to create an ARM template for a Service Fa
 
 For Service Fabric Managed Cluster templates, similar to Service Fabric Cluster templates, there are different options available to create an ARM template for a Service Fabric managed cluster. However, the ARM resource used for managed cluster deployment is ['Microsoft.ServiceFabric/managedClusters'](https://docs.microsoft.com/en-us/azure/templates/microsoft.servicefabric/managedclusters?pivots=deployment-language-arm-template). Managed clusters can also use a template generated from an existing cluster. The following are some of the options available.
 
-- Existing cluster: To create a Service Fabric managed cluster using an ARM template, see [How to Export Service Fabric Managed Cluster Configuration](../how-to-export-service-fabric-managed-cluster-configuration.md).
+- Existing cluster: To create a Service Fabric managed cluster using an ARM template, see [How to Export Service Fabric Managed Cluster Configuration](./how-to-export-service-fabric-managed-cluster-configuration.md).
 
 - Learn Documentation:
 
