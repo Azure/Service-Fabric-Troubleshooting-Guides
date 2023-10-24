@@ -300,6 +300,34 @@ New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
     -Debug
 ```
 
+### Removing Service Fabric Cluster ARM Application with PowerShell
+
+To remove a Service Fabric ARM application, use [Remove-AzServiceFabricApplication](https://learn.microsoft.com/powershell/module/az.servicefabric/remove-azservicefabricapplication)
+
+```powershell
+$resourceGroupName = 'sf-test-cluster'
+$clusterName = $resourceGroupName
+$applicationName = 'voting'
+
+Remove-AzServiceFabricApplication -ResourceGroupName $resourceGroupName `
+    -ClusterName $clusterName `
+    -Name $applicationName
+```
+
+### Removing Service Fabric Managed Cluster ARM Application with PowerShell
+
+To remove a Service Fabric Managed Cluster ARM application, use [Remove-AzServiceFabricManagedClusterApplication](https://learn.microsoft.com/powershell/module/az.servicefabric/remove-azservicefabricmanagedclusterapplication)
+
+```powershell
+$resourceGroupName = 'sf-test-cluster'
+$clusterName = $resourceGroupName
+$applicationName = 'voting'
+
+Remove-AzServiceFabricManagedClusterApplication -ResourceGroupName $resourceGroupName `
+    -ClusterName $clusterName `
+    -Name $applicationName
+```
+
 ### Enable debug logging
 
 Enable debug logging for the pipeline to view additional details in log output for the tasks in pipeline by setting the 'System.Debug' variable to 'true'.
