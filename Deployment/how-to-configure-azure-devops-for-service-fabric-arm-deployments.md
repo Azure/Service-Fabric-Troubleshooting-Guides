@@ -1,6 +1,6 @@
 # How to configure Azure Devops for Service Fabric ARM template deployments
 
-This guide documents the process to configure Azure Devops (ADO) for Service Fabric ARM template deployments. This can be used for both cluster and application deployments and is considered a best practice. This process is valid for both Service Fabric Cluster and Service Fabric Managed Cluster deployments. ARM ADO deployments do not require cluster certificate configuration, cluster connection configuration, or Network Security Group (NSG) configuration. For this reason, ADO ARM deployments support parallel deployments, which can be used to deploy multiple clusters or applications at the same time from same deployment agent.
+This guide documents the configuration of Azure Devops (ADO) for Service Fabric ARM template deployments. This can be used for both cluster and application deployments and is considered a best practice. This process is valid for both Service Fabric Cluster and Service Fabric Managed Cluster deployments. ARM ADO deployments do not require cluster certificate configuration, cluster connection configuration, or additional Network Security Group (NSG) configuration. For these reasons, Service Fabric ADO ARM deployments support parallel jobs, to deploy multiple clusters or applications at the same time from same deployment agent.
 
 For Service Fabric Managed Cluster deployments not using ARM templates, see [How to configure Azure Devops for Service Fabric Managed Cluster](./how-to-configure-azure-devops-for-service-fabric-managed-cluster.md). For Service Fabric Cluster deployments not using ARM templates, see [How to configure Azure Devops for Service Fabric Cluster](./how-to-configure-azure-devops-for-service-fabric-cluster.md).
 
@@ -18,7 +18,7 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 - Create or use an existing [ARM template](#service-fabric-arm-templates) for cluster or application deployment and upload to accessible location.
 - For Service Fabric application deployments, create an sfpkg package for the application and upload to an accessible URL location.
 - Create or use an existing [Azure Devops project](https://learn.microsoft.com/azure/devops/organizations/projects/create-project?view=azure-devops&tabs=browser).
-- In ADO create a [New YAML pipeline](#new-yaml-pipeline).
+- In the ADO project, create a [New YAML pipeline](#new-yaml-pipeline).
 - Add [ARM template deployment task](#add-arm-template-deployment-task) to the pipeline.
 - Deploy the pipeline.
 - Verify / [Troubleshoot](#troubleshooting) the deployment.
@@ -28,9 +28,9 @@ For Service Fabric Managed Cluster deployments not using ARM templates, see [How
 The following are some of the options available for storage locations for ARM templates and sfpkg packages. The azure storage account and github repository options are the most common. If using an Azure storage account, a SAS token can be appended to url for secure access. The deployment agent will need access to the storage location to download the ARM template and sfpkg package. The storage location can be a public URL or a URL that is accessible from the pipeline.
 
 - Azure Storage Account. See [How to deploy private ARM template with SAS token](https://learn.microsoft.com/azure/azure-resource-manager/templates/secure-template-with-sas-token?tabs=azure-powershell).
-- github repository.
-- Azure Devops repository.
 - Azure Devops pipeline artifact.
+- Azure Devops repository.
+- github repository.
 
 ## Service Fabric ARM templates
 
@@ -68,11 +68,11 @@ For Service Fabric Managed Cluster templates, similar to Service Fabric Cluster 
 
 ### Service Fabric Application ARM template
 
-There are different options available to create an ARM template for a Service Fabric application. ['Microsoft.ServiceFabric/clusters/applications'](https://docs.microsoft.com/en-us/azure/templates/microsoft.servicefabric/clusters/applications?pivots=deployment-language-arm-template) is the ARM resource used for application deployment.
+To create an ARM template for a Service Fabric application, use ['Microsoft.ServiceFabric/clusters/applications'](https://docs.microsoft.com/en-us/azure/templates/microsoft.servicefabric/clusters/applications?pivots=deployment-language-arm-template) ARM resource as a reference for template creation.
 
 #### Service Fabric Application Sfpkg Package
 
-To create an sfpkg package for a Service Fabric application, see [Package an application](https://learn.microsoft.com/azure/service-fabric/service-fabric-package-apps). After creation, upload the sfpkg package to the sfpkg package URL being used as a parameter for the ARM template deployment task.
+To create an sfpkg application package for a Service Fabric application, see [Package an application](https://learn.microsoft.com/azure/service-fabric/service-fabric-package-apps). After creation, upload the sfpkg package to the sfpkg package URL being used as the parameter for the ARM template deployment task.
 
 ## Azure Devops YAML pipeline
 
@@ -267,6 +267,8 @@ Below adds an ARM template deployment. All variables for this task are listed in
 
 Run the pipeline manually and validate the deployment. There may be one-time configuration settings or approvals required.
 
+![ado run pipeline permissions](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-run-pipeline-permissions-warn.png)
+
 ## Troubleshooting
 
 ### Template validation with PowerShell
@@ -300,6 +302,31 @@ New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
     -Debug
 ```
 
+### Application package validation with PowerShell
+
+Validate the Service Fabric application package using [Test-ServiceFabricApplicationPackage](https://learn.microsoft.com/powershell/module/servicefabric/test-servicefabricapplicationpackage?view=azureservicefabricps). See [Connecting to secure clusters with PowerShell](../Cluster/Connecting%20to%20secure%20clusters%20with%20PowerShell.md) for more information on connecting to a Service Fabric cluster with PowerShell.
+
+> **Note:**
+> This cmdlet is only available from a machine with the Service Fabric SDK installed.
+
+```powershell
+$clusterEndpoint = 'sf-test-cluster.eastus.cloudapp.azure.com:19000'
+$serverCertThumbprint = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+$clientThumbprint = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+$applicationPackageUrl = 'https://raw.githubusercontent.com/<owner>/<repository>/master/serviceFabric/sfpackages/Voting.1.0.0.sfpkg'
+
+Import-Module servicefabric
+
+Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint `
+  -X509Credential `
+  -ServerCertThumbprint $serverCertThumbprint `
+  -FindType FindByThumbprint `
+  -FindValue $clientThumbprint `
+  -StoreLocation CurrentUser `
+
+Test-ServiceFabricApplicationPackage -ApplicationPackagePath $applicationPackageUrl
+```
+
 ### Removing Service Fabric Cluster ARM Application with PowerShell
 
 To remove a Service Fabric ARM application, use [Remove-AzServiceFabricApplication](https://learn.microsoft.com/powershell/module/az.servicefabric/remove-azservicefabricapplication)
@@ -330,9 +357,52 @@ Remove-AzServiceFabricManagedClusterApplication -ResourceGroupName $resourceGrou
 
 ### Enable debug logging
 
-Enable debug logging for the pipeline to view additional details in log output for the tasks in pipeline by setting the 'System.Debug' variable to 'true'.
+Enable debug logging for the pipeline to view additional details in log output for the tasks in pipeline by setting the '[System.Debug](https://learn.microsoft.com/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#systemdebug)' variable to 'true'.
+
+In the pipeline YAML file:
 
 ```yaml
 variables:
   System.Debug: true
 ```
+
+In the pipeline Variables UI:
+
+Open 'Variables' for the pipeline and set 'System.Debug' to 'true'.
+
+![ado variables debug](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-run-pipeline-debug-variable-ui.png)
+
+In the build pipeline UI:
+
+Select 'Enable system diagnostics' in the 'Run pipeline' dialog.
+
+![ado run pipeline debug](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-run-pipeline-debug.png)
+
+#### Example debug log output
+
+Debug output in log will be prefixed with '##[debug]'. The following is an example of debug output for the 'Initialize job' task.
+
+```powershell
+Starting: Initialize job
+Agent name: 'Hosted Agent'
+Agent machine name: 'fv-az172-199'
+Current agent version: '3.227.2'
+Operating System
+Runner Image
+Runner Image Provisioner
+Current image version: '20231023.1.0'
+Agent running as: 'VssAdministrator'
+##[debug]Triggering repository: sfVotingDevops. repository type: Git
+Prepare build directory.
+##[debug]Creating build directory: 'D:\a\1'
+##[debug]Delete existing artifacts directory: 'D:\a\1\a'
+##[debug]Creating artifacts directory: 'D:\a\1\a'
+##[debug]Delete existing test results directory: 'D:\a\1\TestResults'
+##[debug]Creating test results directory: 'D:\a\1\TestResults'
+##[debug]Creating binaries directory: 'D:\a\1\b'
+##[debug]Creating source directory: 'D:\a\1\s'
+```
+
+#### Download debug log output
+
+![ado run pipeline debug](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-run-pipeline-debug-download.png)
