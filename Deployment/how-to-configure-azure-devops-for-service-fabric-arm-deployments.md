@@ -57,7 +57,7 @@ For Service Fabric Managed Cluster templates, similar to Service Fabric Cluster 
 
 - Existing cluster: To create a Service Fabric managed cluster using an ARM template, see [How to Export Service Fabric Managed Cluster Configuration](./how-to-export-service-fabric-managed-cluster-configuration.md).
 
-- Learn Documentation:
+- Learn Documentation: [Deploy a Service Fabric managed cluster with an Azure Resource Manager template](https://learn.microsoft.com/azure/service-fabric/quickstart-managed-cluster-template)
 
 - Azure Samples Service Fabric Cluster Templates: https://github.com/Azure-Samples/service-fabric-cluster-templates
 
@@ -269,7 +269,13 @@ Run the pipeline manually and validate the deployment. There may be one-time con
 
 ![ado run pipeline permissions](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-run-pipeline-permissions-warn.png)
 
+After completing the pipeline run, review the logs for any errors or warnings.
+
+![ado run pipeline jobs](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-run-pipeline-jobs.png)
+
 ## Troubleshooting
+
+[AzureResourceManagerTemplateDeployment@ - ARM template deployment task](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/azure-resource-group-deployment-v2?view=azure-pipelines&viewFallbackFrom=azure-devops#troubleshooting) lists some common errors and mitigations. The following are some additional troubleshooting steps.
 
 ### Template validation with PowerShell
 
@@ -380,4 +386,14 @@ Prepare build directory.
 
 #### Download debug log output
 
+To download the debug log output, select 'Download logs' in the pipeline view from ellipsis button.
+
 ![ado run pipeline debug](/media/how-to-configure-azure-devops-for-service-fabric-arm-deployments/ado-run-pipeline-debug-download.png)
+
+### [error]Failed to check the resource group status. Error: {"statusCode":400}.
+
+This error can be caused by misconfiguration in the YAML file. Verify YAML parameters are correct. See [AzureResourceManagerTemplateDeployment@ - ARM template deployment task](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/deploy/azure-resource-group-deployment-v2?view=azure-devops#parameters) for more information.
+
+### [error]Failed to check the resource group status. Error: {"statusCode":403}.
+
+This error can be caused by permissions issue with service connection. Verify service connection has appropriate access. See [Troubleshoot ARM service connections](https://learn.microsoft.com/azure/devops/pipelines/release/azure-rm-endpoint?view=azure-devops)
