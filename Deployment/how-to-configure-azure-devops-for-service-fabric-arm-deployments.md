@@ -302,31 +302,6 @@ New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
     -Debug
 ```
 
-### Application package validation with PowerShell
-
-Validate the Service Fabric application package using [Test-ServiceFabricApplicationPackage](https://learn.microsoft.com/powershell/module/servicefabric/test-servicefabricapplicationpackage?view=azureservicefabricps). See [Connecting to secure clusters with PowerShell](../Cluster/Connecting%20to%20secure%20clusters%20with%20PowerShell.md) for more information on connecting to a Service Fabric cluster with PowerShell.
-
-> **Note:**
-> This cmdlet is only available from a machine with the Service Fabric SDK installed.
-
-```powershell
-$clusterEndpoint = 'sf-test-cluster.eastus.cloudapp.azure.com:19000'
-$serverCertThumbprint = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-$clientThumbprint = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-$applicationPackageUrl = 'https://raw.githubusercontent.com/<owner>/<repository>/master/serviceFabric/sfpackages/Voting.1.0.0.sfpkg'
-
-Import-Module servicefabric
-
-Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint `
-  -X509Credential `
-  -ServerCertThumbprint $serverCertThumbprint `
-  -FindType FindByThumbprint `
-  -FindValue $clientThumbprint `
-  -StoreLocation CurrentUser `
-
-Test-ServiceFabricApplicationPackage -ApplicationPackagePath $applicationPackageUrl
-```
-
 ### Removing Service Fabric Cluster ARM Application with PowerShell
 
 To remove a Service Fabric ARM application, use [Remove-AzServiceFabricApplication](https://learn.microsoft.com/powershell/module/az.servicefabric/remove-azservicefabricapplication)
