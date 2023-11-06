@@ -85,4 +85,8 @@
 
 ## Resolution
 
-The Service Fabric team will be releasing a fix this in next 10.x Cumulative Update.
+The fix for this issue is now released in Service Fabric 10.0 SDK (7.0.1949) release. Please download the latest SDK from [Install the SDK and tools](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started#install-the-sdk-and-tools).
+
+[Service Fabric 10.0 Runtime (10.0.1949.9590)](https://download.microsoft.com/download/b/8/a/b8a2fb98-0ec1-41e5-be98-9d8b5abf7856/MicrosoftServiceFabric.10.0.1949.9590.exe)
+
+[Service Fabric 10.0 SDK (7.0.1949)](https://download.microsoft.com/download/b/8/a/b8a2fb98-0ec1-41e5-be98-9d8b5abf7856/MicrosoftServiceFabricSDK.7.0.1949.msi)
