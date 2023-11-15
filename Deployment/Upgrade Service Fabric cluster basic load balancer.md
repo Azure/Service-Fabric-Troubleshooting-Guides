@@ -1,6 +1,6 @@
 # Upgrade Service Fabric cluster from Basic load balancer to Standard load balancer SKU
 
-## Overview  
+## Overview
 
 This documents the options available to upgrade a basic load balancer sku to a standard ip and load balancer sku for a Service Fabric cluster. Choose one of the options below based on availability requirements.
 
@@ -10,7 +10,170 @@ This documents the options available to upgrade a basic load balancer sku to a s
 
 To upgrade basic load balancers in a Service Fabric cluster with no downtime requires the creation of a new scale set (node type), standard load balancer, and standard IP address. The new node type is added to the cluster, applications/services are migrated to new node type, old node type with associated basic load balancer and IP address are deactivated and removed. This process takes multiple hours to complete and is documented in [Scale up a Service Fabric cluster primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-primary-node-type) and [Scale up a Service Fabric cluster non-primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-non-primary-node-type).
 
+<details><summary>Click to expand</summary>
+
+## Steps
+
+### (TEST STEP ONLY) Deploy test basic silver cluster
+
+```powershell
+.\deploy-wrapper.ps1 -fo -resourcegroup sftestcluster -templateFile .\sf-1nt-3n-1lb.json -templateParameterFile .\sf-1nt-3n-1lb.parameters.json
+.\deploy-wrapper.ps1 -fo -resourcegroup sftestcluster -templateFile .\sf-1nt-3n-1lb-silver.json -templateParameterFile .\sf-1nt-3n-1lb-silver.parameters.json
+```
+
+### (TEST STEP ONLY) Deploy test voting app
+
+```powershell
+.\azure-az-deploy-template.ps1 -resourcegroup sftestcluster -location eastus -templatefile .\sf-app-voting.json -templateParameterFile .\sf-app-voting.parameters.json
+```
+
+### Check placement constraints and generate new plb and nodetype commands
+
+```powershell
+.\azure-az-sf-add-nodetype.ps1 -connectionEndpoint sftestcluster.eastus.cloudapp.azure.com:19000 -thumbprint xxxxx -resourceGroupName sftestcluster
+```
+
+### Update placement constraints
+
+#### Example
+
+```powershell
+Update-ServiceFabricService -Stateless -ServiceName fabric:/Voting/VotingWeb -PlacementConstraints '(NodeType != nt1)';
+
+Update-ServiceFabricService -StateFul -ServiceName fabric:/Voting/VotingData -PlacementConstraints '(NodeType != nt1)';
+```
+
+### Modify and execute Add-AzServiceFabricNodeType (from script above)
+
+If creating primary nodetype set $isPrimary to $true
+$isPrimary = $true
+Add nodetype
+
+#### Example
+
+```powershell
+ Add-AzServiceFabricNodeType -ResourceGroupName sftestcluster `
+  -Name 'sftestcluster' `
+  -Capacity 3 `
+  -VmUserName 'cloudadmin' `
+  -VmPassword (ConvertTo-SecureString -String '' -Force -AsPlainText) `
+  -VmSku 'Standard_D2_v2' `
+  -DurabilityLevel 'Silver' `
+  -IsPrimaryNodeType $False `
+  -VMImagePublisher 'MicrosoftWindowsServer' `
+  -VMImageOffer 'WindowsServer' `
+  -VMImageSku '2022-Datacenter' `
+  -VMImageVersion 'latest' `
+  -NodeType 'nt1' `
+  -Verbose
+```
+
+### Verify loadbalancer rules/ nodetype functionality
+
+### Update new nodetype lb from basic to standard
+
+```powershell
+install-module AzureBasicloadbalancerUpgrade
+import-module AzureBasicloadbalancerUpgrade
+
+Start-AzBasicLoadBalancerUpgrade -ResourceGroupName sftestcluster -BasicLoadBalancerName LB-sftestcluster-nt1 -Verbose
+```
+
+#### Service Fabric Cluster Warning
+
+The following warning will be displayed for Service Fabric clusters. This is expected and can be ignored. Using -Force will bypass the warning.
+
+> [!WARNING]
+>WARNING: 2023-06-15T16:08:38-04 [Warning]:[Test-SupportedMigrationScenario] VMSS appears to be a Service Fabric cluster based on extension profile. SF Clusters experienced potentially significant downtime during migration using this PowerShell module. In testing, a 5-node Bronze cluster was unavailable for about 30 minutes and a 5-node Silver cluster was unavailable for about 45 minutes. Shutting down the cluster VMSS prior to initiating migration will result in a more consistent experience of about 5 minutes to complete the LB migration. For Service Fabric clusters that require minimal / no connectivity downtime, adding a new nodetype with standard load balancer and IP resources is a better solution.
+Do you want to proceed with the migration of your Service Fabric Clusters Load Balancer?
+Do you want to continue? (y/n): y
+WARNING: 2023-06-15T16:08:49-04 [Warning]:[LBPublicIPToStatic] 'LBIP-sftestcluster-nt1' ('x.x.x.x') was using Dynamic IP, changing to Static IP allocation method.
+
+### Revert / Modify placement constraints to use new nodetype
+
+#### Example
+
+```powershell
+Update-ServiceFabricService -Stateless -ServiceName fabric:/Voting/VotingWeb -PlacementConstraints '';
+
+Update-ServiceFabricService -StateFul -ServiceName fabric:/Voting/VotingData -PlacementConstraints '';
+```
+
+### Migrate dns/ip to new lb
+
+```powershell
+.\azure-az-ip-dns-swap.ps1
+```
+
+### Set old primary isprimary to false to move seed roles
+#### TODO: Add script to set isprimary to false
+
+### Remove old nodetype/lb
+### TODO: Add script to remove nodetype/lb
+
+Service Fabric Cluster Resource Manager - Placement Policies - Azure Service Fabric | Microsoft Learn
+
+
+## Reference
+
+### Update placement constraints options
+
+Depending on configuration, placement constraints can be updated via powershell or application manifest. Below are examples of updating placement constraints via powershell. For more information see [Update-ServiceFabricService](https://docs.microsoft.com/en-us/powershell/module/servicefabric/update-servicefabricservice?view=azureservicefabricps).
+
+```powershell
+Update-ServiceFabricService -Stateful -ServiceName $serviceName -PlacementConstraints "NodeType == NodeType01"
+```
+
+### Migrate cluster load options
+
+#### Dns - preferred
+
+- seconds to migrate 'dns name' from old lb ip resource to new lb ip resource
+- No azure resource dependencies since it is just a property on ip resource which makes it consistent time to migrate.
+- Since its azure dns, dns replication of name change is almost immediate
+
+```powershell
+    param(
+        $resourceGroupName = 'sftestcluster',
+        $oldPublicIPName = 'PublicIP-LB-FE-0',
+        $newPublicIPName = 'LBIP-sftestcluster-nt1'
+    )
+    $publicIps = Get-AzPublicIpAddress -ResourceGroupName $resourceGroupName | Select-Object Name, ResourceGroupName, IpAddress, DnsSettings
+    foreach($publicIp in $publicIps) {
+        write-host "Public IP: $($publicIp.Name) $($publicIp | convertto-json)"
+    }
+        $oldPublicIP = Get-AzPublicIpAddress -Name $oldPublicIpName -ResourceGroupName $resourceGroupName
+        $publicIP = Get-AzPublicIpAddress -Name $newPublicIpName -ResourceGroupName $resourceGroupName
+
+        $dnsName = $oldPublicIP.DnsSettings.DomainNameLabel
+        $fqdn = $oldPublicIP.DnsSettings.Fqdn
+        $oldPublicIP.DnsSettings.DomainNameLabel = "old-$dnsName"
+        $oldPublicIP.DnsSettings.Fqdn = "old.$fqdn"
+        Set-AzPublicIpAddress -PublicIpAddress $oldPublicIP
+        $publicIP.DnsSettings.DomainNameLabel = $dnsName
+        $publicIP.DnsSettings.Fqdn = $fqdn
+        Set-AzPublicIpAddress -PublicIpAddress $PublicIP
+```
+
+#### IP Address - if  needed
+
+- Minutes to migrate due to azure ip resource dependencies needing to be released
+- Greater potential of issues
+- Greater variability of down time as releasing of ip resources in testing is not consistent
+
+### Script to monitor ip/port availability
+### TODO: Remove or move script to monitor ip/port availability
+
+```powershell
+invoke-webRequest "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-az-load-balancer-monitor.ps1" -outFile "$pwd\azure-az-load-balancer-monitor.ps1";
+.\azure-az-load-balancer-monitor.ps1 -resourceGroup "rg"
+```
+
+</details>
+
 ## Automated Upgrade Process with down time
+
+<details><summary>Click to expand</summary>
 
 > ### :exclamation:NOTE: While the following process executes, connectivity to the cluster will be unavailable.
 
@@ -40,12 +203,12 @@ Perform the following before starting migration to standard load balancer.
 
 Below are basic powershell commands assuming Azure 'Az' modules are already installed. See link above for additional configurations are that are available.
 
-A Warning will be displayed for scale sets that have Service Fabric extension installed:
+A Warning will be displayed for scale sets that have Service Fabric extension installed
 
 ```text
 WARNING: 2023-05-08T11:25:49-04 [Warning]:[Test-SupportedMigrationScenario] VMSS appears to be a Service Fabric cluster based on extension profile. SF Clusters experienced potentially significant downtime during migration using this PowerShell module. In testing, a 5-node Bronze cluster was unavailable for about 30 minutes and a 5-node Silver cluster was unavailable for about 45 minutes. Shutting down the cluster VMSS prior to initiating migration will result in a more consistent experience of about 5 minutes to complete the LB migration. For Service Fabric clusters that require minimal / no connectivity downtime, adding a new node type with standard load balancer and IP resources is a better solution.
 Do you want to proceed with the migration of your Service Fabric Cluster's Load Balancer?
-Do you want to continue? (y/n):
+Do you want to continue? (y/n)
 ```
 
 ```powershell
@@ -350,7 +513,7 @@ After migration to standard load balancer is complete, verify functionality and 
 
 For public load balancers, from an external device / admin machine, open powershell and run the following commands to Service Fabric port connectivity. If there are connectivity issues, verify the NSG security rules. Depending on configuration, there may be multiple NSG's configured for cluster if migration script does not detect an existing NSG.
 
-> ### :exclamation:NOTE: The newly created NSG will not have rules for RDP port access. For RDP access after migration to standard load balancer, add a new rule for RDP in new NSG. 
+> ### :exclamation:NOTE: The newly created NSG will not have rules for RDP port access. For RDP access after migration to standard load balancer, add a new rule for RDP in new NSG.
 
 ```powershell
 $managementEndpoint = 'sfcluster.eastus.cloudapp.azure.com'
@@ -359,7 +522,7 @@ $networkPorts = @(
   19080, # default https address
   19081, # default reverse proxy address if enabled
   3389   # default RDP port for node 0 if enabled
-) 
+)
 foreach($port in $networkPorts) {
   test-netConnection -ComputerName $managementEndpoint -Port $port
 }
@@ -379,7 +542,7 @@ foreach($port in $networkPorts) {
 
 ### Check cluster
 
-Open Service Fabric Explorer (SFX) and verify cluster is 'green' with no warnings or errors. 
+Open Service Fabric Explorer (SFX) and verify cluster is 'green' with no warnings or errors.
 
 Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
 
@@ -398,16 +561,16 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
         -Verbose `
         -Debug
 
-    DEBUG: AzureQoSEvent:  Module: Az.Network:5.3.0; CommandName: Get-AzLoadBalancer; PSVersion: 7.3.1; IsSuccess: True; Duration: 00:00:02.4149601  
-    DEBUG: 1:16:48 PM - [ConfigManager] Got [True] from [EnableDataCollection], Module = [], Cmdlet = [].  
-    DEBUG: 1:16:48 PM - GetAzureRmLoadBalancer end processing.  
-    WARNING: [Warning]:[PublicIPToStatic] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') was using Dynamic IP, changing to Static IP allocation method.  
-    WARNING: [Warning]:[PublicFEMigration] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') is using Basic SKU, changing Standard SKU.  
-    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.0' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!  
-    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.1' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!  
-    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.2' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!  
-    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.3' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!  
-    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.4' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!  
+    DEBUG: AzureQoSEvent:  Module: Az.Network:5.3.0; CommandName: Get-AzLoadBalancer; PSVersion: 7.3.1; IsSuccess: True; Duration: 00:00:02.4149601
+    DEBUG: 1:16:48 PM - [ConfigManager] Got [True] from [EnableDataCollection], Module = [], Cmdlet = [].
+    DEBUG: 1:16:48 PM - GetAzureRmLoadBalancer end processing.
+    WARNING: [Warning]:[PublicIPToStatic] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') was using Dynamic IP, changing to Static IP allocation method.
+    WARNING: [Warning]:[PublicFEMigration] 'PublicIP-LB-FE-0' ('xxx.xxx.xxx.xxx') is using Basic SKU, changing Standard SKU.
+    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.0' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.1' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.2' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.3' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
+    WARNING: [Warning]:[NatRulesMigration] NAT Rule 'LoadBalancerBEAddressNatPool.4' appears to have been dynamically created for Inbound NAT Pool 'LoadBalancerBEAddressNatPool'. This rule will not be migrated!
     ```
 
 - Use the latest version of 'AzureBasicLoadBalancerUpgrade'.
@@ -442,3 +605,5 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
   Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer/index.html#/events
 
   ![](../media/upgrade-service-fabric-cluster-basic-load-balancer/sfx-cluster-events.png)
+
+</details>
