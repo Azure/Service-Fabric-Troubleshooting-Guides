@@ -4,16 +4,47 @@
 
 This article describes how to setup Log Analytics for Service Fabric Cluster. With Log Analytics, you can collect and analyze the logs of your Service Fabric Cluster. You can also setup alerts based on the logs. 
 
-Service Fabric Managed clusters have built-in support for Log Analytics. For more information, see [Azure Service Fabric Managed Clusters](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-managed-clusters).
+Service Fabric Managed clusters have built-in support for Log Analytics. For more information, see [Azure Service Fabric Managed Clusters](https://docs.microsoft.com/azure/service-fabric/service-fabric-managed-clusters).
 
 ## Prerequisites
 
 - You have a Service Fabric Cluster running in Azure.
-- You have a Log Analytics workspace created in Azure. For more information, see [Create a Log Analytics workspace in the Azure portal](https://docs.microsoft.com/en-us/azure/log-analytics/log-analytics-quick-create-workspace).
+- You have a Log Analytics workspace created in Azure. For more information, see [Create a Log Analytics workspace in the Azure portal](https://docs.microsoft.com/azure/log-analytics/log-analytics-quick-create-workspace).
+
+## Configuration
+
+### Log collection configurations
+
+By default, Service Fabric clusters have WAD configuration enabled with base logging enabled. [Log collection configurations](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad#log-collection-configurations) has detailed information for each level. The following common configuration values are for the 'scheduledTransferKeywordFilter' property in the WadCfg extension.
+
+- "scheduledTransferKeywordFilter": "4611686018427387904" - Operational Channel - Base: Default.
+- "scheduledTransferKeywordFilter": "4611686018427387912" - Operational Channel - Detailed.
+- "scheduledTransferKeywordFilter": "4611686018427387928" - Data and Messaging Channel - Base.
+- "scheduledTransferKeywordFilter": "4611686018427387944" - Data and Messaging Channel - Detailed.
+
+### Event log collection
+
+In addition to Service Fabric events, you can also collect Windows Event Logs. [WindowsEventLog Element](https://learn.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-schema-windows#windowseventlog-element) defines this parameter and has examples.
+
+Example WindowsEventLog configuration to collect Application hangs, errors and exceptions, and Microsoft Antimalware events. The 'scheduledTransferPeriod' is set to 5 minutes. The 'name' property is a XPath query that is use:
+
+```json
+"WindowsEventLog": {
+  "scheduledTransferPeriod": "PT5M",
+  "DataSource": [
+    {
+      "name": "System!*[System[Provider[@Name='Microsoft Antimalware']]]"
+    },
+    {
+      "name": "Application!*[System[Provider[@Name='.NET Runtime' or @Name='Application Error' or @Name='Application Hang' or @Name='Windows Error Reporting'] and (Level=1  or Level=2)]]"
+    }
+  ]
+}
+```
 
 ## Setup Log Analytics for Service Fabric Cluster
 
-1. Ensure Windows Azure Diagnostics (WAD) extension is configured on the nodetypes / scale sets. The WadCfg has the configuration for collection and storage account where WAD table data is stored. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric | Microsoft Learn](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information.
+1. Ensure Windows Azure Diagnostics (WAD) extension is configured on the node types / scale sets. The WadCfg has the configuration for collection and storage account where WAD table data is stored. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information. for more information.
 
     Example WadCfg Extension ARM template configuration:
 
@@ -85,7 +116,7 @@ Service Fabric Managed clusters have built-in support for Log Analytics. For mor
 
     </details>
 
-1. Validate that the WAD extension data is being uploaded to the storage account 'WADServiceFabric*Table' Tables. Service Fabric clusters with WAD enabled typically deploy with two storage accounts. One is for Service Fabric cluster logging that contains only blob data. The other is for WAD events that are stored in table data only. If unsure which account is being used, the storage account is configured in the WadCfg as shown above in property 'StorageAccount'. You can use [Azure Storage Explorer](https://azure.microsoft.com/en-us/features/storage-explorer/) to view the data in the storage account. Azure Portal can be used to see if the tables have been created.
+1. Validate that the WAD extension data is being uploaded to the storage account 'WADServiceFabric*Table' Tables. Service Fabric clusters with WAD enabled typically deploy with two storage accounts. One is for Service Fabric cluster logging that contains only blob data. The other is for WAD events that are stored in table data only. If unsure which account is being used, the storage account is configured in the WadCfg as shown above in property 'StorageAccount'. You can use [Azure Storage Explorer](https://azure.microsoft.com/features/storage-explorer/) to view the data in the storage account. Azure Portal can be used to see if the tables have been created.
 
     Example:
 
@@ -107,10 +138,10 @@ Service Fabric Managed clusters have built-in support for Log Analytics. For mor
 
 ## Verification
 
-After configuration, you can verify that the Service Fabric events are being collected by Log Analytics by running 'search *' in Log Analytics 'Logs' view.
+After configuration, verify Service Fabric events are being collected by Log Analytics by running 'search *' in Log Analytics 'Logs' view.
 
 > **Note:**
-> Data may take a few minutes to appear in Log Analytics.
+> Data may take 15+ minutes to appear in Log Analytics.
 
 1. Open Log Analytics workspace in Azure portal. [Log Analytics workspaces - Microsoft Azure](https://ms.portal.azure.com/#browse/Microsoft.OperationalInsights%2Fworkspaces)
   
@@ -120,3 +151,38 @@ After configuration, you can verify that the Service Fabric events are being col
 
 ## Troubleshooting
 
+Service Fabric event tracing to Log Analytics data flow:
+
+```mermaid
+graph LR;
+  subgraph sfc["Service Fabric Cluster node"];
+    A["Service Fabric Components"] --> B["Event Tracing for Windows (ETW)"];
+    B["Event Tracing for Windows (ETW)"] --> C["Azure Diagnostics Agent (WAD)"];
+  end
+  subgraph ab["Azure backend"];
+    C["Azure Diagnostics Agent (WAD)"] --> D["Azure storage tables"];
+    D["Azure storage tables"] --> E["Log Analytics Workspace"];
+  end
+```
+
+1. Verify the WAD extension is configured on the node types / scale sets. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric | Microsoft Learn](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information.
+
+1. Verify the WAD extension storage account name.
+
+1. Verify connectivity from the Service Fabric cluster nodes to the storage account. [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to a node and open a PowerShell prompt.
+
+1. Verify the storage account is added to the Log Analytics workspace. See [Add Azure Storage data to a Log Analytics workspace | Microsoft Docs](https://docs.microsoft.com/azure/log-analytics/log-analytics-add-storage-account) for more information.
+
+1. Troubleshoot WAD extension. [Azure Diagnostics troubleshooting](https://learn.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-troubleshooting)
+
+1. Troubleshoot Azure Monitoring [Troubleshooting guidance for the Azure Monitor agent on Windows virtual machines and scale sets](https://learn.microsoft.com/azure/azure-monitor/agents/azure-monitor-agent-troubleshoot-windows-vm)
+
+## Reference
+
+### List of Service Fabric events
+
+The following is a list of Service Fabric events that Service Fabric exposes. [List of Service Fabric events](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-generation-operational).
+
+### Windows Azure Diagnostics (WAD) extension schema
+
+[Windows diagnostics extension schema](https://learn.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-schema-windows)
