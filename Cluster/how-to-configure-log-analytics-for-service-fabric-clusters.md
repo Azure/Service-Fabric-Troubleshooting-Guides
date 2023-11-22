@@ -174,16 +174,20 @@ After configuration, verify Service Fabric events are being collected by Log Ana
 Service Fabric event tracing to Log Analytics data flow:
 
 ```mermaid
-graph TD;
-  subgraph sfc["Service Fabric Cluster node"];
-    A["Service Fabric Components"] --> B["Event Tracing for Windows (ETW)"];
-    B["Event Tracing for Windows (ETW)"] --> C["Azure Diagnostics Agent (WAD)"];
+graph TD
+  subgraph sfc["Service Fabric Cluster node"]
+    A["Service Fabric Components"] --> B["Event Tracing for Windows (ETW)"]
+    B["Event Tracing for Windows (ETW)"] --> C["Azure Diagnostics Agent (WAD)"]
   end
-  subgraph ab["Azure backend"];
-    D["Azure storage Tables"];
-    D["Azure storage Tables"] --> E["Log Analytics Workspace"];
+  subgraph as["Storage account"]
+    D["Azure Storage Tables"]
   end
-  sfc --> ab
+  subgraph la["Log Analytics"]
+    E["Log Analytics Query"] --> F["Log Analytics Workspace"]
+    F["Log Analytics Workspace"] <--> G["Log Analytics Legacy storage account logs"]
+  end
+C --> D
+G <--> D
 ```
 
 1. Verify the WAD extension is configured on the node types / scale sets. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric | Microsoft Learn](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information.
