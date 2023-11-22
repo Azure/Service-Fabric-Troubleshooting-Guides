@@ -2,14 +2,9 @@
 
 ## Introduction
 
-This article describes how to setup Log Analytics for Service Fabric Cluster. With Log Analytics, you can collect and analyze the logs of your Service Fabric Cluster. You can also setup alerts based on the logs.
+This article describes how to setup Log Analytics for Service Fabric Cluster. With Log Analytics, you can collect and analyze diagnostic Service Fabric Cluster events, Windows Events, and other optional configurations. This article assumes you have a Service Fabric Cluster running in Azure and a Log Analytics workspace. For more information, see [Create a Log Analytics workspace in the Azure portal](https://docs.microsoft.com/azure/log-analytics/log-analytics-quick-create-workspace).
 
-Service Fabric Managed clusters have built-in support for Log Analytics. For more information, see [Azure Service Fabric Managed Clusters](https://docs.microsoft.com/azure/service-fabric/service-fabric-managed-clusters).
-
-## Prerequisites
-
--   Service Fabric Cluster running in Azure.
--   Log Analytics workspace. For more information, see [Create a Log Analytics workspace in the Azure portal](https://docs.microsoft.com/azure/log-analytics/log-analytics-quick-create-workspace).
+This information does not apply to Service Fabric Managed clusters. Managed clusters use Azure Monitor instead of Log Analytics.
 
 ## Configuration
 
@@ -55,9 +50,9 @@ The 'scheduledTransferPeriod' is set to 5 minutes. The 'name' property is a XPat
 
 ## Setup Log Analytics for Service Fabric Cluster
 
-1. Ensure Windows Azure Diagnostics (WAD) extension is configured on the node types / scale sets. The WadCfg has the configuration for collection and storage account where WAD table data is stored. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information. for more information.
+1. Ensure Windows Azure Diagnostics (WAD) extension is configured on the node types / scale sets. The WadCfg has the configuration for collection and storage account where WAD table data is stored. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information.
 
-    Default WadCfg Extension ARM template configuration:
+    Default WadCfg Extension ARM template configuration when deploying from Azure portal:
 
     <details><summary>Click to expand</summary>
 
@@ -139,7 +134,7 @@ The 'scheduledTransferPeriod' is set to 5 minutes. The 'name' property is a XPat
 
     ![Add Storage Account](/media/how-to-configure-log-analytics-for-service-fabric-clusters/azure-portal-log-analytics-add-storage-account.png)
 
-1. Select '+ Add' to add the Service Fabric application diagnostics storage account. This account has the 'WADServiceFabric\*EventTable' tables as shown in example above.
+1. Select '+ Add' to add the Service Fabric application diagnostics storage account. This account has the 'WADServiceFabric\*EventTable' tables as shown in example above and should **not** start with 'sflogs'. If unsure which account is being used, the storage account is configured in the WadCfg as shown above in property 'StorageAccount' and is also known as the 'applicationDiagnosticsStorageAccountName' parameter.
 
 1. For 'Data Type', select 'Service Fabric Events' from the drop-down menu. The 'Source' will populate automatically with 'WADServiceFabric\*EventTable'.
 
@@ -155,7 +150,6 @@ The 'scheduledTransferPeriod' is set to 5 minutes. The 'name' property is a XPat
 
 1. Select 'Save' to save the changes.
 
-
 ## Verification
 
 After configuration, verify Service Fabric events are being collected by Log Analytics by running 'search \*' in Log Analytics 'Logs' view.
@@ -165,7 +159,7 @@ After configuration, verify Service Fabric events are being collected by Log Ana
 
 1. Open Log Analytics workspace in Azure portal. [Log Analytics workspaces - Microsoft Azure](https://ms.portal.azure.com/#browse/Microsoft.OperationalInsights%2Fworkspaces)
 
-1. Select 'Logs', enter a generic query like 'search \*' and verify 'Time range'. There should be recent events and under 'LogManagement' there should be 'ServiceFabricOperationalEvent' and 'ServiceFabricReliableServiceEvent' tables.
+1. Select 'Logs', enter a generic query, for example 'search \*', and verify 'Time range'. There should be recent events and under 'LogManagement' there should be 'ServiceFabricOperationalEvent', 'ServiceFabricReliableServiceEvent', and 'Event' tables for Windows Events.
 
     ![Log Analytics Search](/media/how-to-configure-log-analytics-for-service-fabric-clusters/azure-portal-log-analytics-search.png)
 
@@ -192,9 +186,15 @@ G <--> D
 
 1. Verify the WAD extension is configured on the node types / scale sets. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric | Microsoft Learn](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information.
 
-1. Verify the WAD extension storage account name.
+1. Verify the WAD extension storage account name. This account name will **not** be prefixed with 'sflogs'.
 
-1. Verify connectivity from the Service Fabric cluster nodes to the storage account. [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to a node and open a PowerShell prompt.
+1. Verify connectivity from the Service Fabric cluster nodes to the storage account. [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to a node and open a PowerShell prompt. Run the following command to verify connectivity to the storage account:
+
+    ```powershell
+    Test-NetConnection -ComputerName <storage account name>.table.core.windows.net -Port 443
+    ```
+
+    If the connection fails, verify the storage account name is correct and the storage account firewall is configured to allow access from the Service Fabric cluster nodes. See [Configure Azure Storage firewalls and virtual networks | Microsoft Docs](https://docs.microsoft.com/azure/storage/common/storage-network-security) for more information.
 
 1. Verify the storage account is added to the Log Analytics workspace. See [Add Azure Storage data to a Log Analytics workspace | Microsoft Docs](https://docs.microsoft.com/azure/log-analytics/log-analytics-add-storage-account) for more information.
 
