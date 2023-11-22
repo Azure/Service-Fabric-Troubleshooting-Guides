@@ -184,6 +184,10 @@ C --> D
 G <--> D
 ```
 
+1. Verify data is being uploaded to the storage account tables. Download [Azure Storage Explorer](https://azure.microsoft.com/features/storage-explorer/) and sign in. Navigate to the storage account and enumerate 'Tables'. Verify the 'WADServiceFabric\*EventTable' tables are being populated.
+
+    ![Azure Storage Explorer](/media/how-to-configure-log-analytics-for-service-fabric-clusters/azure-storage-explorer.png)
+
 1. Verify the WAD extension is configured on the node types / scale sets. See [Event Aggregation with Windows Azure Diagnostics - Azure Service Fabric | Microsoft Learn](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-aggregation-wad) for more information.
 
 1. Verify the WAD extension storage account name. This account name will **not** be prefixed with 'sflogs'.
@@ -195,8 +199,6 @@ G <--> D
     ```
 
     If the connection fails, verify the storage account name is correct and the storage account firewall is configured to allow access from the Service Fabric cluster nodes. See [Configure Azure Storage firewalls and virtual networks | Microsoft Docs](https://docs.microsoft.com/azure/storage/common/storage-network-security) for more information.
-
-1. Verify the storage account is added to the Log Analytics workspace. See [Add Azure Storage data to a Log Analytics workspace | Microsoft Docs](https://docs.microsoft.com/azure/log-analytics/log-analytics-add-storage-account) for more information.
 
 1. Troubleshoot WAD extension. [Azure Diagnostics troubleshooting](https://learn.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-troubleshooting)
 
