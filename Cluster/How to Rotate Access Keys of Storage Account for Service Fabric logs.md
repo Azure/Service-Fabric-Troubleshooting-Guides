@@ -6,8 +6,12 @@ Best practice is to provision and manage Service Fabric clusters using ARM templ
 
 ## Modify using ARM Template
 
+### Validate current configuration
+
+Use the following steps to validate current configuration of Service Fabric resource and VMSS extension. Use [Microsoft.Compute virtualMachineScaleSets](https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachinescalesets) and [Microsoft.ServiceFabric clusters](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters) for reference.
+
 1. Verify current Virtual Machine Scale Set (VMSS) Service Fabric extension storage configuration.
-    * In the Service Fabric VM Extension section, verify there are two storage keys configured and 'StorageAccountKey2' refers to key2 of storage account. If you have configured only one key 'StorageAccountKey1', add a second key 'StorageAccountKey2'.
+    * In the Service Fabric VM Extension section, verify there are two storage keys configured and 'StorageAccountKey2' refers to key2 of storage account. If configured with only one key 'StorageAccountKey1', add a second key 'StorageAccountKey2'.
 
         ```json
         "virtualMachineProfile": {
@@ -26,55 +30,118 @@ Best practice is to provision and manage Service Fabric clusters using ARM templ
         ...
         ```
 
-        ![Storage Account Keys](../media/storage-account-access-keys.png)
+2. Verify current active Storage Account Key configuration for Service Fabric resource.
 
-1. Verify current Storage Account Key configuration for Service Fabric resource is using 'StorageAccountKey2'.
+    This can be verified by looking at 'protectedAccountKeyName' in 'diagnosticsStorageAccountConfig' section under Service Fabric resource of the ARM template. If configured with only 'protectedAccountKeyName' add 'protectedAccountName2' for inactive / fallback storage account key.
 
-    This can be verified by looking at 'protectedAccountKeyName' in 'diagnosticsStorageAccountConfig' section under Service Fabric resource of the ARM template. If not correct, modify 'protectedAccountKeyName' and set to 'StorageAccountKey2'.
-
-    * Set the value of 'protectedAccountKeyName' to 'StorageAccountKey2' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource, while keeping the rest unchanged.
-
-        ```diff
-        {
-            "apiVersion": "2020-03-01",
-            "type": "Microsoft.ServiceFabric/clusters",
-            "name": "[parameters('clusterName')]",
-            "location": "[parameters('clusterLocation')]",
-            "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName'))]"
+    ```json
+    {
+        "apiVersion": "2020-03-01",
+        "type": "Microsoft.ServiceFabric/clusters",
+        "name": "[parameters('clusterName')]",
+        "location": "[parameters('clusterLocation')]",
+        "dependsOn": [
+            "[concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName'))]"
+        ],
+        "properties": {
+            "addOnFeatures": [
+                "DnsService",
+                "RepairManager"
             ],
-            "properties": {
-                "addOnFeatures": [
-                    "DnsService",
-                    "RepairManager"
-                ],
-                "certificate": {
-                    "thumbprint": "[parameters('certificateThumbprint')]",
-                    "x509StoreName": "[parameters('certificateStoreValue')]"
-                },
-                "clientCertificateCommonNames": [],
-                "clientCertificateThumbprints": [],
-                "clusterState": "Default",
-                "diagnosticsStorageAccountConfig": {
-                    "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
-        -                "protectedAccountKeyName": "StorageAccountKey1", 
-        +                "protectedAccountKeyName": "StorageAccountKey2", 
-                    "queueEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.queue]",
-                    "storageAccountName": "[parameters('supportLogStorageAccountName')]",
-                    "tableEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.table]"
-                },
-        ...
-        ```
+            "certificate": {
+                "thumbprint": "[parameters('certificateThumbprint')]",
+                "x509StoreName": "[parameters('certificateStoreValue')]"
+            },
+            "clientCertificateCommonNames": [],
+            "clientCertificateThumbprints": [],
+            "clusterState": "Default",
+            "diagnosticsStorageAccountConfig": {
+                "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
+                "protectedAccountKeyName": "StorageAccountKey1", // <--- This is the current active storage account key
+                "protectedAccountKeyName2": "StorageAccountKey2", // <--- This is the current inactive / fallback storage account key
+                "queueEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.queue]",
+                "storageAccountName": "[parameters('supportLogStorageAccountName')]",
+                "tableEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.table]"
+            },
 
-1. Rotate Storage Account Key.
+    ```json
+    {
+        "apiVersion": "2020-03-01",
+        "type": "Microsoft.ServiceFabric/clusters",
+        "name": "[parameters('clusterName')]",
+        "location": "[parameters('clusterLocation')]",
+        "dependsOn": [
+            "[concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName'))]"
+        ],
+        "properties": {
+            "addOnFeatures": [
+                "DnsService",
+                "RepairManager"
+            ],
+            "certificate": {
+                "thumbprint": "[parameters('certificateThumbprint')]",
+                "x509StoreName": "[parameters('certificateStoreValue')]"
+            },
+            "clientCertificateCommonNames": [],
+            "clientCertificateThumbprints": [],
+            "clusterState": "Default",
+            "diagnosticsStorageAccountConfig": {
+                "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
+                "protectedAccountKeyName": "StorageAccountKey1", // <--- This is the current active storage account key
+                "protectedAccountKeyName2": "StorageAccountKey2", // <--- This is the current inactive / fallback storage account key
+                "queueEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.queue]",
+                "storageAccountName": "[parameters('supportLogStorageAccountName')]",
+                "tableEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.table]"
+            },
+    ...
+    ```
+
+### Setting inactive storage account key
+
+1. Rotate inactive Storage Account Key. In this guide, 'StorageAccountKey2'/'key2' of storage account is inactive.
+
+    Rotate 'StorageAccountKey2'/'key2' of storage account using by clicking 'Rotate key' in the storage account 'Access Keys'. See [Manually Rotate Access Keys](https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#manually-rotate-access-keys") for detailed steps.
+
+    ![Storage Account Keys](../media/storage-account-access-keys.png)
+
+1. After rotation, update Service Fabric resource to point to  new 'StorageAccountKey2'.
+
+    Use 'StorageAccountKey2' of storage account in 'diagnosticsStorageAccountConfig' section of  Service Fabric resource using ARM template deployment as following.
+
+    ```diff
+        "protectedSettings": {
+        "StorageAccountKey1": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('supportLogStorageAccountName')),'2015-05-01-preview').key1]",
+    -   "StorageAccountKey2": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('supportLogStorageAccountName')),'2015-05-01-preview').key2]"
+    +   "StorageAccountKey2": "<(new) StorageAccountKey2>"
+    },
+    ```
+
+1. To verify configuration, set the value of 'protectedAccountKeyName' to 'StorageAccountKey2' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource, while keeping the rest unchanged.
+
+    ```diff
+    "diagnosticsStorageAccountConfig": {
+        "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
+    -       "protectedAccountKeyName": "StorageAccountKey1",
+    +       "protectedAccountKeyName": "StorageAccountKey2",
+    -       "protectedAccountKeyName2": "StorageAccountKey2",
+    +       "protectedAccountKeyName2": "StorageAccountKey1",
+    ```
+
+1. Deploy the ARM template to update the Service Fabric resource.
+
+1. After template updates have been deployed, verify successful configuration by reviewing cluster state in Service Fabric Explorer. The cluster nodes should not have any new warnings or errors related to the storage account. Additionally, selecting the 'Events' tab for the cluster in SFX should show a new event with the following message: "Storage account key rotation completed successfully".
+
+### Setting active storage account key
+
+1. Rotate active Storage Account Key. In this guide, 'StorageAccountKey1'/'key1' of storage account is active.
 
     Rotate 'StorageAccountKey1'/'key1' of storage account using by clicking 'Rotate key' in the storage account 'Access Keys'. See [Manually Rotate Access Keys](https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#manually-rotate-access-keys") for detailed steps.
+
+    ![Storage Account Keys](../media/storage-account-access-keys.png)
 
 1. After rotation, update Service Fabric resource to point to  new 'StorageAccountKey1'.
 
     Use 'StorageAccountKey1' of storage account in 'diagnosticsStorageAccountConfig' section of  Service Fabric resource using ARM template deployment as following.
-
-    * In the Service Fabric VM Extension section, make sure you have configured two storage keys and 'StorageAccountKey1' refers to StorageAccountKey1 of storage account.
 
     ```diff
         "protectedSettings": {
@@ -84,41 +151,20 @@ Best practice is to provision and manage Service Fabric clusters using ARM templ
     },
     ```
 
-    * Set the value of 'protectedAccountKeyName' to 'StorageAccountKey1' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource, while keeping the rest unchanged.
+1. To verify configuration, set the value of 'protectedAccountKeyName' to 'StorageAccountKey1' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource, while keeping the rest unchanged.
 
     ```diff
     "diagnosticsStorageAccountConfig": {
         "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
-    -       "protectedAccountKeyName": "StorageAccountKey2", 
-    +       "protectedAccountKeyName": "StorageAccountKey1", 
+    -       "protectedAccountKeyName": "StorageAccountKey2",
+    +       "protectedAccountKeyName": "StorageAccountKey1",
+    -       "protectedAccountKeyName2": "StorageAccountKey2",
+    +       "protectedAccountKeyName2": "StorageAccountKey1",
     ```
 
 1. Deploy the ARM template to update the Service Fabric resource.
 
-1. Repeat steps 1-4 for 'StorageAccountKey2'/'key2' of storage account.
-
-    * In the Service Fabric VM Extension section, make sure you have configured two storage keys and 'StorageAccountKey2' refers to StorageAccountKey2 of storage account.
-
-    ```diff
-        "protectedSettings": {
-        "StorageAccountKey1": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('supportLogStorageAccountName')),'2015-05-01-preview').key1]",
-    -    "StorageAccountKey2": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('supportLogStorageAccountName')),'2015-05-01-preview').key2]"
-    +    "StorageAccountKey2": "<(new) StorageAccountKey2>"
-    },
-    ```
-
-    * Set the value of 'protectedAccountKeyName' to 'StorageAccountKey2' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource, while keeping the rest unchanged.
-
-    ```diff
-    "diagnosticsStorageAccountConfig": {
-        "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
-    -       "protectedAccountKeyName": "StorageAccountKey1", 
-    +       "protectedAccountKeyName": "StorageAccountKey2", 
-    ```
-
-1. Deploy the ARM template to update the Service Fabric resource.
-
-1. Verify successful configuration by reviewing cluster state in Service Fabric Explorer. The cluster nodes should not have any warnings or errors related to the storage account.
+1. After template updates have been deployed, verify successful configuration by reviewing cluster state in Service Fabric Explorer. The cluster nodes should not have any new warnings or errors related to the storage account.
 
 ## Modify using resources.azure.com
 
