@@ -4,13 +4,28 @@ This troubleshooting guide describes the steps to rotate Storage Account Keys fo
 
 Best practice is to provision and manage Service Fabric clusters using ARM templates. This guide describes the steps to rotate Storage Account Keys using ARM templates. If you are not using ARM templates to provision and manage Service Fabric clusters, you can use [resources.azure.com](https://resources.azure.com) to modify the Service Fabric resource to rotate Storage Account Keys.
 
+## Process
+
+1. Verify cluster state before starting process.
+1. Verify cluster configuration for storage account keys.
+    1. Determine current active storage account key.
+1. Using ARM Template or https://resources.azure.com, modify each node type / scale set.
+    1. Setting inactive storage account key.
+    1. Setting active storage account key.
+1. Verify cluster state after completing process.
+1. Troubleshooting.
+
+## Verify cluster state before starting process
+
+Verify current state of 'EventStore' system service and overall cluster in Service Fabric Explorer before starting process. The cluster should be in a healthy state with no errors or warnings before proceeding with storage account key rotation excluding errors or warnings for expired storage keys. If the cluster is not in a healthy state, resolve the errors or warnings before proceeding with storage account key rotation as this may block the cluster from processing the configuration change.
+
 ## Modify using ARM Template
 
 ### Validate current configuration
 
-Use the following steps to validate current configuration of Service Fabric resource and VMSS extensions. Use [Microsoft.Compute virtualMachineScaleSets](https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachinescalesets) and [Microsoft.ServiceFabric clusters](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters) for reference.
+Use the following steps to validate current configuration of Service Fabric resource and VMSS extensions. See [Microsoft.Compute virtualMachineScaleSets](https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachinescalesets) and [Microsoft.ServiceFabric clusters](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters) for reference.
 
-1. For each Nodetype / Virtual Machine Scale Set (VMSS), verify current Service Fabric extension storage configuration.
+1. For each node type / Virtual Machine Scale Set (VMSS), verify current Service Fabric extension storage configuration.
     * In the Service Fabric VM Extension section, verify there are two storage keys configured and 'StorageAccountKey2' refers to key2 of storage account. If configured with only one key 'StorageAccountKey1', add a second key 'StorageAccountKey2'.
 
         ```json
@@ -34,8 +49,8 @@ Use the following steps to validate current configuration of Service Fabric reso
 
     This can be verified by looking at 'protectedAccountKeyName' in 'diagnosticsStorageAccountConfig' section under Service Fabric resource of the ARM template. If configured with only 'protectedAccountKeyName' add 'protectedAccountName2' for inactive / fallback storage account key.
 
-    > [!NOTE]
-    > Modifying the Service Fabric resource requires a full cluster Upgrade Domain (UD) walk.
+    <!-- github md doesnt currently support indented block quotes for icons. just highlight instead -->
+    **NOTE: Modifying the Service Fabric resource requires a full cluster Upgrade Domain (UD) walk.**
 
     ```json
     {
@@ -70,7 +85,7 @@ Use the following steps to validate current configuration of Service Fabric reso
 
 ### Setting inactive storage account key
 
-1. Rotate inactive Storage Account Key. In this guide, 'StorageAccountKey2'/'key2' of storage account is inactive.
+1. For each node type, rotate inactive Storage Account Key. In this guide, 'StorageAccountKey2'/'key2' of storage account is inactive.
 
     Rotate 'StorageAccountKey2'/'key2' of storage account using by clicking 'Rotate key' in the storage account 'Access Keys'. See [Manually Rotate Access Keys](https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#manually-rotate-access-keys") for detailed steps.
 
@@ -121,11 +136,9 @@ Use the following steps to validate current configuration of Service Fabric reso
 
 ### Setting active storage account key
 
-1. Rotate active Storage Account Key. In this guide, 'StorageAccountKey1'/'key1' of storage account is active.
+1. For each node type, rotate active Storage Account Key. In this guide, 'StorageAccountKey1'/'key1' of storage account is active.
 
     Rotate 'StorageAccountKey1'/'key1' of storage account using by clicking 'Rotate key' in the storage account 'Access Keys'. See [Manually Rotate Access Keys](https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#manually-rotate-access-keys") for detailed steps.
-
-    ![Storage Account Keys](../media/storage-account-access-keys.png)
 
 1. After rotation, choose one of these actions to update Service Fabric resource to point to  new 'StorageAccountKey1'.
 
@@ -155,8 +168,8 @@ Use the following steps to validate current configuration of Service Fabric reso
         "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
     -       "protectedAccountKeyName": "StorageAccountKey2",
     +       "protectedAccountKeyName": "StorageAccountKey1",
-    -       "protectedAccountKeyName2": "StorageAccountKey2",
-    +       "protectedAccountKeyName2": "StorageAccountKey1",
+    -       "protectedAccountKeyName2": "StorageAccountKey1",
+    +       "protectedAccountKeyName2": "StorageAccountKey2",
     ```
 
 1. Deploy the ARM template to update the Service Fabric resource.
@@ -172,7 +185,56 @@ Use the following steps to validate current configuration of Service Fabric reso
 
 ## Modify using resources.azure.com
 
-1. In <https://resources.azure.com>, navigate to the virtual machine scale set configured for the cluster:
+### Validate current configuration
+
+Use the following steps to validate current active storage account key in the Service Fabric resource configuration. See [Microsoft.ServiceFabric clusters](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters) for reference.
+
+1. In <https://resources.azure.com>, navigate to the service fabric cluster:
+
+    ```text
+        subscriptions
+        └───%subscription name%
+            └───resourceGroups
+                └───%resource group name%
+                    └───providers
+                        └───Microsoft.ServiceFabric
+                            └───clusters
+                                └───%cluster name%
+    ```
+
+    ![Azure Resource Explorer](../media/resourcemgr10.png)
+
+1. In 'diagnosticsStorageAccountConfig' section, verify there are two protectedAccountKeyNames configured. The active storage account key is the value for 'protectedAccountKeyName'. The value in 'protectedAccountKeyName2' is the inactive or fallback key. If configured with only one key 'protectedAccountKeyName', add a second key 'protectedAccountKeyName2' with the fallback storage account key name, which is by default 'StorageAccountKey2'.
+
+    ```json
+    "diagnosticsStorageAccountConfig": {
+        "blobEndpoint": "https://sflogsstorageaccount.blob.core.windows.net/",
+        "protectedAccountKeyName": "StorageAccountKey1", // <-- current active storage account key
+        "protectedAccountKeyName2": "StorageAccountKey2", // <-- current inactive / fallback storage account key
+        "queueEndpoint": "https://sflogsstorageaccount.queue.core.windows.net/",
+        "storageAccountName": "sflogsstorageaccount", // <-- storage account name
+        "tableEndpoint": "https://sflogsstorageaccount.table.core.windows.net/"
+    },
+    ```
+
+1. At top of page, click "Read/Write" permission and "Edit" to edit configuration.
+
+    ![Read/Write](../media/resourcemgr3.png)  
+    ![Edit](../media/resourcemgr2.png)
+
+1. After finished editing, click PUT at the top of the page.
+
+    ![Click PUT](../media/resourcemgr7.png)
+
+1. **Wait** for the Service Fabric resource 'Updating' 'provisioningState' for the storage keys to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery resource.
+
+    ![GET](../media/resourcemgr2.png)
+
+    ![resources.azure.com sf resource provisioningstate succeeded](../media/resourcemgr6.png)
+
+### Setting inactive storage account key
+
+1. For each node type, in <https://resources.azure.com>, navigate to the virtual machine scale set configured for the cluster:
 
     ```text
         subscriptions
@@ -187,10 +249,7 @@ Use the following steps to validate current configuration of Service Fabric reso
 
     ![Azure Resource Explorer](../media/resourcemgr1.png)
 
-1. Click "Read/Write" permission and "Edit" to edit configuration.
-
-    ![Read/Write](../media/resourcemgr3.png)  
-    ![Edit](../media/resourcemgr2.png)
+1. At top of page, click "Read/Write" permission and "Edit" to edit configuration.
 
 1. Navigate to '/properties/virtualMachineProfile/extensionProfile/extensions' and add 'protectedSettings' section. Replace '\<StorageAccountKey1>' and '\<StorageAccountKey2>' with the keys of the storage account.
 
@@ -204,7 +263,47 @@ Use the following steps to validate current configuration of Service Fabric reso
                         "type": "ServiceFabricNode",
                         "autoUpgradeMinorVersion": true,
     +                    "protectedSettings": {
-    +                        "StorageAccountKey1": "<StorageAccountKey1>",
+    +                        "StorageAccountKey1": "<StorageAccountKey1>"
+    +                    },
+                        "publisher": "Microsoft.Azure.ServiceFabric",
+    ...
+    ```
+
+1. At top of page, click PUT.
+
+1. **Wait** for the virtual machine scale set 'Updating' 'provisioningState' for the storage keys to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
+
+    ![resources.azure.com vmss provisioningstate succeeded](../media/resourcemgr11.png)
+
+### Setting active storage account key
+
+1. For each node type, in <https://resources.azure.com>, navigate to the virtual machine scale set configured for the cluster:
+
+    ```text
+        subscriptions
+        └───%subscription name%
+            └───resourceGroups
+                └───%resource group name%
+                    └───providers
+                        └───Microsoft.Compute
+                            └───virtualMachineScaleSets
+                                └───%virtual machine scale set name%
+    ```
+
+1. Click "Read/Write" permission and "Edit" to edit configuration.
+
+1. Navigate to '/properties/virtualMachineProfile/extensionProfile/extensions' and add 'protectedSettings' section. Replace '\<StorageAccountKey1>' and '\<StorageAccountKey2>' with the keys of the storage account.
+
+    ```diff
+    "virtualMachineProfile": {
+        "extensionProfile": {
+            "extensions": [
+                {
+                    "name": "[concat(parameters('vmNodeType0Name'),'_ServiceFabricNode')]",
+                    "properties": {
+                        "type": "ServiceFabricNode",
+                        "autoUpgradeMinorVersion": true,
+    +                    "protectedSettings": {
     +                        "StorageAccountKey2": "<StorageAccountKey2>"
     +                    },
                         "publisher": "Microsoft.Azure.ServiceFabric",
@@ -213,15 +312,7 @@ Use the following steps to validate current configuration of Service Fabric reso
 
 1. At top of page, click PUT.
 
-    ![Click PUT](../media/resourcemgr7.png)
-
 1. **Wait** for the virtual machine scale set 'Updating' 'provisioningState' for the storage keys to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
-
-    ![GET](../media/resourcemgr2.png)
-
-    ![resources.azure.com vmss provisioningstate succeeded](../media/resourcemgr11.png)
-
-1. Repeat steps 1-4 for 'StorageAccountKey2'/'key2' of storage account.
 
 ## Troubleshooting
 
@@ -229,7 +320,7 @@ Use the following steps to validate current configuration of Service Fabric reso
 
     ![EventStoreService](../media/eventstoreservice.png)
 
-    If the cluster is not in a healthy state, the cluster system service 'fabric:/System/EventStoreService' will be in an error state. The error message will indicate the storage account key that is not valid.
+    If the cluster 'fabric:/System/EventStoreService' is in an error or warning state, the error message should indicate whether the storage account key configured is valid.
 
     ![EventStoreService Error](../media/eventstoreservice-error.png)
 
