@@ -1,6 +1,6 @@
 # How to Rotate Access Keys of Storage Account for Service Fabric logs
 
-This troubleshooting guide describes the steps to rotate Storage Account Keys for the storage account used for Service Fabric Logs. This guide is applicable for Service Fabric clusters only. Service Fabric Managed clusters do not use storage account keys for Service Fabric logs.
+This troubleshooting guide describes the steps to rotate Storage Account Keys for the storage account used for Service Fabric diagnostic logs. This guide is applicable for Service Fabric clusters only. Service Fabric Managed clusters do not use storage account keys for connectivity to the storage account.
 
 Best practice is to provision and manage Service Fabric clusters using ARM templates. This guide describes the steps to rotate Storage Account Keys using ARM templates. If you are not using ARM templates to provision and manage Service Fabric clusters, you can use [resources.azure.com](https://resources.azure.com) to modify the Service Fabric resource to rotate Storage Account Keys.
 
@@ -8,8 +8,9 @@ Best practice is to provision and manage Service Fabric clusters using ARM templ
 
 1. Verify cluster state before starting process.
 1. Verify cluster configuration for storage account keys.
-    1. Determine current active storage account key.
-1. Using ARM Template or https://resources.azure.com, modify each node type / scale set.
+    1. Determine current active storage account key for active/inactive configuration or if using fallback configuration.
+    1. Optionally add inactive storage account key if not configured to enable fallback configuration.
+1. Using ARM Template or https://resources.azure.com, modify each node type / Virtual Machine Scale Set (VMSS) to rotate storage account key.
     1. Setting inactive storage account key.
     1. Setting active storage account key.
 1. Verify cluster state after completing process.
@@ -17,7 +18,9 @@ Best practice is to provision and manage Service Fabric clusters using ARM templ
 
 ## Verify cluster state before starting process
 
-Verify current state of 'EventStore' system service and overall cluster in Service Fabric Explorer before starting process. The cluster should be in a healthy state with no errors or warnings before proceeding with storage account key rotation excluding errors or warnings for expired storage keys. If the cluster is not in a healthy state, resolve the errors or warnings before proceeding with storage account key rotation as this may block the cluster from processing the configuration change.
+Verify current state of 'EventStoreService' system service and overall cluster health in Service Fabric Explorer (SFX) before starting this key rotation process. The cluster should be in a healthy state with no errors or warnings before proceeding with storage account key rotation excluding errors or warnings for expired storage keys. If the cluster is not in a healthy state, resolve the errors or warnings before proceeding with storage account key rotation as this may block the cluster from processing the configuration change.
+
+![EventStoreService good](../media/how-to-rotate-access-keys-of-storage-account-for-service-fabric-logs/sfx-eventstore-good.png)
 
 ## Modify using ARM Template
 
@@ -45,9 +48,12 @@ Use the following steps to validate current configuration of Service Fabric reso
         ...
         ```
 
-2. Verify current active Storage Account Key configuration for Service Fabric resource.
+2. Verify current Storage Account Key configuration for Service Fabric resource.
 
-    This can be verified by looking at 'protectedAccountKeyName' in 'diagnosticsStorageAccountConfig' section under Service Fabric resource of the ARM template. If configured with only 'protectedAccountKeyName' add 'protectedAccountName2' for inactive / fallback storage account key.
+    This can be verified by looking at 'protectedAccountKeyName' in 'diagnosticsStorageAccountConfig' section under Service Fabric resource of the ARM template. If configured with only 'protectedAccountKeyName' this ia an active / inactive configuration. If 'protectedAccountName2' is configured, this is  a fallback configuration.
+
+    * Active / Inactive design works by modifying 'protectedAccountKeyName' to point to the active storage account key. This is the default configuration for Service Fabric clusters being built from Azure portal. This configuration will however cause EventStore service to error and fail if the storage account key configured is expired.
+    * Fallback design works by adding 'protectedAccountKeyName2' to point to the 'StorageAccountKey2' to point to the fallback storage account key.
 
     <!-- github md doesnt currently support indented block quotes for icons. just highlight instead -->
     **NOTE: Modifying the Service Fabric resource requires a full cluster Upgrade Domain (UD) walk.**
@@ -76,7 +82,7 @@ Use the following steps to validate current configuration of Service Fabric reso
             "diagnosticsStorageAccountConfig": {
                 "blobEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.blob]",
                 "protectedAccountKeyName": "StorageAccountKey1", // <--- current active storage account key
-                "protectedAccountKeyName2": "StorageAccountKey2", // <--- current inactive / fallback storage account key
+                "protectedAccountKeyName2": "StorageAccountKey2", // <--- current fallback storage account key
                 "queueEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.queue]",
                 "storageAccountName": "[parameters('supportLogStorageAccountName')]",
                 "tableEndpoint": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('supportLogStorageAccountName')), variables('storageApiVersion')).primaryEndpoints.table]"
@@ -312,17 +318,13 @@ Use the following steps to validate current active storage account key in the Se
 
 1. At top of page, click PUT.
 
-1. **Wait** for the virtual machine scale set 'Updating' 'provisioningState' for the storage keys to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
+1. **Wait** for the virtual machine scale set 'Updating' 'provisioningState' for the storage keys to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to re-query scale set.
 
 ## Troubleshooting
 
-1. If the cluster is not in a healthy state after the storage account key rotation, check the status of cluster system service 'fabric:/System/EventStoreService' in Service Fabric Explorer.
+1. If the cluster is not in a healthy state after the storage account key rotation, check the status of cluster system service 'fabric:/System/EventStoreService' in Service Fabric Explorer. If the cluster 'fabric:/System/EventStoreService' is in an error or warning state, the error message should indicate whether the storage account key configured is valid.
 
-    ![EventStoreService](../media/eventstoreservice.png)
-
-    If the cluster 'fabric:/System/EventStoreService' is in an error or warning state, the error message should indicate whether the storage account key configured is valid.
-
-    ![EventStoreService Error](../media/eventstoreservice-error.png)
+    ![EventStoreService bad](../media/how-to-rotate-access-keys-of-storage-account-for-service-fabric-logs/sfx-eventstore-bad.png)
 
 1. Check the cluster system service 'fabric:/System/EventStoreService' in Service Fabric Explorer for the following error message:
 
@@ -377,3 +379,8 @@ Use the following steps to validate current active storage account key in the Se
     ```
 
     ![Event ID 1004](../media/eventid1004.png)
+
+
+## Reference 
+
+https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-eventstore
