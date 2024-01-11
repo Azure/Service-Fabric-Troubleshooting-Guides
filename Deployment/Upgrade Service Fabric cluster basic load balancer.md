@@ -41,7 +41,7 @@ When you have a combination between internal and external Load Balancer you shou
 
 
 ### Internal-only migration
-For internal-only migration you need to consider an outbound connectivity solution. We recommend using a combination between internal and external load balancers as mentioned above, or using a NAT gateway for outbound connectivity, which does not require exposing a public IP address. This document specifies the process you should take when adding a NAT gateway. You can follow [these steps](https://learn.microsoft.com/en-us/azure/nat-gateway/tutorial-nat-gateway-load-balancer-internal-portal) for setting up the NAT gateway with a standard ILB. 
+For internal-only migration you need to consider an outbound connectivity solution. We recommend using a combination between internal and external load balancers as mentioned above, or using a NAT gateway for outbound connectivity. This document specifies the process you should take when adding a NAT gateway. You can follow [these steps](https://learn.microsoft.com/en-us/azure/nat-gateway/tutorial-nat-gateway-load-balancer-internal-portal) for setting up the NAT gateway with a standard ILB. 
 
 You need to have a public load balancer for the migration of the workload to the new node type. If not, the new nodes will not be able to get added to the cluster since it requires outbound connectivity, and the NAT gateway cannot be added to the subnet if there are any basic-sku resources. Take into account that this means you will have a public IP exposed temporarily during the migration. After this has been completed, change the load balancer from public to private following these steps:
 1. Go to resources.azure.com, navigate to your load balancer and select Edit at the top of the page. 
