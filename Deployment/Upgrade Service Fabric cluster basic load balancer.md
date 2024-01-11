@@ -13,15 +13,15 @@ To upgrade basic load balancers in a Service Fabric cluster with no downtime req
 
 ### Things to consider:
 - Standard LB restricts traffic by default so you need to allow traffic through NSG. If you do not have an NSG make sure you add one to your subnet before the migration with the necessary rules. Read more [here](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-best-practices-networking#network-security-rules). 
-- Standard LB requires a standard sku public IP address. Take into account that your public IP address will need to get upgraded as well. With the manual process with no downtime, the public IP address will change, since we need to create a new resource. 
-- Read more about Basic to Standard LB comparison [here](https://learn.microsoft.com/en-us/azure/load-balancer/skus#skus). 
-- Standard Internal Load Balancers don't have outbound connectivity by design. If you are using an internal-only configuration with basic internal LB, make sure you plan ahead to have outbound configuration when you migrate to standard ILB (i.e. using internal + public LB or NAT gateway). Read more about outbound connectivity [here](https://learn.microsoft.com/en-us/azure/load-balancer/outbound-rules#outbound-rules-scenarios). 
-- If you use the Add-AzServiceFabricNodeType the new LB will always get created with Basic Sku. You would need to use the Start-AzBasicLoadBalancerUpgrade module to upgrade the new LB to standard and make the necessary configurations to your new Load Balancer as stated in this guide.  
+- Standard LB requires a Standard Sku public IP address. Take into account that your public IP address will need to get upgraded as well. With the manual process with no downtime, the public IP address will change, since we need to create a new resource. 
+- Read more about Basic to standard LB comparison [here](https://learn.microsoft.com/en-us/azure/load-balancer/skus#skus). 
+- Standard Internal Load Balancers don't have outbound connectivity by design. If you are using an internal-only configuration, make sure you plan ahead to have outbound configuration when you migrate to standard ILB (i.e. using internal + public LB or NAT gateway). Read more about outbound connectivity [here](https://learn.microsoft.com/en-us/azure/load-balancer/outbound-rules#outbound-rules-scenarios). 
+- If you use the Add-AzServiceFabricNodeType PowerShell module the new LB will always get created with basic Sku. You would need to use the Start-AzBasicLoadBalancerUpgrade module to upgrade the new LB to standard and make the necessary configurations to your new load balancer as stated in this guide.  
 - Changing the DNS name to the new Load Balancer will cause a few seconds of connection loss to SFX.
 
 ```mermaid
 graph TD
-   A[LB migration path] -->B(Prepare you environment for migration<br/> as stated in the Scale-up documentation)-->C(Create the new node type <br/> with a public standard sku LB <br/> and public IP address)-->P{Choose the scenario for<br/> your desired LB}
+   A[LB migration path] -->B(Prepare you environment for migration<br/> as stated in the scale-up documentation)-->C(Create the new node type <br/> with a standard public LB <br/> and public IP address)-->P{Choose the scenario for<br/> your desired LB}
 P-->|1|D(public LB)-->E(Prepare new LB with<br/> LB rules and probes)-->F(Migrate workloads to new node type)
 P-->|2|G(public + internal LBs)-->H(Create new standard ILB<br/> and attach same backend pool)
 P-->|3|J(internal-only LB)-->K(Prepare LB rules and migrate <br/>workloads to new node type)-->L(Remove old LB, public IP and node type)--> M(Set outbound connectivity option<br/> e.i. NAT gateway)--> N(Change LB to private)
@@ -41,9 +41,9 @@ When you have a combination between internal and external Load Balancer you shou
 
 
 ### Internal-only migration
-For internal-only migration you need to consider an outbound connectivity solution. We recommend using a combination between internal and external load balancers as mentioned above, or using a NAT gateway for outbound connectivity, which does not require exposing a public IP address. This document specifies the process you should take when adding a NAT gateway. You can follow [this](https://learn.microsoft.com/en-us/azure/nat-gateway/tutorial-nat-gateway-load-balancer-internal-portal) documentation for setting up the NAT gateway with a standard ILB. 
+For internal-only migration you need to consider an outbound connectivity solution. We recommend using a combination between internal and external load balancers as mentioned above, or using a NAT gateway for outbound connectivity, which does not require exposing a public IP address. This document specifies the process you should take when adding a NAT gateway. You can follow [these steps](https://learn.microsoft.com/en-us/azure/nat-gateway/tutorial-nat-gateway-load-balancer-internal-portal) for setting up the NAT gateway with a standard ILB. 
 
-We need to have a public load balancer for the migration of the workload to the new node type. If not, the new nodes will not be able to get added to the cluster since it requires outbound connectivity, and the NAT gateway cannot be added to the subnet with any basic sku resources. Take into account that this means you will have a public ip exposed temporarily during the migration. After this has been completed, change the load balancer from public to private follow these steps:
+You need to have a public load balancer for the migration of the workload to the new node type. If not, the new nodes will not be able to get added to the cluster since it requires outbound connectivity, and the NAT gateway cannot be added to the subnet if there are any basic-sku resources. Take into account that this means you will have a public IP exposed temporarily during the migration. After this has been completed, change the load balancer from public to private following these steps:
 1. Go to resources.azure.com, navigate to your load balancer and select Edit at the top of the page. 
 2. Remove the publicIPAddress parameter in the frontendIpConfiguration section and replace it with the following:
 ```
@@ -52,14 +52,14 @@ We need to have a public load balancer for the migration of the workload to the 
             "id": "<subnet resource id>"
           },
 ```
-Private IP 10.0.0.250 was used as an example but you can set this value as needed. make sure the privateIPAllocationMethod is set to Static. 
+Private IP 10.0.0.250 was used as an example but you can set this value as needed. Make sure the privateIPAllocationMethod is set to Static. 
 3. Click PUT at the top of the page and wait for the update to complete. 
-After this you can remove the public ip resource if it's not being used. 
+After this you can remove the public IP resource if it's not being used. 
 
 
 
 ### Additional considerations
-- This documentation takes into account the scenarios specified here: https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-patterns-networking. If you have a different configuration for your load balancers or if you encounter any issue when following this process, please engage Service Fabric support team for further assistance. 
+- This documentation takes into account the scenarios specified [in this document](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-patterns-networking). If you have a different configuration for your load balancers or if you encounter any issue when following this process, please engage Service Fabric support team for further assistance. 
 
 ## Automated Upgrade Process with down time
 
