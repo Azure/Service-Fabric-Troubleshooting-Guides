@@ -1,5 +1,10 @@
 # Upgrade Service Fabric cluster from Basic load balancer to Standard load balancer SKU
 
+## Abstract 
+Azure Basic Load Balancers will be retired on September 30th, 2025. To avoid any disruptions you need to migrate to Standard Load Balancer before the deprecation date. Starting March 31st 2025, you won't be able to create any new basic sku Load Balancers. Read more in the [official announcement](https://azure.microsoft.com/en-us/updates/azure-basic-load-balancer-will-be-retired-on-30-september-2025-upgrade-to-standard-load-balancer/). If you have an Azure Basic Load Balancer associated with a Service Fabric cluster, please follow this guide to migrate to keep your cluster safe. Plan accordingly the migration path you will take based on your current load balancer configuration, number of node types, and workloads in your cluster. 
+
+To check the sku of your existing load balancers, please navigate to the Load Balancer resource in the Azure Portal. In the overview page, you will find the sku size. 
+
 ## Overview
 
 This documents the options available to upgrade a basic load balancer sku to a standard ip and load balancer sku for a Service Fabric cluster. Choose one of the options below based on availability requirements.
