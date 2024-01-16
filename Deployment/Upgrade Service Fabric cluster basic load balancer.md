@@ -1,13 +1,14 @@
 # Upgrade Service Fabric cluster from Basic load balancer to Standard load balancer SKU
 
-## Abstract 
-Azure Basic Load Balancers will be retired on September 30th, 2025. To avoid any disruptions you need to migrate to Standard Load Balancer before the deprecation date. Starting March 31st 2025, you won't be able to create any new basic sku Load Balancers. Read more in the [official announcement](https://azure.microsoft.com/en-us/updates/azure-basic-load-balancer-will-be-retired-on-30-september-2025-upgrade-to-standard-load-balancer/). If you have an Azure Basic Load Balancer associated with a Service Fabric cluster, please follow this guide to migrate to keep your cluster safe. Plan accordingly the migration path you will take based on your current load balancer configuration, number of node types, and workloads in your cluster. 
+## Abstract
 
-To check the sku of your existing load balancers, please navigate to the Load Balancer resource in the Azure Portal. In the overview page, you will find the sku size. 
+Azure Basic Load Balancers will be retired on September 30th, 2025. To avoid any disruptions you need to migrate to Standard Load Balancer before the deprecation date. Starting March 31st 2025, you won't be able to create any new basic SKU Load Balancers. Read more in the [official announcement](https://azure.microsoft.com/updates/azure-basic-load-balancer-will-be-retired-on-30-september-2025-upgrade-to-standard-load-balancer/). If you have an Azure Basic Load Balancer associated with a Service Fabric cluster, please follow this guide to migrate to keep your cluster safe. Plan accordingly the migration path you will take based on your current load balancer configuration, number of node types, and workloads in your cluster.
+
+To check the SKU of your existing load balancers, please navigate to the [Load Balancers](https://portal.azure.com/#view/Microsoft_Azure_Network/LoadBalancingHubMenuBlade/~/loadBalancers) resource in the Azure Portal. In the overview page, you will find the SKU size.
 
 ## Overview
 
-This documents the options available to upgrade a basic load balancer sku to a standard ip and load balancer sku for a Service Fabric cluster. Choose one of the options below based on availability requirements.
+This documents the options available to upgrade a basic load balancer SKU to a standard ip and load balancer SKU for a Service Fabric cluster. Choose one of the options below based on availability requirements.
 
 > [!NOTE]
 > This does not apply to [Service Fabric managed clusters](https://learn.microsoft.com/azure/service-fabric/overview-managed-cluster). Service Fabric managed clusters with 'Basic' SKU are provisioned with a 'Basic' load balancer but cannot be upgraded and must be redeployed . Service Fabric managed clusters with 'Standard' SKU have are provisioned with a 'Standard' load balancer and are not impacted.
@@ -16,12 +17,13 @@ This documents the options available to upgrade a basic load balancer sku to a s
 
 To upgrade basic load balancers in a Service Fabric cluster with no downtime requires the creation of a new scale set (node type), standard load balancer, and standard IP address.  After the new node type is added to the cluster, you need to configure your load balancer depending on your specific scenario as shown in the decision diagram below. Lastly, applications/services are migrated to new node type, old node type with associated basic load balancer and IP address are deactivated and removed. This process takes multiple hours to complete and is documented in [Scale up a Service Fabric cluster primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-primary-node-type) and [Scale up a Service Fabric cluster non-primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-non-primary-node-type).
 
-### Things to consider:
-- Standard LB restricts traffic by default so you need to allow traffic through NSG. If you do not have an NSG make sure you add one to your subnet before the migration with the necessary rules. Read more [here](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-best-practices-networking#network-security-rules). 
-- Standard LB requires a Standard Sku public IP address. Take into account that your public IP address will need to get upgraded as well. With the manual process with no downtime, the public IP address will change, since we need to create a new resource. 
-- Read more about Basic to standard LB comparison [here](https://learn.microsoft.com/en-us/azure/load-balancer/skus#skus). 
-- Standard Internal Load Balancers don't have outbound connectivity by design. If you are using an internal-only configuration, make sure you plan ahead to have outbound configuration when you migrate to standard ILB (i.e. using internal + public LB or NAT gateway). Read more about outbound connectivity [here](https://learn.microsoft.com/en-us/azure/load-balancer/outbound-rules#outbound-rules-scenarios). 
-- If you use the Add-AzServiceFabricNodeType PowerShell module the new LB will always get created with basic Sku. You would need to use the Start-AzBasicLoadBalancerUpgrade module to upgrade the new LB to standard and make the necessary configurations to your new load balancer as stated in this guide.  
+### Things to consider
+
+- Standard Load Balancers (LB) restricts traffic by default so you need to allow traffic through NSG. If you do not have an NSG make sure you add one to your subnet before the migration with the necessary rules. Read more [here](https://learn.microsoft.com/azure/service-fabric/service-fabric-best-practices-networking#network-security-rules).
+- Standard LB requires a Standard SKU public IP address. Take into account that your public IP address will need to get upgraded as well. With the manual process with no downtime, the public IP address will change, since we need to create a new resource.
+- Read more about Basic to standard LB comparison [here](https://learn.microsoft.com/azure/load-balancer/skus#skus).
+- Standard Internal Load Balancers (ILB) don't have outbound connectivity by design. If you are using an internal-only configuration, make sure you plan ahead to have outbound configuration when you migrate to standard ILB (i.e. using internal + public LB or NAT gateway). Read more about outbound connectivity [here](https://learn.microsoft.com/azure/load-balancer/outbound-rules#outbound-rules-scenarios).
+- If you use the Add-AzServiceFabricNodeType PowerShell module the new LB will always get created with basic SKU. You would need to use the Start-AzBasicLoadBalancerUpgrade module to upgrade the new LB to standard and make the necessary configurations to your new load balancer as stated in this guide.
 - Changing the DNS name to the new Load Balancer will cause a few seconds of connection loss to SFX.
 
 ```mermaid
@@ -39,43 +41,48 @@ click G "#internal-and-external-migration"
 ```
 
 ### Basic migration
-When you have a basic Load Balancer you only need to make sure that you have the necessary rules and probes set up in your new Load Balancer before migrating. Make sure that you migrate any additional network configuration to the new IP address as needed. 
+
+When you have a basic Load Balancer you only need to make sure that you have the necessary rules and probes set up in your new Load Balancer before migrating. Make sure that you migrate any additional network configuration to the new IP address as needed.
 
 ### Internal and external migration
-When you have a combination between internal and external Load Balancer you should use the public LB for the management endpoint and outbound connectivity of the cluster. The private LB should be used for any internal traffic. You can read more about this scenario [here](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-patterns-networking#internal-and-external-load-balancer). 
 
+When you have a combination between internal and external Load Balancer you should use the public LB for the management endpoint and outbound connectivity of the cluster. The private LB should be used for any internal traffic. You can read more about this scenario [here](https://learn.microsoft.com/azure/service-fabric/service-fabric-patterns-networking#internal-and-external-load-balancer).
 
 ### Internal-only migration
-For internal-only migration you need to consider an outbound connectivity solution. We recommend using a combination between internal and external load balancers as mentioned above, or using a NAT gateway for outbound connectivity. This document specifies the process you should take when adding a NAT gateway. You can follow [these steps](https://learn.microsoft.com/en-us/azure/nat-gateway/tutorial-nat-gateway-load-balancer-internal-portal) for setting up the NAT gateway with a standard ILB. 
 
-You need to have a public load balancer for the migration of the workload to the new node type. If not, the new nodes will not be able to get added to the cluster since it requires outbound connectivity, and the NAT gateway cannot be added to the subnet if there are any basic-sku resources. Take into account that this means you will have a public IP exposed temporarily during the migration. After this has been completed, change the load balancer from public to private following these steps:
-1. Go to resources.azure.com, navigate to your load balancer and select Edit at the top of the page. 
+For internal-only migration you need to consider an outbound connectivity solution. We recommend using a combination between internal and external load balancers as mentioned above, or using a NAT gateway for outbound connectivity. This document specifies the process you should take when adding a NAT gateway. You can follow [these steps](https://learn.microsoft.com/azure/nat-gateway/tutorial-nat-gateway-load-balancer-internal-portal) for setting up the NAT gateway with a standard ILB.
+
+You need to have a public load balancer for the migration of the workload to the new node type. If not, the new nodes will not be able to get added to the cluster since it requires outbound connectivity, and the NAT gateway cannot be added to the subnet if there are any basic-SKU resources. Take into account that this means you will have a public IP exposed temporarily during the migration. After this has been completed, change the load balancer from public to private following these steps:
+
+1. Go to resources.azure.com, navigate to your load balancer and select Edit at the top of the page.
 2. Remove the publicIPAddress parameter in the frontendIpConfiguration section and replace it with the following:
-```
-      "privateIPAddress": "10.0.0.250",
-      "subnet": {
-            "id": "<subnet resource id>"
-          },
-```
-Private IP 10.0.0.250 was used as an example but you can set this value as needed. Make sure the privateIPAllocationMethod is set to Static. 
-3. Click PUT at the top of the page and wait for the update to complete. 
-After this you can remove the public IP resource if it's not being used. 
 
+    ```json
+    "privateIPAddress": "10.0.0.250",
+    "subnet": {
+        "id": "<subnet resource id>"
+        },
+    ```
 
+    Private IP 10.0.0.250 was used as an example but you can set this value as needed. Make sure the privateIPAllocationMethod is set to Static.
+
+3. Click PUT at the top of the page and wait for the update to complete.
+After this you can remove the public IP resource if it's not being used.
 
 ### Additional considerations
-- This documentation takes into account the scenarios specified [in this document](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-patterns-networking). If you have a different configuration for your load balancers or if you encounter any issue when following this process, please engage Service Fabric support team for further assistance. 
+
+- This documentation takes into account the scenarios specified [in this document](https://learn.microsoft.com/azure/service-fabric/service-fabric-patterns-networking). If you have a different configuration for your load balancers or if you encounter any issue when following this process, please engage Service Fabric support team for further assistance.
 
 ## Automated Upgrade Process with down time
 
 > [!IMPORTANT]
 > While the following process executes, connectivity to the cluster will be unavailable.
 
-[Upgrade a basic load balancer used with Virtual Machine Scale Sets](https://learn.microsoft.com/azure/load-balancer/upgrade-basic-standard-virtual-machine-scale-sets) documents the commands used and detailed information about upgrading the load balancer sku. Upgrading a scale set / node type for a Service Fabric cluster will take longer to complete than documented in link above due to cluster characteristics and requirements. Anticipate a minimum of one hour of downtime for a silver or greater cluster durability and 30 minutes for bronze.
+[Upgrade a basic load balancer used with Virtual Machine Scale Sets](https://learn.microsoft.com/azure/load-balancer/upgrade-basic-standard-virtual-machine-scale-sets) documents the commands used and detailed information about upgrading the load balancer SKU. Upgrading a scale set / node type for a Service Fabric cluster will take longer to complete than documented in link above due to cluster characteristics and requirements. Anticipate a minimum of one hour of downtime for a silver or greater cluster durability and 30 minutes for bronze.
 
 ### Process
 
-- Updates front end public IP addresses to standard sku and static assignment.
+- Updates front end public IP addresses to standard SKU and static assignment.
 - Upgrades the basic load balancer configuration to a new standard load balancer ensuring configuration and feature parity.
 - Adds load balancer outbound rule for virtual machine scale set.
 - Upgrades virtual machine scale set backend pool members to use the standard load balancer.
@@ -407,7 +414,8 @@ After migration to standard load balancer is complete, verify functionality and 
 
 For public load balancers, from an external device / admin machine, open powershell and run the following commands to Service Fabric port connectivity. If there are connectivity issues, verify the NSG security rules. Depending on configuration, there may be multiple NSG's configured for cluster if migration script does not detect an existing NSG.
 
-> ### :exclamation:NOTE: The newly created NSG will not have rules for RDP port access. For RDP access after migration to standard load balancer, add a new rule for RDP in new NSG.
+>[!IMPORTANT]
+> The newly created NSG will not have rules for RDP port access. For RDP access after migration to standard load balancer, add a new rule for RDP in new NSG.
 
 ```powershell
 $managementEndpoint = 'sfcluster.eastus.cloudapp.azure.com'
@@ -499,5 +507,3 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
   Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer/index.html#/events
 
   ![](../media/upgrade-service-fabric-cluster-basic-load-balancer/sfx-cluster-events.png)
-
-</details>
