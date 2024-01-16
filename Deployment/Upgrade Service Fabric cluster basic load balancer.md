@@ -27,9 +27,9 @@ To upgrade basic load balancers in a Service Fabric cluster with no downtime req
 ```mermaid
 graph TD
    A[LB migration path] -->B(Prepare you environment for migration<br/> as stated in the scale-up documentation)-->C(Create the new node type <br/> with a standard public LB <br/> and public IP address)-->P{Choose the scenario for<br/> your desired LB}
-P-->|1|D(public LB)-->E(Prepare new LB with<br/> LB rules and probes)-->F(Migrate workloads to new node type)
-P-->|2|G(public + internal LBs)-->H(Create new standard ILB<br/> and attach same backend pool)
-P-->|3|J(internal-only LB)-->K(Prepare LB rules and migrate <br/>workloads to new node type)-->L(Remove old LB, public IP and node type)--> M(Set outbound connectivity option<br/> i.e. NAT gateway)--> N(Change LB to private)
+P-->|Scenario 1|D(public LB)--->E(Prepare new LB with<br/> LB rules and probes)-->F(Migrate workloads to new node type)
+P-->|Scenario 2|G(public + internal LBs)-->H(Create new standard ILB<br/> and attach same backend pool)
+P-->|Scenario 3|J(internal-only LB)-->K(Prepare LB rules and migrate <br/>workloads to new node type)-->L(Remove old LB, public IP and node type)--> M(Set outbound connectivity option<br/> i.e. NAT gateway)--> N(Change LB to private)
 F-->O(Delete old resources)
 H-->E
 N-->O
