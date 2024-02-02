@@ -54,6 +54,9 @@ For internal-only migration you need to consider an outbound connectivity soluti
 
 You need to have a public load balancer for the migration of the workload to the new node type. If not, the new nodes will not be able to get added to the cluster since it requires outbound connectivity, and the NAT gateway cannot be added to the subnet if there are any basic-SKU resources. Take into account that this means you will have a public IP exposed temporarily during the migration. After this has been completed, change the load balancer from public to private following these steps:
 
+> [!IMPORTANT]
+> If you create your Load Balancer in a [region that supports Availability Zones](https://learn.microsoft.com/en-us/azure/reliability/availability-zones-service-support), make sure you specify a zone, instead of selecting "no zone" in the Availability Zone setting of the frontend IP configuration. Otherwise, a random zone will be selected and the update could fail. Read more about [Availability Zones in Load Balnacers](https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-availability-zones#non-zonal). 
+
 1. Go to resources.azure.com, navigate to your load balancer and select Edit at the top of the page.
 2. Remove the publicIPAddress parameter in the frontendIpConfiguration section and replace it with the following:
 
