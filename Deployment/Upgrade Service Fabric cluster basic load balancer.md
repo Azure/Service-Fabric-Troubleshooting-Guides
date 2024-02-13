@@ -2,13 +2,13 @@
 
 ## Abstract
 
-Azure Basic Load Balancers will be retired on September 30th, 2025. To ensure that your Load Balancer continues to function properly, we recommend that you migrate to Standard Load Balancer before the deprecation date. After this date, Microsoft cannot guarantee the functionality of any existing Basic Load Balancer. Read more in the [official announcement](https://azure.microsoft.com/updates/azure-basic-load-balancer-will-be-retired-on-30-september-2025-upgrade-to-standard-load-balancer/). If you have an Azure Basic Load Balancer associated with a Service Fabric cluster, please follow this guide to migrate to keep your cluster safe. Plan accordingly the migration path you will take based on your current load balancer configuration, number of node types, and workloads in your cluster. 
+Azure Basic Load Balancers will be retired on September 30th, 2025. To ensure that your Load Balancer continues to function properly, we recommend that you migrate to Standard Load Balancer before the deprecation date. After this date, Microsoft cannot guarantee the functionality of any existing Basic Load Balancer. Read more in the [official announcement](https://azure.microsoft.com/updates/azure-basic-load-balancer-will-be-retired-on-30-september-2025-upgrade-to-standard-load-balancer/). If you have an Azure Basic Load Balancer associated with a Service Fabric cluster, please follow this migration guide to keep your cluster safe. Plan accordingly the migration path you will take based on your current load balancer configuration, number of node types, and workloads in your cluster. 
 
 To check the SKU of your existing load balancers, please navigate to the [Load Balancers](https://portal.azure.com/#view/Microsoft_Azure_Network/LoadBalancingHubMenuBlade/~/loadBalancers) resource in the Azure Portal. In the overview page, you will find the SKU size.
 
 ## Overview
 
-This documents the options available to upgrade a basic load balancer SKU to a standard ip and load balancer SKU for a Service Fabric cluster. Choose one of the options below based on availability requirements.
+This document specifies the options available to upgrade a basic load balancer to a standard ip and load balancer for a Service Fabric cluster. Choose one of the options below based on availability requirements.
 
 > [!NOTE]
 > This does not apply to [Service Fabric managed clusters](https://learn.microsoft.com/azure/service-fabric/overview-managed-cluster). Service Fabric managed clusters with 'Basic' SKU are provisioned with a 'Basic' load balancer but cannot be upgraded and must be redeployed . Service Fabric managed clusters with 'Standard' SKU have are provisioned with a 'Standard' load balancer and are not impacted.
@@ -19,7 +19,7 @@ To upgrade basic load balancers in a Service Fabric cluster with no downtime req
 
 ### Things to consider
 
-- Standard Load Balancers (LB) restricts traffic by default so you need to allow traffic through NSG. If you do not have an NSG make sure you add one to your subnet before the migration with the necessary rules. Read more [here](https://learn.microsoft.com/azure/service-fabric/service-fabric-best-practices-networking#network-security-rules).
+- Standard Load Balancers (LB) restrict traffic by default so you need to allow traffic through NSG. If you do not have an NSG make sure you add one to your subnet before the migration with the necessary rules. Read more [here](https://learn.microsoft.com/azure/service-fabric/service-fabric-best-practices-networking#network-security-rules).
 - Standard LB requires a Standard SKU public IP address. Take into account that your public IP address will need to get upgraded as well. With the manual process with no downtime, the public IP address will change, since we need to create a new resource.
 - Read more about Basic to standard LB comparison [here](https://learn.microsoft.com/azure/load-balancer/skus#skus).
 - Standard Internal Load Balancers (ILB) don't have outbound connectivity by design. If you are using an internal-only configuration, make sure you plan ahead to have outbound configuration when you migrate to standard ILB (i.e. using internal + public LB or NAT gateway). Read more about outbound connectivity [here](https://learn.microsoft.com/azure/load-balancer/outbound-rules#outbound-rules-scenarios).
