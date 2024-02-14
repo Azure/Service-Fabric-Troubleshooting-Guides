@@ -135,7 +135,7 @@ To prevent this issue in the future, consider using the CA signed certificate wi
     ```powershell
     $oldThumbprint = "<replace with expired thumbprint>"
     $newThumbprint = "<replace with new thumbprint>"
-    .\FixExpiredCert.ps1 -localOnly -oldThumbprint $oldThumbprint -newThumbprint $newThumbPrint
+    .\FixExpiredCert.ps1 -localOnly -oldThumbprint $oldThumbprint -newThumbprint $newThumbprint
     ```
 
     Note: If there are any errors or issues when running the script you can attempt to fix\correct these and just rerun the script, changes made by the script are idempotent.  In some cases if there are many nodes and you know the mitigation was already successful on some nodes before the script failed then you can remove those from the nodeIpArray to speed things up, but there is no harm if the mitigation is run multiple times on the same node.
