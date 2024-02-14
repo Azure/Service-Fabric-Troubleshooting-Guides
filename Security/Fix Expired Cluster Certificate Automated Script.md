@@ -15,9 +15,11 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 * [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node
   * Open the Certificate Manager for 'Local Computer' (certlm.msc) and check below details
   * Make sure certificate is ACL'd to network service
-  * Verify the Certificate Expiry, if it is expired, follow below steps
-  ![](../media/certlm1.png)  
-  ![](../media/certlm2.png)  
+  * Verify the Certificate Expiry, if it is expired, follow below steps  
+
+    ![](../media/certlm1.png)  
+
+    ![](../media/certlm2.png)  
 
 ## [Fix Expired Cert steps]
 
