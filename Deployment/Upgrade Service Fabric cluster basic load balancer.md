@@ -96,12 +96,11 @@ After this, you can remove the public IP resource if it's not being used.
 Perform the following before starting the migration to a Standard Load Balancer.
 
 - Verify current cluster configuration is documented. If deploying / recovering cluster via ARM template verify template is current. If the ARM template is not available, a non-deployable template with the current configuration can be exported from the Azure portal in the clusters resource group view by selecting 'Export template'.
-
 - Verify current cluster application configuration is documented. If deploying cluster applications via ARM template verify template is current. Application port settings are normally configured in the application's manifest file.
-
 - In Service Fabric Explorer (SFX), verify cluster is in a green state and currently healthy.
-
 - If possible, perform the migration process on a non-production cluster to familiarize the process and downtime.
+- Install and use the latest version of PowerShell core (pwsh) [Installing PowerShell (Core) on Windows](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+- Install and use the latest version of Azure 'Az' modules. See [Install Azure PowerShell](https://docs.microsoft.com/powershell/azure/install-az-ps) for installation instructions.
 
 ### Upgrade PowerShell commands
 
@@ -488,6 +487,22 @@ Example: https://sfcluster.eastus.cloudapp.azure.com:19080/Explorer
     }
 
     Install-Module -Name AzureBasicLoadBalancerUpgrade -Repository PSGallery -Force
+    ```
+
+- Use the latest version of PowerShell core (pwsh). Using Windows PowerShell 5.1 may cause issues like the following:
+
+    ```text
+    2024-02-27T10:28:01-05 [Information]:[LBMigrationPrep] Failed backup preparation step for 'LB-villar1-n2' 
+    log : 2024-02-27T10:28:01-05 [Error]:[BackupVmss] Exporting the VMSS 'n2' for backup purposes failed. 
+    This is likely due to the VMSS having an extension with a complex object type in the settings. 
+    **Please try again in PowerShell Core** 
+    Error: Exception calling "Serialize" with "3" argument(s): 
+    "The collection type 'System.Object' on 'Microsoft.Azure.Commands.Compute.Automation.Models.PSVirtualMachineScaleSetExtension.Settings' is not supported."
+    At C:\Program Files\WindowsPowerShell\Modules\AzureBasicLoadBalancerUpgrade\2.4.5\modules\BackupResources\BackupResources.psm1:126 char:17
+    + ...               log -Severity Error -Message $message -terminateOnError
+    +                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+        + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,log
     ```
 
 - Use the latest version of Azure 'Az' modules.
