@@ -103,7 +103,7 @@ steps:
   import-module servicefabric
   import-module az.resources
 
-  $clusterEndpoint = 'mysftestcluster.eastus.cloudapp.azure.com'
+  $clusterEndpoint = 'mysftestcluster.eastus.cloudapp.azure.com:19000'
   $clusterName = 'mysftestcluster'
 
   $clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'

@@ -26,6 +26,14 @@ Customer is using Windows Server image 2019 with Containers
 - 2019-Datacenter-with-Containers-smalldisk 
 - 2019-Datacenter-with-Containers-smalldisk-g2
 
+Customer is using Windows Server SemiAnnual images with Containers
+- Datacenter-Core-1803-with-Containers-smalldisk
+- Datacenter-Core-1709-with-Containers-smalldisk
+- Datacenter-Core-1809-with-Containers-smalldisk
+- Datacenter-Core-1903-with-Containers-smalldisk
+- Datacenter-Core-1909-with-Containers-smalldisk
+- Datacenter-Core-2004-with-Containers-smalldisk
+
 ## Migration risk decision guide
 
 This guide is designed to help you assess the effort and risk of each migration option. 
