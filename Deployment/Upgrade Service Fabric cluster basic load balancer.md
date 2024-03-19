@@ -1,4 +1,4 @@
-# Upgrade Azure Service Fabric cluster from Basic to Standard SKU on Azure Load Balancer
+# Upgrade from Basic to Standard SKU on Azure Load Balancer for Azure Service Fabric clusters
 
 ## Abstract
 
@@ -444,7 +444,7 @@ foreach($port in $networkPorts) {
 }
 ```
 
-### Check cluster
+### Check cluster health
 
 Open SFX and verify that the cluster health is green without any warnings or errors.
 
