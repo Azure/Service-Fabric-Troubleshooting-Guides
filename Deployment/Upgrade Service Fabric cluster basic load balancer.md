@@ -13,6 +13,16 @@ This document specifies the options available to upgrade a Azure Load Balancer w
 > [!NOTE]
 > This does not apply to [Azure Service Fabric Managed Clusters](https://learn.microsoft.com/azure/service-fabric/overview-managed-cluster). Service Fabric Managed Clusters with Basic SKU are provisioned with a Azure Load Balancer on Basic SKU but cannot be upgraded and must be redeployed. Service Fabric Managed Clusters with Standard SKU have are provisioned with a Azure Load Balancer on Standard SKU and are not impacted.
 
+
+## Migration decision guide 
+
+The following table captures the risk and effort evaluation of the various migration options
+| Scenario | Effort | Risk | Process | 
+| --- | --- | --- | --- |
+| Manual upgrade with no down time | High | Low | [Manual process](#manual-upgrade-process-with-no-down-time) |
+| Automatic upgrade with downtime | Low | High | [Automatic process](#automated-upgrade-process-with-down-time) | 
+| Cluster recreation | Medium | Low | - | 
+
 ## Manual upgrade process with no down time
 
 To upgrade Azure Load Balancers on Basic SKU together with Azure Service Fabric (ASF) cluster with no downtime requires the creation of a new Azure Virtual Machine Scale Set (VMMS),  Node Type configuration in ASF, Azure Load Balancer with Standard SKU, and Azure IP Address with Standard SKU. After the new Node Type is added to the cluster configuration, you need to configure your load balancer depending on your specific scenario as shown in the decision diagram below. Lastly, applications are migrated to the new node type, and the old node type with associated old Azure Load Balancer and Azure IP Address on Basic SK are deactivated and removed. This process takes multiple hours to complete and is documented in [Scale up a Service Fabric cluster primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-primary-node-type) and [Scale up a Service Fabric cluster non-primary node type](https://learn.microsoft.com/azure/service-fabric/service-fabric-scale-up-non-primary-node-type).
@@ -25,6 +35,14 @@ To upgrade Azure Load Balancers on Basic SKU together with Azure Service Fabric 
 - Azure Load Balancer on Standard SKU configured as internal-only (ILB) don't have outbound connectivity by design. If you are using an internal-only configuration, make sure you plan ahead to have an outbound configuration when you migrate to standard ILB (i.e. using internal + public LB or NAT gateway). Read more about [outbound connectivity](https://learn.microsoft.com/azure/load-balancer/outbound-rules#outbound-rules-scenarios).
 - If you use the Add-AzServiceFabricNodeType PowerShell module the new LB will always get created with Basic SKU. You would need to use the Start-AzBasicLoadBalancerUpgrade module to upgrade the new LB to Standard SKU and make the necessary configurations for your new load balancer as stated in this guide.
 - Changing the DNS name to the new Load Balancer will cause a few seconds of connection loss to SFX.
+
+The following table outlines the process and effort required for each LB scenario.
+
+| Scenario | Effort | Additional requirements | Process | 
+| --- | --- | --- | --- |
+| Public Load Balancer | Low | NSG | [Basic Migration](#basic-migration) |
+| Public and Internal Load Balancer | Medium | NSG | [Internal and external migration](#internal-and-external-migration) | 
+| Internal-only Load Balancer | High | outbound connectivity solution (NAT gateway) | [Internal-only migration](#internal-only-migration) | 
 
 ```mermaid
 graph TD
