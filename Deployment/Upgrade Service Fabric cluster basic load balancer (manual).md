@@ -21,6 +21,8 @@ The following table outlines the process and effort required for each LB scenari
 | Public and Internal Load Balancer | Medium | NSG | [Internal and external migration](#internal-and-external-migration) | 
 | Internal-only Load Balancer | High | outbound connectivity solution (NAT gateway) | [Internal-only migration](#internal-only-migration) | 
 
+### Choose your migration path
+
 The following diagram details the migration path required for each load balancer scenario. 
 
 <img width="698" alt="LBscenarios_flowcharts" src="https://github.com/jagilber/Service-Fabric-Troubleshooting-Guides/assets/50681801/9ac77241-0035-42ec-b718-6813cc3f0b35">
