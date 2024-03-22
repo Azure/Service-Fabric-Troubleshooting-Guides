@@ -19,8 +19,8 @@ This document specifies the options available to upgrade a Azure Load Balancer w
 The following table captures the risk and effort evaluation of the various migration options
 | Scenario | Effort | Risk | Process | 
 | --- | --- | --- | --- |
-| Manual upgrade with no down time | High | Low | [Manual process](#manual-upgrade-process-with-no-down-time) |
-| Automatic upgrade with downtime | Low | High | [Automatic process](#automated-upgrade-process-with-down-time) | 
+| Manual upgrade with no down time | High | Low | [Manual process](./Upgrade%20Service%20Fabric%20cluster%20basic%20load%20balancer%20(manual).md) |
+| Automatic upgrade with downtime | Low | High | [Automatic process](./Upgrade%20Service%20Fabric%20cluster%20basic%20load%20balancer%20(automated).md) | 
 | Cluster recreation | Medium | Low | - | 
 
 
