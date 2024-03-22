@@ -44,7 +44,7 @@ You need to have a public load balancer for the migration of the workload to the
 > [!IMPORTANT]
 > If you create your load balancer in a region that supports [Azure Availability Zones](https://learn.microsoft.com/en-us/azure/reliability/availability-zones-service-support), make sure you specify a zone, instead of selecting "no zone" in the Availability Zone setting of the frontend IP configuration. Otherwise, a random zone will be selected and the update could fail. Read more about [non-zonal load balancer](https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer?tabs=graph#non-zonal-load-balancer).
 
-1. Go to [resources.azure.com](https://resources.azure.com), navigate to your load balancer and select 'Edit' at the top of the page.
+1. Search the reference for the Load Balancer resource in your ARM template.
 2. Remove the publicIPAddress parameter in the frontendIpConfiguration section and replace it with the following:
 
     ```json
@@ -56,7 +56,7 @@ You need to have a public load balancer for the migration of the workload to the
 
     Private IP 10.0.0.250 was used as an example but you can set this value as needed. Make sure the privateIPAllocationMethod is set to 'Static'.
 
-3. Click PUT at the top of the page and wait for the update to complete.
+3. Deploy the changes.
 After this, you can remove the public IP resource if it's not being used.
 
 ### Additional considerations
