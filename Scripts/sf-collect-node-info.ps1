@@ -60,10 +60,9 @@ SOFTWARE
 .NOTES
     File Name  : sf-collect-node-info.ps1
     Author     : microsoft service fabric support
-    Version    : 210620 add MIT oss license
+    Version    : 240422 add 'g' datetime format for timestamps to fix event log enumeration in different cultures
     History    :
-                210307 add tls settings and update event-log-manager url
-                
+
 .EXAMPLE
     .\sf-collect-node-info.ps1
     default command to collect event logs, process, service, os information for last 7 days.
@@ -475,7 +474,7 @@ function process-machine() {
                 }
             }
             elseif ((test-path $eventScriptFile)) {
-                $argList = "-File $($parentWorkdir)\event-log-manager.ps1 -eventLogNamePattern `"$($eventlognames)`" -eventStartTime `"$($startTime.ToString('g'))`" -eventStopTime `"$($endTime.ToString('g'))`" -eventDetails -merge -uploadDir `"$($tempLocation)`" -nodynamicpath"
+                $argList = "-File $($parentWorkdir)\event-log-manager.ps1 -eventLogNamePattern `"$($eventlognames)`" -eventStartTime `"$($startTime -f 'g')`" -eventStopTime `"$($endTime -f 'g')`" -eventDetails -merge -uploadDir `"$($tempLocation)`" -nodynamicpath"
                 write-host "event logs: starting command powershell.exe $($argList)"
                 start-process -filepath "powershell.exe" -ArgumentList $argList -Wait -WindowStyle Hidden -WorkingDirectory $tempLocation
             }
