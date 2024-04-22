@@ -475,7 +475,7 @@ function process-machine() {
                 }
             }
             elseif ((test-path $eventScriptFile)) {
-                $argList = "-File $($parentWorkdir)\event-log-manager.ps1 -eventLogNamePattern `"$($eventlognames)`" -eventStartTime `"$($startTime)`" -eventStopTime `"$($endTime)`" -eventDetails -merge -uploadDir `"$($tempLocation)`" -nodynamicpath"
+                $argList = "-File $($parentWorkdir)\event-log-manager.ps1 -eventLogNamePattern `"$($eventlognames)`" -eventStartTime `"$($startTime.ToString('g'))`" -eventStopTime `"$($endTime.ToString('g'))`" -eventDetails -merge -uploadDir `"$($tempLocation)`" -nodynamicpath"
                 write-host "event logs: starting command powershell.exe $($argList)"
                 start-process -filepath "powershell.exe" -ArgumentList $argList -Wait -WindowStyle Hidden -WorkingDirectory $tempLocation
             }
