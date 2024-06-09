@@ -99,7 +99,7 @@ The region of a scale set becomes eligible to get image upgrades either through 
 
 ### Scheduling OS Image Upgrade with Maintenance Control
 
-Azure Service Fabric Managed Clusters support for Maintenance Control is currently in preview. See [MaintenanceControl](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-maintenance-control) for configuration and support information as not all regions are currently supported.
+For Azure Service Fabric Managed Clusters support for Maintenance Control, see [MaintenanceControl](https://learn.microsoft.com/azure/service-fabric/how-to-managed-cluster-maintenance-control) for configuration and known issues.
 
 > **Note**
 > Maintenance Control requires a schedule with minimum settings of daily schedule with at least a 5 hour window. Updates not completed in the provided window will resume during next window.
@@ -143,6 +143,106 @@ available versions:
 20348.1906.230803
 20348.1970.230905
 published latest version: 20348.1970.230905 running version: 'latest'
+```
+
+### Review OS image upgrade status
+
+Use [Get-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/get-azvmssrollingupgrade) cmdlet to enumerate current OS image upgrade status. [Example Get-AzVmssRollingUpgrade](#example-Get-AzVmssRollingUpgrade--resourcegroupname-resourcegroupname--name-nodetypename--verbose) below has expected output.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+Import-Module -Name Az.Compute
+
+Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
+    -Name $nodeTypeName `
+    -Verbose
+```
+
+### Review OS image upgrade history
+
+Use [Get-AzVmss](https://learn.microsoft.com/powershell/module/az.compute/get-azvmss) cmdlet to enumerate OS image upgrade history. [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) below has expected output.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+Import-Module -Name Az.Compute
+
+Get-AzVmss -ResourceGroupName $resourceGroupName `
+    -Name $nodeTypeName `
+    -OSUpgradeHistory `
+    -Verbose
+```
+
+### Configure Rolling Upgrade Policy
+
+Additional configuration for Automatic OS Upgrade can be configured using [Set-AzVmssRollingUpgradePolicy](https://learn.microsoft.com/powershell/module/az.compute/set-azvmssrollingupgradepolicy?view=azps-10.1.0) cmdlet. The following example shows how to configure rolling upgrade policy for node type 'nt0' using an ARM template or using Azure PowerShell.
+
+```diff
+"properties": {
+    "singlePlacementGroup": true,
+    "upgradePolicy": {
+        "mode": "Automatic",
++       "rollingUpgradePolicy": {
++           "maxBatchInstancePercent": 20,
++           "maxUnhealthyInstancePercent": 20,
++           "maxUnhealthyUpgradedInstancePercent": 20,
++           "pauseTimeBetweenBatches": "PT0S"
++     },
+      "automaticOSUpgradePolicy": {
+        "enableAutomaticOSUpgrade": true,
+-       "useRollingUpgradePolicy": false
++       "useRollingUpgradePolicy": true
+      }
+    },
+```
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+$pauseTimeSeconds = 'PT0S' # ISO 8601 duration format
+$createNewInstancesInsteadOfUpgrading = $false
+Import-Module -Name Az.Compute
+
+$vmss = Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName
+
+Set-AzVmssRollingUpgradePolicy -VirtualMachineScaleSet $vmss `
+    -MaxBatchInstancePercent 20 `
+    -MaxUnhealthyInstancePercent 20 `
+    -MaxUnhealthyUpgradedInstancePercent 20 `
+    -PauseTimeBetweenBatches $pauseTimeSeconds `
+    -PrioritizeUnhealthyInstances $true `
+    -EnableCrossZoneUpgrade $true `
+    -MaxSurge $createNewInstancesInsteadOfUpgrading `
+    -Verbose
+```
+
+### Manual Upgrade OS image
+
+Use [Start-AzVmssRollingOSUpgrade](https://learn.microsoft.com/powershell/module/az.compute/start-azvmssrollingosupgrade) cmdlet to start OS image upgrade if one is available. Refer to [Enumerate current OS image SKU's available in Azure](#enumerate-current-os-image-skus-available-in-azure) to see if there is a newer OS image version available.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+Import-Module -Name Az.Compute
+
+Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName `
+    -VMScaleSetName $nodeTypeName `
+    -Verbose
+```
+
+### Stop OS image upgrade
+
+Use [Stop-AzVmssRollingUpgrade](https://learn.microsoft.com/powershell/module/az.compute/stop-azvmssrollingupgrade) cmdlet to stop OS image upgrade if one is in progress.
+
+```powershell
+$resourceGroupName = '<resource group name>'
+$nodeTypeName = '<node type name>'
+Import-Module -Name Az.Compute
+
+Stop-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName `
+    -VMScaleSetName $nodeTypeName `
+    -Force
 ```
 
 ### Disable OS image upgrade
@@ -239,7 +339,7 @@ Repair Task
 }
 ```
 
-#### Using PowerShell with Servic Fabric SDK to monitor OS image upgrade
+#### Using PowerShell with Service Fabric SDK to monitor OS image upgrade
 
 PowerShell can also be used to view repair tasks. From a machine that has Service Fabric SDK installed or from a Service Fabric node, use [Get-ServiceFabricRepairTask](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricrepairtask) cmdlet to view repair tasks. There may be many tasks returned. Using -State or -TaskId can be used to filter results.
 
@@ -284,4 +384,104 @@ Example:
     "PerformPreparingHealthCheck": false,
     "PerformRestoringHealthCheck": false
   }
+```
+
+## Examples
+
+### Example Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName -Name $nodeTypeName -Verbose
+
+> **Note**
+> RunningStatus information is last time a rolling upgrade was started but not necessarily last time an image was upgraded. Use [Example Get-AzVmss](#example-get-azvmss--resourcegroupname-resourcegroupname--name-nodetypename--osupgradehistory) to get last time an image was upgraded.
+
+```powershell
+Get-AzVmssRollingUpgrade -ResourceGroupName $resourceGroupName -Name $nodeTypeName | ConvertTo-Json
+{
+  "Policy": {
+    "MaxBatchInstancePercent": 20,
+    "MaxUnhealthyInstancePercent": 20,
+    "MaxUnhealthyUpgradedInstancePercent": 20,
+    "PauseTimeBetweenBatches": "PT0S",
+    "EnableCrossZoneUpgrade": null,
+    "PrioritizeUnhealthyInstances": null,
+    "RollbackFailedInstancesOnPolicyBreach": false,
+    "MaxSurge": false
+  },
+  "RunningStatus": {
+    "Code": "Completed",
+    "StartTime": "2023-06-30T19:46:17.2677469Z",
+    "LastAction": "Start",
+    "LastActionTime": "2023-06-30T19:46:17.2208724Z"
+  },
+  "Progress": {
+    "SuccessfulInstanceCount": 0,
+    "FailedInstanceCount": 0,
+    "InProgressInstanceCount": 0,
+    "PendingInstanceCount": 0
+  },
+  "Error": null,
+  "Id": null,
+  "Name": null,
+  "Type": "Microsoft.Compute/virtualMachineScaleSets/rollingUpgrades",
+  "Location": "eastus",
+  "Tags": {}
+}
+```
+
+### Example Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory
+
+> **Note**
+> An empty result can indicate that node type is not configured for Automatic OS Image Upgrade or an upgrade has not taken place yet.
+
+```powershell
+Get-AzVmss -ResourceGroupName $resourceGroupName -Name $nodeTypeName -OSUpgradeHistory | ConvertTo-Json
+{
+  "Properties": {
+    "RunningStatus": {
+      "Code": "Completed",
+      "StartTime": "2023-06-30T19:46:17.2677469Z",
+      "EndTime": null
+    },
+    "Progress": {
+      "SuccessfulInstanceCount": 0,
+      "FailedInstanceCount": 0,
+      "InProgressInstanceCount": 0,
+      "PendingInstanceCount": 0
+    },
+    "Error": null,
+    "StartedBy": "Platform",
+    "TargetImageReference": {
+      "Publisher": "MicrosoftWindowsServer",
+      "Offer": "WindowsServer",
+      "Sku": "2022-Datacenter",
+      "Version": "20348.1787.230621",
+      "ExactVersion": null,
+      "SharedGalleryImageId": null,
+      "CommunityGalleryImageId": null,
+      "Id": null
+    },
+    "RollbackInfo": {
+      "SuccessfullyRolledbackInstanceCount": 0,
+      "FailedRolledbackInstanceCount": 0,
+      "RollbackError": null
+    }
+  },
+  "Type": "Microsoft.Compute/virtualMachineScaleSets/rollingUpgrades",
+  "Location": "eastus"
+}
+```
+
+### Example Start-AzVmssRollingOSUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName -Verbose
+
+> **Note**
+> A result similar to below will always be returned regardless of whether there is a newer OS image version available or not.
+
+```powershell
+Start-AzVmssRollingOsUpgrade -ResourceGroupName $resourceGroupName -VMScaleSetName $nodeTypeName | ConvertTo-Json
+{
+  "Name": "6dd0212d-ff35-4dce-b77e-999a57c1534e",
+  "StartTime": "2023-07-11T19:34:57.7803755-04:00",
+  "EndTime": "2023-07-11T19:35:28.2994743-04:00",
+  "Status": "Succeeded",
+  "Error": null
+}
 ```
