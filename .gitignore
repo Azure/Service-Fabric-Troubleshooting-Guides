@@ -11,3 +11,8 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.json
+*.sqlite
+*.vsidx
+/.vs/Service-Fabric-Troubleshooting-Guides/v17/DocumentLayout.json
+/.vs/Service-Fabric-Troubleshooting-Guides/v17/.wsuo
