@@ -127,6 +127,8 @@ To prevent this issue in the future, consider using the CA signed certificate wi
    Example of downloading from within RDP
   
     ```powershell
+    [net.servicePointManager]::Expect100Continue = $true;
+    [net.servicePointManager]::SecurityProtocol = [net.SecurityProtocolType]::Tls12;
     $url = "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/FixExpiredCert.ps1"
     $output = "$pwd\FixExpiredCert.ps1"
     Invoke-WebRequest -Uri $url -OutFile $output
