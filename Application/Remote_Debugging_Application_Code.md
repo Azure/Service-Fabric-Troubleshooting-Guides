@@ -1,4 +1,4 @@
-# Debug Application issues for services deployed to an Azure Service Fabric Cluster
+# Remote debugging for services deployed in an Azure Service Fabric Cluster
 
 - Install AZ Cli from https://aka.ms/installazurecliwindowsx64 
 - Publish the debug build of your application to the cluster
@@ -17,9 +17,9 @@ If successful, should return
 
 - Log into the portal, then Remote into an instance (node) on VMSS of the SF cluster either using RDP (3389) or Bastion.
 - Install the Remote Tools from https://aka.ms/vs/17/release/RemoteTools.amd64ret.enu.exe 
-- Launch ìRemote Debuggerî from Windows Search bar (this should launch msvsmon.exe) after a dialog asking to configure remote debugging
+- Launch ‚ÄúRemote Debugger‚Äù from Windows Search bar (this should launch msvsmon.exe) after a dialog asking to configure remote debugging
 - Get the IP address from the Load Balancer Frontend IP configuration in the portal
-- Attach to Process in Visual Studio Debug menu, specify ìRemote (Windows)î as connection type and enter <ipaddress>:40026 for the connection target.
+- Attach to Process in Visual Studio Debug menu, specify ‚ÄúRemote (Windows)‚Äù as connection type and enter <ipaddress>:40026 for the connection target.
 
 You should get a prompt for username/password that was used when setting up the cluster. Same account that you log into the VM with.
 
