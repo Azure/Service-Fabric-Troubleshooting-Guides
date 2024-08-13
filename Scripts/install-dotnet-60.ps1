@@ -38,6 +38,7 @@ SOFTWARE
     invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/install-dotnet-60.ps1" -outFile "$pwd\install-dotnet-60.ps1";
 #>
 
+[cmdletbinding()]
 param(
     [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/7989338b-8ae9-4a5d-8425-020148016812/c26361fde7f706279265a505b4d1d93a/dotnet-runtime-6.0.6-win-x64.exe',
     [version]$version = '6.0.6',
@@ -46,6 +47,8 @@ param(
     [switch]$restart
 )
 
+$eventLogName = 'Application'
+$maxEventMessageSize = 16384  #32766 - 1000
 $PSModuleAutoLoadingPreference = 2
 $ErrorActionPreference = 'continue'
 [net.servicePointManager]::Expect100Continue = $true;
@@ -112,32 +115,6 @@ function main() {
     return $result
 }
 
-function register-event() {
-    if ($registerEvent) {
-        $error.clear()
-        New-EventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue
-        if($error -and ($error -inotmatch 'source is already registered')) {
-            $registerEvent = $false
-        }
-        else {
-            $error.clear()
-        }
-    }
-}
-
-function write-event($data) {
-    write-host $data
-
-    try {
-        if ($registerEvent) {
-            Write-EventLog -LogName 'Application' -Source $registerEventSource -Message $data -EventId 1000
-        }
-    }
-    catch {
-        $error.Clear()
-    }
-}
-
 function get-dotnetVersion() {
     $dotnetExe = 'C:\Program Files\dotnet\dotnet.exe'
     if ((test-path $dotnetExe)) {
@@ -151,6 +128,67 @@ function get-dotnetVersion() {
     
     write-host "installed dotnet version:$installedVersion"
     return $installedVersion
+}
+
+function register-event() {
+    if ($registerEvent) {
+        $error.clear()
+        write-host "new-eventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue"
+        new-eventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue
+        if($error -and ($error -inotmatch 'source is already registered')) {
+            $registerEvent = $false
+        }
+        else {
+            $error.clear()
+        }
+    }
+}
+
+function write-event($data, $level = 'Information') {
+    write-host $data
+
+    if (!$global:result -or $error -or $level -ieq 'Error') {
+        $level = 'Error'
+        $data = "$data`r`nErrors:`r`n$($error | out-string)"
+        write-error $data
+        $error.Clear()
+    }
+
+    try {
+        if ($registerEvent) {
+            $index = 0
+            $counter = 1
+            $totalEvents = [int]($data.Length / $maxEventMessageSize) + 1
+
+            while ($index -lt $data.Length) {
+                $header = "$counter of $totalEvents`n"
+                $counter++
+                $dataSize = [math]::Min($data.Length - $index, $maxEventMessageSize)
+                write-verbose "`$data.Substring($index, $dataSize)"
+                $dataChunk = $header
+                $dataChunk += $data.Substring($index, $dataSize)
+                $index += $dataSize
+
+                write-verbose "write-eventLog -LogName $eventLogName ``
+                    -Source $registerEventSource ``
+                    -Message $dataChunk ``
+                    -EventId 1000 ``
+                    -EntryType $level
+                "
+
+                write-eventLog -LogName $eventLogName `
+                    -Source $registerEventSource `
+                    -Message $dataChunk `
+                    -EventId 1000 `
+                    -EntryType $level
+
+            }
+        }
+    }
+    catch {
+        write-host "exception writing event to event log:$($error | out-string)"
+        $error.Clear()
+    }
 }
 
 main
