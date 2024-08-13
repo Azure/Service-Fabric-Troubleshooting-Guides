@@ -56,64 +56,71 @@ $ErrorActionPreference = 'continue'
 [net.servicePointManager]::SecurityProtocol = [net.SecurityProtocolType]::Tls12;
 
 function main() {
-    $installLog = "$psscriptroot\install.log"
-    $transcriptLog = "$psscriptroot\transcript.log"
-    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+    try {
+        $installLog = "$psscriptroot\install.log"
+        $transcriptLog = "$psscriptroot\transcript.log"
+        $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
-    if(!$isAdmin){
-        Write-Warning "restart script as administrator"
-        return
-    }
+        if (!$isAdmin) {
+            Write-Warning "restart script as administrator"
+            return
+        }
     
-    register-event
+        register-event
 
-    $installedVersion = get-dotnetVersion
-    if ($installedVersion -ge $version) {
-        write-event "dotnet $installedVersion already installed"
-        return
-    }
+        $installedVersion = get-dotnetVersion
+        if ($installedVersion -ge $version) {
+            write-event "dotnet $installedVersion already installed"
+            return
+        }
 
-    Start-Transcript -Path $transcriptLog
+        Start-Transcript -Path $transcriptLog
 
-    $installFile = "$psscriptroot\$([io.path]::GetFileName($dotnetDownloadUrl))"
-    write-host "installation file:$installFile"
+        $installFile = "$psscriptroot\$([io.path]::GetFileName($dotnetDownloadUrl))"
+        write-host "installation file:$installFile"
 
-    if (!(test-path $installFile)) {
-        "Downloading [$url]`nSaving at [$installFile]" 
-        write-host "$result = [net.webclient]::new().DownloadFile($dotnetDownloadUrl, $installFile)"
-        $result = [net.webclient]::new().DownloadFile($dotnetDownloadUrl, $installFile)
-        write-host "downloadFile result:$($result | Format-List *)"
-    }
+        if (!(test-path $installFile)) {
+            "Downloading [$url]`nSaving at [$installFile]" 
+            write-host "$result = [net.webclient]::new().DownloadFile($dotnetDownloadUrl, $installFile)"
+            $result = [net.webclient]::new().DownloadFile($dotnetDownloadUrl, $installFile)
+            write-host "downloadFile result:$($result | Format-List *)"
+        }
 
-    $argumentList = "/q /log $installLog"
+        $argumentList = "/q /log $installLog"
 
-    if (!$restart) {
-        $argumentList += " /norestart"
-    }
+        if (!$restart) {
+            $argumentList += " /norestart"
+        }
 
-    write-host "
+        write-host "
         `$result = Invoke-Command -ScriptBlock { 
             Start-Process -FilePath $installFile -ArgumentList $argumentList -Wait -PassThru 
         }
     "
     
-    $result = Invoke-Command -ScriptBlock { 
-        Start-Process -FilePath $installFile -ArgumentList $argumentList -Wait -PassThru 
+        $result = Invoke-Command -ScriptBlock { 
+            Start-Process -FilePath $installFile -ArgumentList $argumentList -Wait -PassThru 
+        }
+
+        write-host "install result:$($result | Format-List * | out-string)"
+        Write-Host "installed dotnet version final:$(get-dotnetVersion)"
+        write-host "install log:`r`n$(Get-Content -raw $installLog)"
+        write-host "restarting OS:$restart"
+
+        Stop-Transcript
+        write-event (get-content -raw $transcriptLog)
+
+        if ($restart) {
+            Restart-Computer -Force
+        }
+
+        return $result
     }
-
-    write-host "install result:$($result | Format-List * | out-string)"
-    Write-Host "installed dotnet version final:$(get-dotnetVersion)"
-    write-host "install log:`r`n$(Get-Content -raw $installLog)"
-    write-host "restarting OS:$restart"
-
-    Stop-Transcript
-    write-event (get-content -raw $transcriptLog)
-
-    if($restart) {
-        Restart-Computer -Force
+    catch {
+        write-verbose "variables:$((get-variable -scope local).value | convertto-json -WarningAction SilentlyContinue -depth 2)"
+        write-host "exception::$($psitem.Exception.Message)`r`n$($psitem.scriptStackTrace)" -ForegroundColor Red
+        return 1
     }
-
-    return $result
 }
 
 function get-dotnetVersion() {
@@ -136,7 +143,7 @@ function register-event() {
         $error.clear()
         write-host "new-eventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue"
         new-eventLog -LogName $eventLogName -Source $registerEventSource -ErrorAction silentlycontinue
-        if($error -and ($error -inotmatch 'source is already registered')) {
+        if ($error -and ($error -inotmatch 'source is already registered')) {
             $registerEvent = $false
         }
         else {
@@ -148,7 +155,7 @@ function register-event() {
 function write-event($data, $level = 'Information') {
     write-host $data
 
-    if (!$global:result -or $error -or $level -ieq 'Error') {
+    if ($error -or $level -ieq 'Error') {
         $level = 'Error'
         $data = "$data`r`nErrors:`r`n$($error | out-string)"
         write-error $data
@@ -159,7 +166,7 @@ function write-event($data, $level = 'Information') {
         if ($registerEvent) {
             $index = 0
             $counter = 1
-            $totalEvents = [int]($data.Length / $maxEventMessageSize) + 1
+            $totalEvents = [math]::ceiling($data.Length / $maxEventMessageSize)
 
             while ($index -lt $data.Length) {
                 $header = "$counter of $totalEvents`n"
@@ -172,7 +179,7 @@ function write-event($data, $level = 'Information') {
 
                 write-verbose "write-eventLog -LogName $eventLogName ``
                     -Source $registerEventSource ``
-                    -Message $dataChunk ``
+                    -Message $($dataChunk.length) ``
                     -EventId 1000 ``
                     -EntryType $level
                 "
