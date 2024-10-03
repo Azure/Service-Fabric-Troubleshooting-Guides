@@ -41,8 +41,8 @@ SOFTWARE
 
 [cmdletbinding()]
 param(
-    [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/d1adccfa-62de-4306-9410-178eafb4eeeb/48e3746867707de33ef01036f6afc2c6/dotnet-sdk-8.0.303-win-x64.exe',
-    [version]$version = '8.0.303',
+    [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/3980ab0a-379f-44a0-9be6-eaf74c07a3b3/bd1cc6107ff3d8fe0104d30f01339b74/dotnet-runtime-8.0.7-win-x64.exe',
+    [version]$version = '8.0.7',
     [bool]$registerEvent = $true,
     [string]$registerEventSource = 'CustomScriptExtension',
     [switch]$restart
