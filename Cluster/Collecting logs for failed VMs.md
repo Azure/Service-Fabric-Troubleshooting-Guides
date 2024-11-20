@@ -1,40 +1,71 @@
 # Collecting logs for failed VMs
 
+## Overview
+
+This article provides guidance on collecting logs for Virtual Machines (VMs) in a Failed (Running) state in Azure Portal. This situation can prevent Service Fabric nodes from becoming healthy.
+
 ## Symptoms
 
-VMs in VMSS are in Failed(Running) state in Azure Portal and preventing Service Fabric nodes from becoming healthy. In this state the VMs themselves are running but there is an error in one of the VMSS extensions. VMs will be accessible through RDP.
+VMs in a Virtual Machine Scale Set (VMSS) are in a Failed (Running) state, which prevents Service Fabric nodes from becoming healthy. Although the VMs are running, there is an error in one of the VMSS extensions. The VMs will still be accessible through Remote Desktop Protocol (RDP).
 
-## Cause
+## Root Causes
 
-There can be a number of reasons for a VMSS extension to fail
+Several reasons may cause a VMSS extension to fail:
 
-- Incorrect configuration
-- A resource referenced by the VMSS extension is not available
-- Timeouts or transient issues causing the extensions to fail
+*   Incorrect VMSS extension configuration.
+*   A resource referenced by the VMSS extension is not available.
+*   Network connectivity
+*   Timeouts or transient issues causing the extensions to fail.
 
-## Gathering more informaiton
+## Scoping Questions
 
-1. RDP to one or more of the VMs in Failed state
-2. Open command prompt and then run the following commands
+To narrow down the problem, consider asking:
 
-    ```powershell
+1.  Are all VMs experiencing this issue, or only certain ones?
+2.  Has there been any recent changes to Extension configurations or resources?
+3.  Are there specific error messages related to the failure of VMSS extensions?
+4.  Have any recent OS updates been made?
+5.  Have any recent NSG updates been made?
+
+## Data Collection
+
+To gather data necessary for troubleshooting:
+
+1.  RDP into one or more of the VMs in a Failed state.
+2.  Open Command Prompt and run the following commands:
+    
+    ```cmd
     md C:\guestlogs
     cd C:\guestlogs
-    C:\WindowsAzure\GuestAgent_VERSION\CollectGuestLogs.exe (VERSION will be different values, use the highest version value)
+    C:\WindowsAzure\GuestAgent_VERSION\CollectGuestLogs.exe 
     ```
+    
+    Replace `VERSION` with the highest version value available.
+    
+3.  This command creates a compressed file with various logs.
+4.  Copy this file out of the VM.
 
-3. This will create a compressed file with various logs
-4. Copy the file out of the VM
+## Troubleshooting Steps
 
-## Mitigation
+1.  **Check Configuration Issues:**
+    *   Review failures in the logs to identify any configuration issues like invalid references to resources.
+    *   Correct any configuration errors found in your Azure Resource Manager (ARM) template and redeploy it.
+2.  **Address Other Issues:**
+    *   If no configuration issues are identified, open a support incident through Azure Portal.
+    *   Include collected logs from affected VMs or error messages found within these logs.
 
-### Config issues
+## Preventive Measures
 
-- Check failures in the logs to eliminate any config issues
-  - For example, a reference to a resource could be wrong or no longer valid
-- Fix the config issue in the ARM template and redeploy it
+To avoid similar issues in future:
 
-### Other issues
+*   Regularly validate and update your ARM templates and configurations.
+*   Ensure that all resources referenced by VMSS extensions are available and correctly configured.
+*   Monitor VMSS extensions for timeouts and transient issues proactively.
 
-- Open Support Incident through the Azure Portal
-- Include the logs collected from the VM(s) or the error message found in the logs
+## Contact Information
+
+For further assistance or escalation, contact Microsoft Support through \[Azure Portal\].
+
+## References
+
+N/A
