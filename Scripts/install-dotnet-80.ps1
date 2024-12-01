@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    example script to install dotnet 6.0 on virtual machine scaleset using custom script extension
+    example script to install dotnet 8.0 on virtual machine scaleset using custom script extension
     use custom script extension in ARM template
     save file to url that vmss nodes have access to during provisioning
 
@@ -35,13 +35,14 @@ SOFTWARE
 
 .LINK
     [net.servicePointManager]::Expect100Continue = $true;[net.servicePointManager]::SecurityProtocol = [net.securityProtocolType]::Tls12;
-    invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/install-dotnet-60.ps1" -outFile "$pwd\install-dotnet-60.ps1";
+    invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/install-dotnet-80.ps1" -outFile "$pwd\install-dotnet-80.ps1";
 #>
+
 
 [cmdletbinding()]
 param(
-    [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/7989338b-8ae9-4a5d-8425-020148016812/c26361fde7f706279265a505b4d1d93a/dotnet-runtime-6.0.6-win-x64.exe',
-    [version]$version = '6.0.6',
+    [string]$dotnetDownloadUrl = 'https://download.visualstudio.microsoft.com/download/pr/6224f00f-08da-4e7f-85b1-00d42c2bb3d3/b775de636b91e023574a0bbc291f705a/dotnet-sdk-8.0.403-win-x64.exe',
+    [version]$version = '8.0.403',
     [bool]$registerEvent = $true,
     [string]$registerEventSource = 'CustomScriptExtension',
     [switch]$restart
@@ -95,7 +96,7 @@ function main() {
         `$result = Invoke-Command -ScriptBlock { 
             Start-Process -FilePath $installFile -ArgumentList $argumentList -Wait -PassThru 
         }
-        "
+    "
     
         $result = Invoke-Command -ScriptBlock { 
             Start-Process -FilePath $installFile -ArgumentList $argumentList -Wait -PassThru 
@@ -182,7 +183,7 @@ function write-event($data, $level = 'Information') {
                     -EventId 1000 ``
                     -EntryType $level
                 "
-
+                    
                 write-eventLog -LogName $eventLogName `
                     -Source $registerEventSource `
                     -Message $dataChunk `
