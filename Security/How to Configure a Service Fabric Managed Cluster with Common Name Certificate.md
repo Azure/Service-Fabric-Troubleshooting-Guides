@@ -16,7 +16,7 @@ Use one of the three options below to add a common name certificate as a 'client
 
 ### Using ARM template to add common name certificate to configuration
 
-If using an ARM template for deployment, add a new 'clients' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
+If using an ARM template for deployment, add a new 'clients' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/Deployment/how-to-export-service-fabric-managed-cluster-configuration.md) for detailed information.
 
 - isAdmin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
 - commonName - certificate 'SubjectName' without the 'CN='
@@ -86,7 +86,7 @@ Use one of the three options below  to add a common name certificate for applica
 
 ### Using ARM template to add common name certificate to nodetype configuration
 
-If using an ARM template for deployment, add a new 'vmSecrets' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/cluster/How%20to%20Export%20Service%20Fabric%20Managed%20Cluster%20Configuration.md) for detailed information.
+If using an ARM template for deployment, add a new 'vmSecrets' element to array as shown below. For managed clusters, an ARM template can be generated with the current configuration from Azure portal or from PowerShell using Export-AzResourceGroup. See [How to Export Service Fabric Managed Cluster Configuration](/Deployment/how-to-export-service-fabric-managed-cluster-configuration.md) for detailed information.
 
 - id - Azure key vault id. Example: '/subscriptions/{{subscription id}}/resourceGroups/xxxxxxx/providers/Microsoft.KeyVault/vaults/{{vault name}}'
 - certificateStore - 'My'
