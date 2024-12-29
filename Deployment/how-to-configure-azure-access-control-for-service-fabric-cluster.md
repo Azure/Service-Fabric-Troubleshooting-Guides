@@ -10,11 +10,11 @@ For Service Fabric service connection configurations, it is recommended to use E
 
 - Verify [Requirements](#requirements)
 - Create Azure Resource Group for Service Fabric cluster
-- Create [Azure Subscription Custom Role Definition](#azure-subscription-custom-role-definition)
-- Assign [Azure Subscription Custom Role Definition](#azure-subscription-custom-role-definition) to Entra constrained user
-- Create [Azure Resource Group Custom Role Definition](#azure-resource-group-custom-role-definition)
-- Assign [Azure Resource Group Custom Role Definition](#azure-resource-group-custom-role-definition) to Entra constrained user
-- Assign built-in roles to Entra constrained user
+- [Create Azure Subscription Custom Role Definition](#create-azure-subscription-custom-role-definition)
+- [Assign Azure Subscription Custom Role to Entra constrained user](#assign-azure-subscription-custom-role-to-entra-constrained-user)
+- [Create Azure Resource Group Custom Role Definition](#create-azure-resource-group-custom-role-definition)
+- [Assign Azure Resource Group Custom Role to Entra constrained user](#assign-azure-resource-group-custom-role-to-entra-constrained-user)
+- [Assign Service Fabric built-in roles to Entra constrained user](#assign-service-fabric-built-in-roles-to-entra-constrained-user)
     - Service Fabric Cluster Contributor
     - Service Fabric Managed Cluster Contributor
 - Assign Entra constrained user to Azure Key Vault Access Policy
@@ -25,22 +25,30 @@ For Service Fabric service connection configurations, it is recommended to use E
 
 - Administrative access to Azure Subscription and Resource Group that allows creation of custom roles and assignment of roles.
 - Default Service Fabric cluster deployment consisting of:
- - Service Fabric Cluster
- - Virtual Network
- - Public IP Address
- - Load Balancer
- - Virtual Machine Scale Set
- - Storage Accounts
-- Entra constrained user that can be assigned with the following permissions:
- - Azure Key Vault Access Policy
- - Azure Subscription Custom Role
- - Azure Resource Group Custom Role
+  - Service Fabric Cluster
+  - Virtual Network
+  - Public IP Address
+  - Load Balancer
+  - Virtual Machine Scale Set
+  - Storage Accounts
+- Entra constrained user that will be assigned the following roles:
+  - Azure Key Vault Access Policy
+  - Azure Subscription Custom Role
+  - Azure Resource Group Custom Role
+  - Service Fabric Cluster Contributor
 
-## Azure Subscription Configuration
+## Azure Portal Subscription Configuration
+
+To configure Azure Access control (IAM) for Service Fabric cluster deployments, currently, a custom role at the subscription level is required. This is necessary to allow the Entra constrained user to deploy Service Fabric clusters in the subscription. The custom roles should be created with the minimum permissions required for Service Fabric cluster deployments.
 
 ### Subscription Access Control (IAM)
 
-### Azure Subscription Custom Role Definition
+- Login to [Azure Portal](https://portal.azure.com) as a subscription owner / administrator
+- On the Subscription blade, select Access control (IAM), then select Add custom role
+- Fill in the required fields
+- JSON definition for the custom role is provided below. This definition should be modified with subscription id and required permissions.
+
+#### Create Azure Subscription Custom Role Definition
 
 ```json
 {
@@ -65,11 +73,25 @@ For Service Fabric service connection configurations, it is recommended to use E
 }
 ```
 
-## Azure Resource Group Configuration
+#### Assign Azure Subscription Custom Role to Entra constrained user
+
+- On the Subscription blade, select Access control (IAM), then select Add role assignment
+- Select the custom role created in the previous step
+- Select the Entra constrained user
+- Select Review + assign
+
+## Azure Portal Resource Group Configuration
+
+To configure Azure Access control (IAM) for Service Fabric cluster deployments, a custom role at the resource group level is required. This is necessary to allow the Entra constrained user to deploy Service Fabric clusters in the resource group. The custom roles should be created with the minimum permissions required for Service Fabric cluster deployments.
 
 ### Resource Group Access Control (IAM)
 
-### Azure Resource Group Custom Role Definition
+#### Create Azure Resource Group Custom Role Definition
+
+- Login to [Azure Portal](https://portal.azure.com) as a subscription owner / administrator
+- On the Resource Group blade, select Access control (IAM), then select Add custom role
+- Fill in the required fields
+- JSON definition for the custom role is provided below. This definition should be modified with subscription id, resource group and required permissions.
 
 ```json
 {
@@ -97,7 +119,21 @@ For Service Fabric service connection configurations, it is recommended to use E
 }
 ```
 
-## Assign built-in roles to Entra constrained user
+#### Assign Azure Resource Group Custom Role to Entra constrained user
+
+- On the Resource Group blade, select Access control (IAM), then select Add role assignment
+- Select the custom role created in the previous step
+- Select the Entra constrained user
+- Select Review + assign
+
+## Assign Service Fabric built-in roles to Entra constrained user
+
+- On the Resource Group blade, select Access control (IAM), then select Add role assignment
+- Select one of the built-in roles:
+    - Service Fabric Cluster Contributor
+    - Service Fabric Managed Cluster Contributor
+- Select the Entra constrained user
+- Select Review + assign
 
 ## Assign Entra constrained user to Azure Key Vault Access Policy
 
@@ -107,13 +143,25 @@ For Service Fabric service connection configurations, it is recommended to use E
 
 ### Azure Portal Service Fabric cluster deployment
 
+- Login to [Azure Portal](https://portal.azure.com) as Entra constrained user
+- Select Resource Group
+- Select +Create
+- Select [Service Fabric Cluster](https://portal.azure.com/#create/Microsoft.ServiceFabricCluster) or [Service Fabric Managed Cluster](https://portal.azure.com/#create/Microsoft.ManagedServiceFabricCluster)
+- Fill in the required fields
+
 ### PowerShell Service Fabric cluster deployment
+
+```powershell
+# connect to Azure with global admin account
+Connect-AzAccount -TenantId <tenant id> -SubscriptionId <subscription id>
+# create new service fabric cluster arm template deployment
+New-AzResourceGroupDeployment -ResourceGroupName <resource group> -TemplateFile <template file> -TemplateParameterFile <parameters file>
+```
 
 ## Scenarios
 
 - Azure Portal Service Fabric cluster deployment
 - PowerShell Service Fabric cluster deployment
-- Azure DevOps Service Connection configuration
 - Azure Portal Service Fabric managed cluster deployment
 - PowerShell Service Fabric managed cluster deployment
 
@@ -147,8 +195,8 @@ $roleDefinition = @'
   }
 }
 '@
-
 New-AzRoleDefinition -InputObject $roleDefinition
+
 $roleDefinition = @'
 {
   "properties": {
@@ -174,7 +222,6 @@ $roleDefinition = @'
   }
 }
 '@
-
 New-AzRoleDefinition -InputObject $roleDefinition
 ```
 
@@ -183,6 +230,7 @@ New-AzRoleDefinition -InputObject $roleDefinition
 ```powershell
 # connect to Azure with global admin account
 Connect-AzAccount -TenantId <tenant id> -SubscriptionId <subscription id>
+
 # assign subscription role definition
 New-AzRoleAssignment -SignInName <user email> -RoleDefinitionName "service fabric subscription custom role for deployments" -Scope "/providers/Microsoft.Management/managementGroups/<subscription id>"
 
@@ -195,6 +243,7 @@ New-AzRoleAssignment -SignInName <user email> -RoleDefinitionName "service fabri
 ```powershell
 # connect to Azure with global admin account
 Connect-AzAccount -TenantId <tenant id> -SubscriptionId <subscription id>
+
 # get subscription role definition
 Get-AzRoleDefinition -Name "service fabric subscription custom role for deployments"
 
@@ -204,20 +253,6 @@ Get-AzRoleDefinition -Name "service fabric resource group custom role for deploy
 # get role assignment
 Get-AzRoleAssignment -SignInName <user email>
 ```
-
-## Troubleshooting
-
-
-
-## Reference
-
-- https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-services-resource-providers
-- https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-- https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles
-- https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments
-- https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal
-- https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps
-- https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-to-resource-group
 
 ## Built-in roles
 
@@ -278,3 +313,13 @@ Get-AzRoleAssignment -SignInName <user email>
   }
 }
 ```
+
+## Reference
+
+- https://learn.microsoft.com/azure/azure-resource-manager/management/azure-services-resource-providers
+- https://learn.microsoft.com/azure/role-based-access-control/built-in-roles
+- https://learn.microsoft.com/azure/role-based-access-control/custom-roles
+- https://learn.microsoft.com/azure/role-based-access-control/role-assignments
+- https://learn.microsoft.com/azure/role-based-access-control/role-assignments-portal
+- https://learn.microsoft.com/azure/role-based-access-control/role-assignments-steps
+- https://learn.microsoft.com/azure/azure-resource-manager/templates/deploy-to-resource-group
