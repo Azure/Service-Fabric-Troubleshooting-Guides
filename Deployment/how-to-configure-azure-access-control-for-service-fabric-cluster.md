@@ -2,10 +2,6 @@
 
 The steps below describe how to configure Azure Access control Custom Roles for Service Fabric clusters. This configuration is based on default deployment parameters and may need to be adjusted based on specific requirements. These steps have been tested with Service Fabric clusters deployed in Azure as a default Entra constrained user that is not the subscription owner / administrator.
 
-## Azure Devops Service Connection Options
-
-For Service Fabric service connection configurations, it is recommended to use Entra (Azure Active Directory / AAD) for authentication and certificate common name for server certificate lookup. This configuration is maintenance free and provides the best security. This is the only service connection configuration that supports parallel deployments per agent host. See [Agent limitations](#agent-limitations).
-
 ## Process
 
 - Verify [Requirements](#requirements)
