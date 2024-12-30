@@ -11,8 +11,8 @@ The steps below describe how to configure Azure Access control Custom Roles for 
 - [Create Azure Resource Group Custom Role Definition](#create-azure-resource-group-custom-role-definition)
 - [Assign Azure Resource Group Custom Role to Entra constrained user](#assign-azure-resource-group-custom-role-to-entra-constrained-user)
 - [Assign Service Fabric built-in roles to Entra constrained user](#assign-service-fabric-built-in-roles-to-entra-constrained-user)
-    - Service Fabric Cluster Contributor
-    - Service Fabric Managed Cluster Contributor
+  - Service Fabric Cluster Contributor
+  - Service Fabric Managed Cluster Contributor
 - Assign Entra constrained user to Azure Key Vault Access Policy
 - Assign any additional roles to Entra constrained user necessary for custom deployment
 - Test Entra constrained user configuration
@@ -126,8 +126,8 @@ To configure Azure Access control (IAM) for Service Fabric cluster deployments, 
 
 - On the Resource Group blade, select Access control (IAM), then select Add role assignment
 - Select one of the built-in roles:
-    - Service Fabric Cluster Contributor
-    - Service Fabric Managed Cluster Contributor
+  - Service Fabric Cluster Contributor
+  - Service Fabric Managed Cluster Contributor
 - Select the Entra constrained user
 - Select Review + assign
 
