@@ -66,6 +66,15 @@ Expressions for placement constraints and node properties are specified using th
 
 ## Troubleshooting
 
+### PowerShell Commands
+
+- `Get-ServiceFabricClusterManifest` - Retrieves the cluster manifest for the Service Fabric cluster.
+- `Get-ServiceFabricNode` - Retrieves information about the nodes in the Service Fabric cluster.
+- `Get-ServiceFabricDeployedApplication` - Retrieves information about the applications deployed in the Service Fabric cluster on a node.
+- `Get-ServiceFabricService` - Retrieves information about the services deployed in the Service Fabric cluster.
+- `Get-ServiceFabricReplica` - Retrieves information about the replicas deployed in the Service Fabric cluster.
+
+
 ### Enumerating the node properties
 
 ## Reference
