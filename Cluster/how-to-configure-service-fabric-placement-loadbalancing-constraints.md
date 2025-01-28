@@ -88,13 +88,55 @@ Connect-ServiceFabricCluster
 ### Add / Update key-value pairs for node properties
 
 ```powershell
-Update-ServiceFabricNode -NodeName "Node1" -Property "HasSSD" -Value "true"
+$resourceGroupName = "myResourceGroup"
+$clusterName = "myCluster"
+$nodeTypeName = "NodeType0"
+$key = "HasSSD"
+$value = "true"
+
+$resource = Get-AzResource -Name $clusterName -ResourceGroupName $resourceGroupName -ResourceType 'microsoft.servicefabric/clusters'
+$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -id $resource.Id -SkipAllParameterization
+$cluster = ConvertFrom-Json (Get-Content $jsonFile)
+
+foreach($nodeType in $cluster.properties.nodeTypes) {
+    if($nodeType.name -eq $nodeTypeName) {
+        if($nodeType.placementProperties -eq $null) {
+            $nodeType.placementProperties = @{$key = $value}
+        }
+        elseif($nodeType.placementProperties.ContainsKey($key)) {
+            $nodeType.placementProperties.$key = $value
+        }
+        else {
+            $nodeType.placementProperties.Add($key, $value)
+        }
+    }
+}
+
+New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster
 ```
 
 ### Remove key-value pairs for node properties
 
 ```powershell
-Update-ServiceFabricNode -NodeName "Node1" -Property "HasSSD" -Remove
+$resourceGroupName = "myResourceGroup"
+$clusterName = "myCluster"
+$nodeTypeName = "NodeType0"
+$key = "HasSSD"
+$value = "true"
+
+$resource = Get-AzResource -Name $clusterName -ResourceGroupName $resourceGroupName -ResourceType 'microsoft.servicefabric/clusters'
+$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -id $resource.Id -SkipAllParameterization
+$cluster = ConvertFrom-Json (Get-Content $jsonFile)
+
+foreach($nodeType in $cluster.properties.nodeTypes) {
+    if($nodeType.name -eq $nodeTypeName) {
+        if($nodeType.placementProperties -ne $null -and $nodeType.placementProperties.ContainsKey($key)) {
+            $nodeType.placementProperties.Remove($key)
+        }
+    }
+}
+
+New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster
 ```
 
 ### Create a new service with placement constraints
@@ -205,7 +247,7 @@ See [Microsoft.ServiceFabric clusters/applications](https://learn.microsoft.com/
 -   `Get-ServiceFabricClusterManifest` - Retrieves the cluster manifest for the Service Fabric cluster.
 -   `Get-ServiceFabricNode` - Retrieves information about the nodes in the Service Fabric cluster.
 -   `Get-ServiceFabricDeployedApplication` - Retrieves information about the applications deployed in the Service Fabric cluster on a node.
--   `Get-ServiceFabricService` - Retrieves information about the services deployed in the Service Fabric cluster.
+-   `Get-ServiceFabricService -Application <fabric:/Application Name>` - Retrieves information about the services deployed in the Service Fabric cluster.
 -   `Get-ServiceFabricReplica` - Retrieves information about the replicas deployed in the Service Fabric cluster.
 
 
