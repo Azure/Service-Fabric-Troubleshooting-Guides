@@ -1,8 +1,14 @@
+# todo: use 'placement properties' are on the node type 'placement constraints' use the 'placement properties'
+# todo: add best practices
+    - not using nodename (single point of failure)
+    - nodetype is preferred
+    - application manifest is preferred as configuration will not be lost during application upgrade 
+
 # How to Configure Service Fabric Placement and Load Balancing Constraints
 
-This article explains how to configure Service Fabric placement and load balancing constraints (PLB). It is based on the official documentation and provides a step-by-step guide with examples.
+This article explains how to configure Service Fabric placement and load balancing (PLB) constraints. It is based on the official documentation and provides a step-by-step guide with examples.
 
-PLB is a feature of Service Fabric that allows you to control the placement of services and replicas on nodes in the cluster. Typically, this is done with default built-in constraints `NodeType` or `NodeName`, but you can also define custom constraints to optimize the placement of services and replicas based on specific requirements.
+PLB is a feature of Service Fabric that allows you to control the placement of services and replicas on nodes in the cluster. Typically, this is done with default built-in node properties `NodeType` or `NodeName`, but you can also define custom constraints to optimize the placement of services and replicas based on specific requirements.
 
 PLB is enabled at the cluster level and constraints are specified statically in application manifest or dynamically with powershell for the Service Fabric application and as tags on a node. Use the `PlacementConstraints` and `NodeProperties` elements to define constraints that control where services and replicas are placed in the cluster.
 
@@ -18,7 +24,7 @@ Dynamic node tags are used to assign custom properties to nodes in the cluster b
 
 ### Service Fabric Cluster Resource Manager
 
-The Service Fabric Cluster Resource Manager is responsible for balancing the placement of services and replicas in the cluster based on the constraints specified in the application manifest file. The Cluster Resource Manager uses the Placement and Load Balancing (PLB) service to optimize the placement of services and replicas in the cluster based on the constraints specified in the application manifest file. See [Service Fabric Cluster Resource Manager](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-balancing) for more information.
+The Service Fabric Cluster Resource Manager is responsible for balancing the placement of services and replicas in the cluster based on the constraints specified in the application manifest file. The Cluster Resource Manager uses the Placement and Load Balancing (PLB) service to optimize the placement of services and replicas in the cluster based on the constraints specified in the application manifest file. See [Service Fabric Cluster Resource Manager](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-balancing) for more information. CRM is a metrics based cluster level balancing mechanism.
 
 ## Placement Design
 
@@ -64,7 +70,7 @@ Expressions for placement constraints and node properties are specified using th
 
 ### Step 1: Determine the key-value pairs for node properties and placement constraints
 
-### Step 2: Assign values to nodes in the cluster based on the custom properties
+### Step 2: Assign values to node type in the cluster based on the custom properties
 
 ### Step 3: Define expression using node properties in the application manifest file
 
@@ -78,11 +84,21 @@ To configure PLB constraints dynamically using PowerShell, you can use the follo
 
 ### Connect to cluster
 
-From a node in cluster, open a PowerShell window and run the following commands to connect to the Service Fabric cluster:
+From an admin machine with [Service Fabric SDK](https://learn.microsoft.com/azure/service-fabric/service-fabric-get-started) installed, open a [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) (pwsh.exe) window and run the following commands to connect to the Service Fabric cluster. These commands do require PowerShell 6+, Azure 'Az.Accounts', and 'Az.Resources' modules to be installed. [Connect-ServiceFabricCluster](https://learn.microsoft.com/powershell/module/servicefabric/connect-servicefabriccluster) cmdlet is used to connect to the cluster and has many options. Refer to online documentation and [Connecting to secure clusters with PowerShell](Connecting%20to%20secure%20clusters%20with%20PowerShell.md):
 
 ```powershell
 Import-Module ServiceFabric
-Connect-ServiceFabricCluster
+# Install-Module -Name Az.Accounts -AllowClobber -Scope CurrentUser
+# Install-Module -Name Az.Resources -AllowClobber -Scope CurrentUser
+
+# Connect to the cluster has many options, here is an example using X509 certificate
+Connect-ServiceFabricCluster -ConnectionEndpoint "mycluster.westus.cloudapp.azure.com:19000" `
+    -X509Credential `
+    -ServerCertThumbprint "<server thumbprint>" `
+    -FindType FindByThumbprint `
+    -FindValue "<client thumbprint>"
+
+Connect-AzAccount
 ```
 
 ### Add / Update key-value pairs for node properties
@@ -95,24 +111,27 @@ $key = "HasSSD"
 $value = "true"
 
 $resource = Get-AzResource -Name $clusterName -ResourceGroupName $resourceGroupName -ResourceType 'microsoft.servicefabric/clusters'
-$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -id $resource.Id -SkipAllParameterization
-$cluster = ConvertFrom-Json (Get-Content $jsonFile)
+$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -Resource $resource.Id -SkipAllParameterization -Force
+$cluster = ConvertFrom-Json -AsHashTable (Get-Content -Raw $jsonFile.Path)
 
-foreach($nodeType in $cluster.properties.nodeTypes) {
-    if($nodeType.name -eq $nodeTypeName) {
+foreach($nodeType in $cluster.resources.properties.nodeTypes) {
+    if($nodeType.name -ieq $nodeTypeName) {
         if($nodeType.placementProperties -eq $null) {
+            Write-Host "Setting placement properties for node type $nodeTypeName"
             $nodeType.placementProperties = @{$key = $value}
         }
         elseif($nodeType.placementProperties.ContainsKey($key)) {
+            Write-Host "Updating placement properties for node type $nodeTypeName"
             $nodeType.placementProperties.$key = $value
         }
         else {
+            Write-Host "Adding placement properties for node type $nodeTypeName"
             $nodeType.placementProperties.Add($key, $value)
         }
     }
 }
 
-New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster
+New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster -Verbose
 ```
 
 ### Remove key-value pairs for node properties
@@ -125,18 +144,19 @@ $key = "HasSSD"
 $value = "true"
 
 $resource = Get-AzResource -Name $clusterName -ResourceGroupName $resourceGroupName -ResourceType 'microsoft.servicefabric/clusters'
-$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -id $resource.Id -SkipAllParameterization
-$cluster = ConvertFrom-Json (Get-Content $jsonFile)
+$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -Resource $resource.Id -SkipAllParameterization -Force
+$cluster = ConvertFrom-Json -AsHashTable (Get-Content -Raw $jsonFile.Path)
 
-foreach($nodeType in $cluster.properties.nodeTypes) {
-    if($nodeType.name -eq $nodeTypeName) {
+foreach($nodeType in $cluster.resources.properties.nodeTypes) {
+    if($nodeType.name -ieq $nodeTypeName) {
         if($nodeType.placementProperties -ne $null -and $nodeType.placementProperties.ContainsKey($key)) {
+            Write-Host "Removing placement properties for node type $nodeTypeName"
             $nodeType.placementProperties.Remove($key)
         }
     }
 }
 
-New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster
+New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster -Verbose
 ```
 
 ### Create a new service with placement constraints
@@ -230,7 +250,7 @@ See [Microsoft.ServiceFabric clusters/applications](https://learn.microsoft.com/
         "partitionDescription": {
             "partitionScheme": "Singleton"
         },
-        "placementConstraints": "(HasSSD == true && NodeType==NodeType0)",
+        "placementConstraints": "(HasSSD == true && NodeType==NodeType0)", // todo: confirm this
         "serviceLoadMetrics": [
         ],
         "servicePlacementPolicies": [
@@ -260,3 +280,5 @@ See [Microsoft.ServiceFabric clusters/applications](https://learn.microsoft.com/
 -   [Service Fabric Cluster Resource Manager](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-balancing)
 
 -   [Introduction to dynamic node tags](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-node-tagging)
+
+-   [Advanced Placement Properties](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-advanced-placement-rules-placement-policies)
