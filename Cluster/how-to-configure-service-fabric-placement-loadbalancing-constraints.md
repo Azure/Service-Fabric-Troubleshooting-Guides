@@ -1,8 +1,10 @@
 # todo: use 'placement properties' are on the node type 'placement constraints' use the 'placement properties'
+
 # todo: add best practices
+
     - not using nodename (single point of failure)
     - nodetype is preferred
-    - application manifest is preferred as configuration will not be lost during application upgrade 
+    - application manifest is preferred as configuration will not be lost during application upgrade
 
 # How to Configure Service Fabric Placement and Load Balancing Constraints
 
@@ -31,32 +33,6 @@ The Service Fabric Cluster Resource Manager is responsible for balancing the pla
 Determining the key-value pairs for the node properties and placement constraints is the first step in configuring PLB constraints. You can use `NodeType` or `NodeName` as built-in properties, or define custom properties based on your requirements.
 
 Resource capacity, load, or other custom attributes can be used as node properties to optimize the placement of services and replicas in the cluster. You can define custom properties in the application manifest file and assign values to nodes in the cluster.
-
-### Placement Expression operators
-
-[Placement Constraints and node property syntax](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-cluster-description#placement-constraints-and-node-property-syntax)
-
-Expressions for placement constraints and node properties are specified using the following operators:
-
--   `==` (equals)
--   `!=` (not equals)
--   `>` (greater than)
--   `<` (less than)
--   `>=` (greater than or equal to)
--   `<=` (less than or equal to)
--   `&&` (logical AND)
--   `||` (logical OR)
--   `!` (logical NOT)
--   `(` and `)` (parentheses for grouping)
-
-### Placement Expression Examples
-
--   `NodeType == "FrontEnd"`
--   `NodeType != "BackEnd"`
--   `NodeType == "FrontEnd" && NodeName == "Node1"`
--   `NodeType == "FrontEnd" || NodeName == "Node1"`
--   `Value > 10`
--   `Value <= 10`
 
 ## Process
 
@@ -101,21 +77,34 @@ Connect-ServiceFabricCluster -ConnectionEndpoint "mycluster.westus.cloudapp.azur
 Connect-AzAccount
 ```
 
-### Add / Update key-value pairs for node properties
+### Add / Update / Remove key-value pairs for node properties
 
 ```powershell
+#Requires -PSEdition Core
+# set parameters
 $resourceGroupName = "myResourceGroup"
 $clusterName = "myCluster"
 $nodeTypeName = "NodeType0"
 $key = "HasSSD"
 $value = "true"
+$addOrRemove = "add" # or "remove"
+$jsonFile = "$pwd\cluster.json"
 
-$resource = Get-AzResource -Name $clusterName -ResourceGroupName $resourceGroupName -ResourceType 'microsoft.servicefabric/clusters'
-$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -Resource $resource.Id -SkipAllParameterization -Force
-$cluster = ConvertFrom-Json -AsHashTable (Get-Content -Raw $jsonFile.Path)
+$resource = Get-AzResource -Name $clusterName `
+    -ResourceGroupName $resourceGroupName `
+    -ResourceType 'microsoft.servicefabric/clusters'
+
+Export-AzResourceGroup -ResourceGroupName $resourceGroupName `
+    -Resource $resource.Id `
+    -Path $jsonFile `
+    -SkipAllParameterization `
+    -Force
+
+$cluster = ConvertFrom-Json -AsHashTable (Get-Content -Raw $jsonFile)
 
 foreach($nodeType in $cluster.resources.properties.nodeTypes) {
-    if($nodeType.name -ieq $nodeTypeName) {
+    if($nodeType.name -ine $nodeTypeName) { continue }
+    if($addOrRemove -ieq "add"){
         if($nodeType.placementProperties -eq $null) {
             Write-Host "Setting placement properties for node type $nodeTypeName"
             $nodeType.placementProperties = @{$key = $value}
@@ -129,34 +118,23 @@ foreach($nodeType in $cluster.resources.properties.nodeTypes) {
             $nodeType.placementProperties.Add($key, $value)
         }
     }
-}
-
-New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster -Verbose
-```
-
-### Remove key-value pairs for node properties
-
-```powershell
-$resourceGroupName = "myResourceGroup"
-$clusterName = "myCluster"
-$nodeTypeName = "NodeType0"
-$key = "HasSSD"
-$value = "true"
-
-$resource = Get-AzResource -Name $clusterName -ResourceGroupName $resourceGroupName -ResourceType 'microsoft.servicefabric/clusters'
-$jsonFile = Export-AzResourceGroup -ResourceGroupName $resourceGroupName -Resource $resource.Id -SkipAllParameterization -Force
-$cluster = ConvertFrom-Json -AsHashTable (Get-Content -Raw $jsonFile.Path)
-
-foreach($nodeType in $cluster.resources.properties.nodeTypes) {
-    if($nodeType.name -ieq $nodeTypeName) {
-        if($nodeType.placementProperties -ne $null -and $nodeType.placementProperties.ContainsKey($key)) {
+    elseif($addOrRemove -ieq "remove") {
+        if($nodeType.placementProperties -ne $null `
+            -and $nodeType.placementProperties.ContainsKey($key)) {
             Write-Host "Removing placement properties for node type $nodeTypeName"
             $nodeType.placementProperties.Remove($key)
+        }
+        else {
+            Write-Host "Key not found for $nodeTypeName"
         }
     }
 }
 
-New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateObject $cluster -Verbose
+$cluster | ConvertTo-Json -Depth 100 | Out-File -Path $jsonFile -Force
+New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
+    -TemplateFile $jsonFile `
+    -Mode Incremental `
+    -Verbose
 ```
 
 ### Create a new service with placement constraints
@@ -181,7 +159,7 @@ Update-ServiceFabricService -ServiceName $serviceName `
 
 ## Example ApplicationManifest.xml
 
-To configure PLB constraints statically in the application manifest file, you can use the following example:
+To configure PLB constraints statically in the application manifest file `<PlacementConstraints>` child element is used. See [Describe an application in ApplicationManifest.xml](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-and-service-manifests#describe-an-application-in-applicationmanifestxml) and the following example:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -199,9 +177,9 @@ To configure PLB constraints statically in the application manifest file, you ca
 
 ## Example ARM Template
 
-To configure PLB constraints using an ARM template, you can use the following example:
+To configure node properties using an ARM template, you can use the following example:
 
-### Define node properties and placement constraints
+### Define node properties
 
 ```json
 {
@@ -251,14 +229,38 @@ See [Microsoft.ServiceFabric clusters/applications](https://learn.microsoft.com/
             "partitionScheme": "Singleton"
         },
         "placementConstraints": "(HasSSD == true && NodeType==NodeType0)", // todo: confirm this
-        "serviceLoadMetrics": [
-        ],
-        "servicePlacementPolicies": [
-        ],
+        "serviceLoadMetrics": [],
+        "servicePlacementPolicies": [],
         "defaultMoveCost": ""
     }
 }
 ```
+
+### Placement Expression operators
+
+[Placement Constraints and node property syntax](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-cluster-description#placement-constraints-and-node-property-syntax)
+
+Expressions for placement constraints and node properties are specified using the following operators:
+
+-   `==` (equals)
+-   `!=` (not equals)
+-   `>` (greater than)
+-   `<` (less than)
+-   `>=` (greater than or equal to)
+-   `<=` (less than or equal to)
+-   `&&` (logical AND)
+-   `||` (logical OR)
+-   `!` (logical NOT)
+-   `(` and `)` (parentheses for grouping)
+
+### Placement Expression Examples
+
+-   `NodeType == "FrontEnd"`
+-   `NodeType != "BackEnd"`
+-   `NodeType == "FrontEnd" && NodeName == "Node1"`
+-   `NodeType == "FrontEnd" || NodeName == "Node1"`
+-   `Value > 10`
+-   `Value <= 10`
 
 ## Troubleshooting
 
@@ -269,7 +271,6 @@ See [Microsoft.ServiceFabric clusters/applications](https://learn.microsoft.com/
 -   `Get-ServiceFabricDeployedApplication` - Retrieves information about the applications deployed in the Service Fabric cluster on a node.
 -   `Get-ServiceFabricService -Application <fabric:/Application Name>` - Retrieves information about the services deployed in the Service Fabric cluster.
 -   `Get-ServiceFabricReplica` - Retrieves information about the replicas deployed in the Service Fabric cluster.
-
 
 ## Reference
 
@@ -282,3 +283,5 @@ See [Microsoft.ServiceFabric clusters/applications](https://learn.microsoft.com/
 -   [Introduction to dynamic node tags](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-node-tagging)
 
 -   [Advanced Placement Properties](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-advanced-placement-rules-placement-policies)
+
+-   [Service Fabric Service Model Schema Elements](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#placementconstraints-element)
