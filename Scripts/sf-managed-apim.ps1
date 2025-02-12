@@ -55,7 +55,8 @@ param(
     $adminPassword = '',
     $clusterName = $resourceGroupName,
     $clusterTemplateFile = "$pwd\sfmc-template.json",
-    $serviceFabricAppUrl = 'fabric:/sfWeatherApiCore/WeatherApi',
+    $serviceFabricAppUrl = 'fabric:/sf-sample-weatherforecast/VotingWebCore', #'fabric:/sfWeatherApiCore/WeatherApi',
+    $urlTemplate = '/WeatherForecast',
     $clientCertificateThumbprint = '',
     $apimBackendTemplate = "$pwd\apim-backend.json",
     $apimIpDomainNameLabel = 'apimip',
@@ -238,7 +239,7 @@ New-AzResourceGroupDeployment -Name 'sfmcDeployment' ``
     -TemplateParameterObject $($sfmc | convertto-json) ``
     -DeploymentDebugLogLevel All ``
     -Verbose ``
-    -Debug
+    -Force
 " -foregroundColor Cyan
 
 New-AzResourceGroupDeployment -Name 'sfmcDeployment' `
@@ -247,7 +248,7 @@ New-AzResourceGroupDeployment -Name 'sfmcDeployment' `
     -TemplateParameterObject $sfmc `
     -DeploymentDebugLogLevel All `
     -Verbose `
-    -Debug
+    -Force
 
 write-host "deploy service fabric application '$serviceFabricAppUrl' to cluster before continuing." -foregroundColor Magenta
 pause
@@ -258,27 +259,119 @@ write-host "Get-AzApiManagement -ResourceGroupName $resourceGroupName -Name $api
 $apimService = Get-AzApiManagement -ResourceGroupName $resourceGroupName -Name $apimName
 write-host "apimservice: $($apimService | convertto-json)" -foregroundColor Cyan
 
-if (!($apimservice.Identity) -or !($apimservice.Identity.Type -contains 'SystemAssigned')) {
-    # Update an API Management instance
-    write-host "Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity" -foregroundColor Cyan
-    Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity
-}
+write-host "Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity" -foregroundColor Cyan
+Set-AzApiManagement -InputObject $apimService -SystemAssignedIdentity
 
 write-host "configuration key vault access using managed identity"
 $managedIdentityId = (Get-AzADServicePrincipal -SearchString $apimName).Id
 
+# write-host "
+# Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName ``
+#     -ObjectId $managedIdentityId ``
+#     -PermissionsToSecrets get,list ``
+#     -PermissionsToCertificates get,list ``
+#     -PermissionsToKeys get,list
+# " -foregroundColor Cyan
+
+# Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName `
+#     -ObjectId $managedIdentityId `
+#     -PermissionsToSecrets get, list `
+#     -PermissionsToCertificates get, list `
+#     -PermissionsToKeys get, list
+
+# $currentUserId = (Get-AzADUser -UserPrincipalName (Get-AzContext).Account).Id
+# write-host "adding current user to key vault access policy: $currentUserId" -foregroundColor Cyan
+# write-host "
+# Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName ``
+#     -ObjectId $currentUserId ``
+#     -PermissionsToSecrets get,list ``
+#     -PermissionsToCertificates get,list ``
+#     -PermissionsToKeys get,list
+# " -foregroundColor Cyan
+
+# Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName `
+#     -ObjectId $currentUserId `
+#     -PermissionsToSecrets get, list `
+#     -PermissionsToCertificates get, list `
+#     -PermissionsToKeys get,list
+# https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations
+
+write-host "getting key vault"
+write-host "Get-AzKeyVault -VaultName $keyVaultName" -foregroundColor Cyan
+$keyvault = Get-AzKeyVault -VaultName $keyVaultName
+
+if(!$keyvault) {
+    write-host "key vault not found. exiting." -foregroundColor Red
+    return
+}
+
+$roleDefId = (Get-AzRoleDefinition -Name 'Key Vault Reader').Id
+$roleSecDefId = (Get-AzRoleDefinition -Name 'Key Vault Secrets User').Id
+
 write-host "
-Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName ``
+New-AzRoleAssignment -RoleDefinitionId $roleDefId ``
     -ObjectId $managedIdentityId ``
-    -PermissionsToSecrets get,list ``
-    -PermissionsToCertificates get,list
+    -Scope $($keyvault.ResourceId)
 " -foregroundColor Cyan
 
-Set-AzKeyVaultAccessPolicy -VaultName $keyVaultName `
+New-AzRoleAssignment -RoleDefinitionId $roleDefId `
     -ObjectId $managedIdentityId `
-    -PermissionsToSecrets get, list `
-    -PermissionsToCertificates get, list `
-    -PermissionsToKeys get, list
+    -Scope $keyvault.ResourceId
+
+write-host "
+New-AzRoleAssignment -RoleDefinitionId $roleSecDefId ``
+    -ObjectId $managedIdentityId ``
+    -Scope $($keyvault.ResourceId)
+" -foregroundColor Cyan
+
+New-AzRoleAssignment -RoleDefinitionId $roleSecDefId `
+    -ObjectId $managedIdentityId `
+    -Scope $keyvault.ResourceId
+    
+$currentUserId = (Get-AzADUser -UserPrincipalName (Get-AzContext).Account).Id
+write-host "adding current user to key vault access policy: $currentUserId" -foregroundColor Cyan
+write-host "
+New-AzRoleAssignment -RoleDefinitionId $roleDefId ``
+    -ObjectId $currentUserId ``
+    -Scope $($keyvault.ResourceId)
+" -foregroundColor Cyan
+
+New-AzRoleAssignment -RoleDefinitionId $roleDefId `
+    -ObjectId $currentUserId `
+    -Scope $keyvault.ResourceId
+
+write-host "
+New-AzRoleAssignment -RoleDefinitionId $roleSecDefId ``
+    -ObjectId $currentUserId ``
+    -Scope $($keyvault.ResourceId)
+" -foregroundColor Cyan
+
+New-AzRoleAssignment -RoleDefinitionId $roleSecDefId `
+    -ObjectId $currentUserId `
+    -Scope $keyvault.ResourceId
+
+write-host "waiting for key vault access policy to propagate. sleep 5 minutes"
+start-sleep -s 300
+$count = 0
+$maxCount = 10
+$policy = $null
+while ($count -lt $maxCount -and !$policy) {
+    $count++
+    write-host "waiting for key vault access policy to propagate $count of $maxCount" -foregroundColor Yellow
+    $keyvault = Get-AzKeyVault -VaultName $keyVaultName
+    $policy = $keyvault.AccessPolicies.ObjectId -contains $managedIdentityId
+    if (!$policy) {
+        start-sleep -s 10
+    }
+    else {
+        write-host "key vault access policy propagated $($policy | out-string)" -foregroundColor Green
+    }
+}
+
+if ($count -ge $maxCount) {
+    write-host "key vault access policy did not propagate in time." -foregroundColor Red
+    # return
+}
 
 write-host "creating key vault certificate in apim"
 write-host "New-AzApiManagementContext -ResourceGroupName $resourceGroupName -ServiceName $apimName" -foregroundColor Cyan
@@ -287,6 +380,9 @@ $apiMgmtContext = New-AzApiManagementContext -ResourceGroupName $resourceGroupNa
 write-host "New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier" -foregroundColor Cyan
 $keyvault = New-AzApiManagementKeyVaultObject -SecretIdentifier $secretIdentifier
 
+$global:apiMgmtContext = $apiMgmtContext
+$global:keyvault = $keyvault
+$global:kvcertId = $kvcertId
 write-host "New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault" -foregroundColor Cyan
 $keyVaultCertificate = New-AzApiManagementCertificate -Context $apiMgmtContext -CertificateId $kvcertId -KeyVault $keyvault
 
@@ -315,7 +411,7 @@ New-AzResourceGroupDeployment -Name 'apimBackendDeployment' ``
     -TemplateParameterObject $($backend | convertto-json) ``
     -DeploymentDebugLogLevel All ``
     -Verbose ``
-    -Debug
+    -Force
 " -foregroundColor Cyan
 
 New-AzResourceGroupDeployment -Name 'apimBackendDeployment' `
@@ -324,7 +420,7 @@ New-AzResourceGroupDeployment -Name 'apimBackendDeployment' `
     -TemplateParameterObject $backend `
     -DeploymentDebugLogLevel All `
     -Verbose `
-    -Debug
+    -Force
 
 write-host "creating api in apim"
 $apiId = 'service-fabric-app'
@@ -356,7 +452,7 @@ New-AzApiManagementOperation -Context $apiMgmtContext ``
     -OperationId $operationId ``
     -Name $operationName ``
     -Method 'GET' ``
-    -UrlTemplate '' ``
+    -UrlTemplate '$urlTemplate' ``
     -Description ''
 " -foregroundColor Cyan
 
@@ -365,7 +461,7 @@ New-AzApiManagementOperation -Context $apiMgmtContext `
     -OperationId $operationId `
     -Name $operationName `
     -Method 'GET' `
-    -UrlTemplate '' `
+    -UrlTemplate $urlTemplate `
     -Description ''
 
 write-host "creating api policy"
@@ -395,9 +491,9 @@ Set-AzApiManagementPolicy -Context $apiMgmtContext ``
     -Format 'application/vnd.ms-azure-apim.policy.raw+xml'
 " -foregroundColor Cyan
 
-Set-AzApiManagementPolicy -Context $apiMgmtContext ``
-    -ApiId $apiId ``
-    -Policy $policyString ``
-    -Format 'application/vnd.ms-azure-apim.policy.raw+xml'
+Set-AzApiManagementPolicy -Context $apiMgmtContext `
+-ApiId $apiId `
+-Policy $policyString `
+-Format 'application/vnd.ms-azure-apim.policy.raw+xml'
 
 write-host 'finished' -foregroundColor Green
