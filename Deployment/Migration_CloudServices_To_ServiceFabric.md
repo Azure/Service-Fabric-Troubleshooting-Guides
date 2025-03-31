@@ -2,7 +2,7 @@
 
 This document provides a decision matrix to help evaluate migration options for an Azure solution currently built on Cloud Services. The matrix compares various Azure platform technologies to help guide your re-architecting decisions.
 
----
+--- 
 
 ## Decision Matrix
 
