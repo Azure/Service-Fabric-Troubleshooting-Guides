@@ -132,9 +132,9 @@ foreach($nodeType in $cluster.resources.properties.nodeTypes) {
 
 $cluster | ConvertTo-Json -Depth 100 | Out-File -Path $jsonFile -Force
 New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
-    -TemplateFile $jsonFile `
-    -Mode Incremental `
-    -Verbose
+  -TemplateFile $jsonFile `
+  -Mode Incremental `
+  -Verbose
 ```
 
 ### Create a new service with placement constraints
@@ -242,46 +242,46 @@ See [Microsoft.ServiceFabric clusters/applications](https://learn.microsoft.com/
 
 Expressions for placement constraints and node properties are specified using the following operators:
 
--   `==` (equals)
--   `!=` (not equals)
--   `>` (greater than)
--   `<` (less than)
--   `>=` (greater than or equal to)
--   `<=` (less than or equal to)
--   `&&` (logical AND)
--   `||` (logical OR)
--   `!` (logical NOT)
--   `(` and `)` (parentheses for grouping)
+- `==` (equals)
+- `!=` (not equals)
+- `>` (greater than)
+- `<` (less than)
+- `>=` (greater than or equal to)
+- `<=` (less than or equal to)
+- `&&` (logical AND)
+- `||` (logical OR)
+- `!` (logical NOT)
+- `(` and `)` (parentheses for grouping)
 
 ### Placement Expression Examples
 
--   `NodeType == "FrontEnd"`
--   `NodeType != "BackEnd"`
--   `NodeType == "FrontEnd" && NodeName == "Node1"`
--   `NodeType == "FrontEnd" || NodeName == "Node1"`
--   `Value > 10`
--   `Value <= 10`
+- `NodeType == "FrontEnd"`
+- `NodeType != "BackEnd"`
+- `NodeType == "FrontEnd" && NodeName == "Node1"`
+- `NodeType == "FrontEnd" || NodeName == "Node1"`
+- `Value > 10`
+- `Value <= 10`
 
 ## Troubleshooting
 
 ### PowerShell Commands
 
--   `Get-ServiceFabricClusterManifest` - Retrieves the cluster manifest for the Service Fabric cluster.
--   `Get-ServiceFabricNode` - Retrieves information about the nodes in the Service Fabric cluster.
--   `Get-ServiceFabricDeployedApplication` - Retrieves information about the applications deployed in the Service Fabric cluster on a node.
--   `Get-ServiceFabricService -Application <fabric:/Application Name>` - Retrieves information about the services deployed in the Service Fabric cluster.
--   `Get-ServiceFabricReplica` - Retrieves information about the replicas deployed in the Service Fabric cluster.
+- `Get-ServiceFabricClusterManifest` - Retrieves the cluster manifest for the Service Fabric cluster.
+- `Get-ServiceFabricNode` - Retrieves information about the nodes in the Service Fabric cluster.
+- `Get-ServiceFabricDeployedApplication` - Retrieves information about the applications deployed in the Service Fabric cluster on a node.
+- `Get-ServiceFabricService -Application <fabric:/Application Name>` - Retrieves information about the services deployed in the Service Fabric cluster.
+- `Get-ServiceFabricReplica` - Retrieves information about the replicas deployed in the Service Fabric cluster.
 
 ## Reference
 
--   [Node properties and placement constraints](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-cluster-description#node-properties-and-placement-constraints)
+- [Node properties and placement constraints](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-cluster-description#node-properties-and-placement-constraints)
 
--   [Describe an application in ApplicationManifest.xml](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-and-service-manifests#describe-an-application-in-applicationmanifestxml)
+- [Describe an application in ApplicationManifest.xml](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-and-service-manifests#describe-an-application-in-applicationmanifestxml)
 
--   [Service Fabric Cluster Resource Manager](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-balancing)
+- [Service Fabric Cluster Resource Manager](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-balancing)
 
--   [Introduction to dynamic node tags](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-node-tagging)
+- [Introduction to dynamic node tags](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-node-tagging)
 
--   [Advanced Placement Properties](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-advanced-placement-rules-placement-policies)
+- [Advanced Placement Properties](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-advanced-placement-rules-placement-policies)
 
--   [Service Fabric Service Model Schema Elements](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#placementconstraints-element)
+- [Service Fabric Service Model Schema Elements](https://learn.microsoft.com/azure/service-fabric/service-fabric-service-model-schema-elements#placementconstraints-element)
