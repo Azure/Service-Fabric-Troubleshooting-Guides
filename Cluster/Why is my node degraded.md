@@ -18,7 +18,7 @@ The report is periodically emitted.
 - **Disk failed:** This indicates the node is unable to read/write into the disk. This could be caused by a faulty disk, an OS problem, the node is unable to flush its data or could also be a side effect of the node consumming too much memory. This problem can make the node bugcheck when the probe goes unresponsive for more than 15 minutes. This can also make the node fail to open the reliability subsystem; if that is the case, you will see a health report indicating so. 
 ## Diagnose
 - The warning should include a status code to investigate. Use this status code to investigate what can cause the reported condition.
-- You might need to RDP into the node in order to check what is happening. You may find that the node is unresponsive and the RDP session can't be established. If that is the case, [try restarting the node](#restart-the-node)
+- You might need to RDP into the node in order to check what is happening. You may find that the node is unresponsive and the RDP session can't be established. If that is the case, [try restarting the node](#Restart-the-Service-Fabric-Node )
 
 ### Network probe failed
 Go to [winsock error codes](https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2) and see what can trigger the reported error.
