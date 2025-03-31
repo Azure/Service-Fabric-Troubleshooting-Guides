@@ -18,7 +18,7 @@ The report is periodically emitted.
 - **Disk failed:** This indicates the node is unable to read/write into the disk. This could be caused by a faulty disk, an OS problem, the node is unable to flush its data or could also be a side effect of the node consumming too much memory. This problem can make the node bugcheck when the probe goes unresponsive for more than 15 minutes. This can also make the node fail to open the reliability subsystem; if that is the case, you will see a health report indicating so. 
 ## Diagnose
 - The warning should include a status code to investigate. Use this status code to investigate what can cause the reported condition.
-- You might need to RDP into the node in order to check what is happening. You may find that the node is unresponsive and the RDP session can't be established. If that is the case, [try restarting the node](#Restart-the-Service-Fabric-Node )
+- You might need to RDP into the node in order to check what is happening. You may find that the node is unresponsive and the RDP session can't be established. If that is the case, [try restarting the node](#Restart-the-Service-Fabric-Node)
 
 ### Network probe failed
 Go to [winsock error codes](https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2) and see what can trigger the reported error.
@@ -29,14 +29,14 @@ If you happen to find a process responsible for this condition, [restarting the 
 The node might not have enough memory to perform the requested operation. There might be a leaking process, or the node could be overloaded. 
 If you have access to the node, investigate what is causing the memory exhaustion problem inside the node. Open Windows Task Manager and check the memory usage; you might find a process using excessive memory, or multiple spawn processes; 
 If that is the case, you would need to [stop the process.](#stop-the-rogue-process) <br/>
-If the node is not responding or there is no apparent cause for this failure to happen, [try restarting the node.](#restart-the-node)
+If the node is not responding or there is no apparent cause for this failure to happen, [try restarting the node.](#Restart-the-Service-Fabric-Node)
 
 ### Disk Probe
 > This is reported from the root disk where fabric bits are installed.
 
 This problem gets automatically mitigated after 15 minutes of solid failures. If the node doesn't restart and you keep seeing this error, it could mean that the problem is transient and it is possible that the node has a bad disk or there might be an ongoing issue causing disk unavailability. <br/>
 Open the Windows Event Viewer. Inside Windows Logs/System You might be able to see some warnings/errors where the disk is the source. Use [chkdsk](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/chkdsk?tabs=event-viewer) to check and try to repair the disk.<br/> 
-If the disk is healthy, there could be a problem with the system and [restarting the node](#restart-the-node) could help to mitigate the issue.
+If the disk is healthy, there could be a problem with the system and [restarting the node](#Restart-the-Service-Fabric-Node) could help to mitigate the issue.
 
 # Mitigations
 
