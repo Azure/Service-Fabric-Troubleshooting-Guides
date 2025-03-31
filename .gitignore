@@ -16,3 +16,5 @@
 *.vsidx
 /.vs/Service-Fabric-Troubleshooting-Guides/v17/DocumentLayout.json
 /.vs/Service-Fabric-Troubleshooting-Guides/v17/.wsuo
+/.vs/Service-Fabric-Troubleshooting-Guides/copilot-chat/
+/.vs/Service-Fabric-Troubleshooting-Guides/CopilotIndices/
