@@ -189,7 +189,7 @@ Minimal changes to application architecture, focusing on adapting existing code 
 - Doesn't fully leverage Service Fabric capabilities
 - May require future refactoring to optimize
 
-**Important Limitation**: Service Fabric Managed Clusters currently **do not support containers**. If your application requires IIS, Windows-specific server components, or other dependencies that would be best containerized, you will need to use a traditional Service Fabric cluster with Windows Container support instead of a Managed Cluster. Consider this limitation carefully when planning your lift-and-shift migration approach.
+**Important Limitation**: Service Fabric Managed Clusters currently **do not support containers**. If your application requires IIS, Windows-specific server components, or other dependencies that would be best containerized, you will need to use a traditional Service Fabric cluster with Windows Container support instead of a Managed Cluster. Consider this limitation carefully when planning your lift-and-shift migration approach.  Refer to [Containerize existing Windows applications](https://learn.microsoft.com/en-us/previous-versions/azure/architecture/service-fabric/modernize-app-azure-service-fabric#containerize-existing-windows-applications)
 
 #### Refactor to Microservices
 Decompose application into microservices for greater scalability and easier maintenance.
@@ -214,7 +214,7 @@ Decompose application into microservices for greater scalability and easier main
 
 #### When to Use Traditional Service Fabric Clusters:
 - Applications requiring Windows Containers
-- Workloads with IIS dependencies
+- Workloads with IIS dependencies (should containerize)
 - Applications with complex server component dependencies
 - Scenarios requiring containerization
 
