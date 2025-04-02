@@ -296,7 +296,7 @@ public class IncrementalMigrationService
 
 ## State Backup and Restore
 
-Service Fabric provides a built-in Periodic Backup and Restore feature that can be configured at the application, service, or partition level. This is the recommended approach for backing up stateful services.
+Service Fabric provides a built-in [Periodic Backup and Restore](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-backuprestoreservice-configure-periodic-backup) feature that can be configured at the application, service, or partition level. This is the recommended approach for backing up stateful services.
 
 ### 1. Backup Policy Configuration
 
@@ -305,6 +305,33 @@ First, create a backup policy that defines:
 - Storage location (Azure Blob Store or File Share)
 - Retention policy
 - Auto-restore settings
+
+#### Using Managed Identity for Azure Blob Storage
+
+1. First, enable managed identity on your Service Fabric cluster's VMSS:
+
+```powershell
+# Enable system-assigned managed identity
+$vmss = Get-AzVmss -ResourceGroupName "MyResourceGroup" -VMScaleSetName "MyClusterVMSS"
+Update-AzVmss -ResourceGroupName "MyResourceGroup" -Name "MyClusterVMSS" -VirtualMachineScaleSet $vmss -IdentityType "SystemAssigned"
+
+# Or enable user-assigned managed identity
+$identity = New-AzUserAssignedIdentity -ResourceGroupName "MyResourceGroup" -Name "MyBackupIdentity"
+$vmss = Get-AzVmss -ResourceGroupName "MyResourceGroup" -VMScaleSetName "MyClusterVMSS"
+Update-AzVmss -ResourceGroupName "MyResourceGroup" -Name "MyClusterVMSS" -VirtualMachineScaleSet $vmss -IdentityType "UserAssigned" -IdentityId $identity.Id
+```
+
+2. Assign the necessary RBAC roles:
+
+```powershell
+# Get the managed identity principal ID
+$principalId = (Get-AzUserAssignedIdentity -ResourceGroupName "MyResourceGroup" -Name "MyBackupIdentity").PrincipalId
+
+# Assign Storage Blob Data Contributor role
+New-AzRoleAssignment -ObjectId $principalId -RoleDefinitionName "Storage Blob Data Contributor" -Scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account>"
+```
+
+3. Configure backup policy with managed identity:
 
 ```json
 {
@@ -320,10 +347,12 @@ First, create a backup policy that defines:
         ]
     },
     "Storage": {
-        "StorageKind": "AzureBlobStore",
-        "FriendlyName": "Azure_storagesample",
-        "ConnectionString": "<Your Azure Storage Connection String>",
-        "ContainerName": "backup-container"
+        "StorageKind": "ManagedIdentityAzureBlobStore",
+        "FriendlyName": "AzureMI_storagesample",
+        "BlobServiceUri": "https://<account-name>.blob.core.windows.net",
+        "ContainerName": "backup-container",
+        "ManagedIdentityType": "VMSS",
+        "ManagedIdentityClientId": "<Client-Id of User-Assigned MI>"  // Optional, only needed if using user-assigned identity
     },
     "RetentionPolicy": {
         "RetentionPolicyType": "Basic",
@@ -364,32 +393,115 @@ You can also enable backup for specific services within your application:
 Enable-ServiceFabricServiceBackup -ServiceId "fabric:/MyApp/MyStatefulService" -BackupPolicy $policy
 ```
 
-### 4. Monitor Backup Status
+### 4. Comprehensive Monitoring and Alerting
 
-Monitor the backup status using PowerShell:
+#### 4.1. Backup Status Monitoring
 
 ```powershell
-# Get backup configuration for application
-Get-ServiceFabricApplicationBackupConfigurationInfo -ApplicationId "fabric:/MyApp"
+# Get detailed backup configuration
+$config = Get-ServiceFabricApplicationBackupConfigurationInfo -ApplicationId "fabric:/MyApp"
+Write-Host "Backup Policy: $($config.BackupPolicy.Name)"
+Write-Host "Schedule: $($config.BackupPolicy.Schedule.ScheduleKind)"
+Write-Host "Storage: $($config.BackupPolicy.Storage.StorageKind)"
 
-# Get backup configuration for service
-Get-ServiceFabricServiceBackupConfigurationInfo -ServiceId "fabric:/MyApp/MyStatefulService"
+# Get backup history
+$backups = Get-ServiceFabricApplicationBackupList -ApplicationId "fabric:/MyApp"
+$backups | ForEach-Object {
+    Write-Host "Backup ID: $($_.BackupId)"
+    Write-Host "Time: $($_.BackupTime)"
+    Write-Host "Location: $($_.BackupLocation)"
+    Write-Host "Status: $($_.BackupStatus)"
+}
 
-# List available backups
-Get-ServiceFabricApplicationBackupList -ApplicationId "fabric:/MyApp"
+# Get backup storage details
+$storageInfo = Get-ServiceFabricBackupStorageInfo -ApplicationId "fabric:/MyApp"
+Write-Host "Storage Type: $($storageInfo.StorageKind)"
+Write-Host "Container: $($storageInfo.ContainerName)"
 ```
 
-### 5. Restore from Backup
+#### 4.2. Azure Monitor Integration
 
-Restore from a backup using PowerShell:
+1. Create a Log Analytics workspace:
 
 ```powershell
-# Get backup details
+# Create Log Analytics workspace
+$workspace = New-AzOperationalInsightsWorkspace -ResourceGroupName "MyResourceGroup" -Name "MyBackupWorkspace" -Location "eastus"
+
+# Enable Service Fabric diagnostics
+$storageAccount = Get-AzStorageAccount -ResourceGroupName "MyResourceGroup" -Name "MyStorageAccount"
+Set-AzServiceFabricDiagnostics -ResourceGroupName "MyResourceGroup" -Name "MyCluster" -StorageAccountId $storageAccount.Id -WorkspaceId $workspace.CustomerId
+```
+
+2. Create monitoring alerts:
+
+```powershell
+# Create alert rule for backup failures
+$actionGroup = New-AzActionGroup -ResourceGroupName "MyResourceGroup" -Name "BackupAlerts" -ShortName "BackupAlert"
+Add-AzActionGroupReceiver -ActionGroupId $actionGroup.Id -Name "Email" -EmailReceiver -EmailAddress "admin@company.com"
+
+$condition = New-AzMetricAlertRuleV2Criteria -MetricName "BackupFailureCount" -TimeAggregation Count -Operator GreaterThan -Threshold 1
+New-AzMetricAlertRuleV2 -ResourceGroupName "MyResourceGroup" -Name "BackupFailureAlert" -Location "eastus" -TargetResourceId "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.ServiceFabric/clusters/MyCluster" -Condition $condition -ActionGroup $actionGroup.Id
+```
+
+### 5. Disaster Recovery Procedures
+
+#### 5.1. Backup Verification
+
+```powershell
+# Verify backup integrity
 $backupList = Get-ServiceFabricApplicationBackupList -ApplicationId "fabric:/MyApp"
 $latestBackup = $backupList | Sort-Object BackupTime -Descending | Select-Object -First 1
 
-# Restore from backup
+# Test restore in isolated environment
+$testRestore = Start-ServiceFabricApplicationRestore -ApplicationId "fabric:/MyApp" -BackupId $latestBackup.BackupId -Force
+Wait-ServiceFabricApplicationRestore -ApplicationId "fabric:/MyApp" -OperationId $testRestore.OperationId
+
+# Verify restored data
+$restoredData = Get-ServiceFabricApplicationBackupList -ApplicationId "fabric:/MyApp"
+Write-Host "Restore Status: $($restoredData.Status)"
+```
+
+#### 5.2. Disaster Recovery Plan
+
+1. **Pre-Disaster Preparation**:
+   - Maintain a list of critical services and their backup policies
+   - Document recovery time objectives (RTO) and recovery point objectives (RPO)
+   - Keep backup storage credentials and access information secure
+   - Regularly test restore procedures in isolated environments
+
+2. **During Disaster**:
+   - Assess the scope of data loss
+   - Identify the most recent valid backup
+   - Execute the restore procedure
+   - Verify data consistency after restore
+
+3. **Post-Disaster**:
+   - Document the incident and recovery process
+   - Update disaster recovery procedures based on lessons learned
+   - Review and update backup policies if needed
+
+#### 5.3. Cross-Region Disaster Recovery
+
+1. **Configure Geo-Replication**:
+   - Set up Azure Storage account with geo-replication
+   - Configure backup policies to use geo-replicated storage
+   - Maintain separate backup policies for different regions
+
+2. **Regional Failover Procedure**:
+```powershell
+# Stop services in affected region
+Stop-ServiceFabricApplication -ApplicationId "fabric:/MyApp"
+
+# Restore from backup in secondary region
+$backupList = Get-ServiceFabricApplicationBackupList -ApplicationId "fabric:/MyApp"
+$latestBackup = $backupList | Sort-Object BackupTime -Descending | Select-Object -First 1
 Start-ServiceFabricApplicationRestore -ApplicationId "fabric:/MyApp" -BackupId $latestBackup.BackupId
+
+# Verify restore completion
+Wait-ServiceFabricApplicationRestore -ApplicationId "fabric:/MyApp" -OperationId $restoreOperation.OperationId
+
+# Start services in secondary region
+Start-ServiceFabricApplication -ApplicationId "fabric:/MyApp"
 ```
 
 ### 6. Suspend and Resume Backup
