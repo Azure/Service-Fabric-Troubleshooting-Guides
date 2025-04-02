@@ -1,5 +1,13 @@
 # State Management Migration Example: Azure Cloud Services to Service Fabric
 
+> **Important Disclaimer**: This document demonstrates how to migrate state management to Service Fabric's Reliable Collections, but it's important to note that this is not a requirement. You can continue using external state stores (like Azure Table Storage, Azure SQL Database, etc.) with your Service Fabric services. The migration to Reliable Collections is an option that you may consider if you want to take advantage of the benefits of stateful services, such as:
+> - Lower latency for stateful operations
+> - Built-in replication and high availability
+> - Transactional consistency
+> - Simplified state management within the cluster
+>
+> However, if your current external state store is working well for your needs, you can keep using it with Service Fabric services. The services can still access external stores while running in Service Fabric.
+
 This document provides a comprehensive example of migrating state management from Azure Cloud Services to Service Fabric's Reliable Collections. It includes detailed code examples, configuration changes, and best practices for state management.
 
 ## Table of Contents
