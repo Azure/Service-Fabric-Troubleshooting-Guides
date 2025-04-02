@@ -296,171 +296,151 @@ public class IncrementalMigrationService
 
 ## State Backup and Restore
 
-### 1. Backup Configuration
-```xml
-<ApplicationManifest ...>
-  <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="StatefulServicePkg" ServiceManifestVersion="1.0.0" />
-    <ConfigOverrides>
-      <ConfigOverride Name="Config">
-        <Settings>
-          <Section Name="BackupRestore">
-            <Parameter Name="BackupInterval" Value="3600" />
-            <Parameter Name="BackupRetentionPeriod" Value="86400" />
-          </Section>
-        </Settings>
-      </ConfigOverride>
-    </ConfigOverrides>
-  </ServiceManifestImport>
-</ApplicationManifest>
-```
+Service Fabric provides a built-in Periodic Backup and Restore feature that can be configured at the application, service, or partition level. This is the recommended approach for backing up stateful services.
 
-### 2. Backup Implementation
-```csharp
-public class BackupService : StatefulService
+### 1. Backup Policy Configuration
+
+First, create a backup policy that defines:
+- Backup schedule (frequency-based or time-based)
+- Storage location (Azure Blob Store or File Share)
+- Retention policy
+- Auto-restore settings
+
+```json
 {
-    private readonly TimeSpan _backupInterval;
-    private readonly TimeSpan _retentionPeriod;
-
-    protected override async Task RunAsync(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                // Create backup
-                await BackupAsync(BackupOption.Full, cancellationToken);
-                
-                // Wait for next backup interval
-                await Task.Delay(_backupInterval, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                // Handle backup errors
-                ServiceEventSource.Current.ServiceMessage(
-                    this.Context,
-                    $"Backup failed: {ex.Message}");
-            }
-        }
-    }
-
-    private async Task BackupAsync(BackupOption option, CancellationToken cancellationToken)
-    {
-        var backupDescription = new BackupDescription(
-            option,
-            true, // Force backup
-            this.BackupCallbackAsync);
-
-        await this.BackupAsync(backupDescription, cancellationToken);
-    }
-
-    private async Task<bool> BackupCallbackAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
-    {
-        // Implement backup callback
-        return true;
+    "Name": "DailyBackupPolicy",
+    "AutoRestoreOnDataLoss": false,
+    "MaxIncrementalBackups": 20,
+    "Schedule": {
+        "ScheduleKind": "TimeBased",
+        "ScheduleFrequencyType": "Daily",
+        "RunTimes": [
+            "0001-01-01T09:00:00Z",
+            "0001-01-01T18:00:00Z"
+        ]
+    },
+    "Storage": {
+        "StorageKind": "AzureBlobStore",
+        "FriendlyName": "Azure_storagesample",
+        "ConnectionString": "<Your Azure Storage Connection String>",
+        "ContainerName": "backup-container"
+    },
+    "RetentionPolicy": {
+        "RetentionPolicyType": "Basic",
+        "RetentionDuration": "P7D",
+        "MinimumNumberOfBackups": 5
     }
 }
 ```
+
+### 2. Enable Backup for Application
+
+Use PowerShell to enable backup for your application:
+
+```powershell
+# Create backup policy
+$policy = New-ServiceFabricBackupPolicy -Name "DailyBackupPolicy" `
+    -AutoRestoreOnDataLoss $false `
+    -MaxIncrementalBackups 20 `
+    -ScheduleKind TimeBased `
+    -ScheduleFrequencyType Daily `
+    -RunTimes @("09:00", "18:00") `
+    -StorageKind AzureBlobStore `
+    -ConnectionString "<Your Azure Storage Connection String>" `
+    -ContainerName "backup-container" `
+    -RetentionDuration "P7D" `
+    -MinimumNumberOfBackups 5
+
+# Enable backup for application
+Enable-ServiceFabricApplicationBackup -ApplicationId "fabric:/MyApp" -BackupPolicy $policy
+```
+
+### 3. Enable Backup for Specific Service
+
+You can also enable backup for specific services within your application:
+
+```powershell
+# Enable backup for specific service
+Enable-ServiceFabricServiceBackup -ServiceId "fabric:/MyApp/MyStatefulService" -BackupPolicy $policy
+```
+
+### 4. Monitor Backup Status
+
+Monitor the backup status using PowerShell:
+
+```powershell
+# Get backup configuration for application
+Get-ServiceFabricApplicationBackupConfigurationInfo -ApplicationId "fabric:/MyApp"
+
+# Get backup configuration for service
+Get-ServiceFabricServiceBackupConfigurationInfo -ServiceId "fabric:/MyApp/MyStatefulService"
+
+# List available backups
+Get-ServiceFabricApplicationBackupList -ApplicationId "fabric:/MyApp"
+```
+
+### 5. Restore from Backup
+
+Restore from a backup using PowerShell:
+
+```powershell
+# Get backup details
+$backupList = Get-ServiceFabricApplicationBackupList -ApplicationId "fabric:/MyApp"
+$latestBackup = $backupList | Sort-Object BackupTime -Descending | Select-Object -First 1
+
+# Restore from backup
+Start-ServiceFabricApplicationRestore -ApplicationId "fabric:/MyApp" -BackupId $latestBackup.BackupId
+```
+
+### 6. Suspend and Resume Backup
+
+You can temporarily suspend and resume backups:
+
+```powershell
+# Suspend backup
+Suspend-ServiceFabricApplicationBackup -ApplicationId "fabric:/MyApp"
+
+# Resume backup
+Resume-ServiceFabricApplicationBackup -ApplicationId "fabric:/MyApp"
+```
+
+### 7. Disable Backup
+
+When backup is no longer needed:
+
+```powershell
+# Disable backup
+Disable-ServiceFabricApplicationBackup -ApplicationId "fabric:/MyApp" -CleanBackup $true
+```
+
+### Important Considerations
+
+1. **Backup Storage**:
+   - For Azure clusters, use Azure Blob Storage with managed identity when possible
+   - For standalone clusters, use file share storage
+   - Ensure storage reliability meets your requirements
+
+2. **Backup Schedule**:
+   - Choose appropriate backup frequency based on data change rate
+   - Consider using incremental backups to optimize storage usage
+   - Schedule backups during low-traffic periods
+
+3. **Retention Policy**:
+   - Set appropriate retention duration based on compliance requirements
+   - Consider minimum number of backups needed for recovery
+   - Monitor storage costs
+
+4. **Auto Restore**:
+   - Disable auto-restore in production clusters
+   - Implement manual restore procedures
+   - Test restore procedures regularly
+
+5. **Monitoring**:
+   - Monitor backup success/failure rates
+   - Set up alerts for backup failures
+   - Track storage usage
 
 ## Performance Optimization
 
 ### 1. Batch Operations
-```csharp
-public class BatchOperationService : StatefulService
-{
-    private IReliableDictionary<string, Entity> _dictionary;
-
-    protected override async Task RunAsync(CancellationToken cancellationToken)
-    {
-        _dictionary = await StateManager.GetOrAddAsync<IReliableDictionary<string, Entity>>("Entities");
-
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            using (var tx = StateManager.CreateTransaction())
-            {
-                // Batch updates
-                var tasks = new List<Task>();
-                for (int i = 0; i < 100; i++)
-                {
-                    tasks.Add(_dictionary.AddOrUpdateAsync(
-                        tx,
-                        $"key{i}",
-                        new Entity { Value = i },
-                        (key, oldValue) => new Entity { Value = i }));
-                }
-
-                await Task.WhenAll(tasks);
-                await tx.CommitAsync();
-            }
-        }
-    }
-}
 ```
-
-### 2. Caching Strategy
-```csharp
-public class CachingService : StatefulService
-{
-    private IReliableDictionary<string, CacheEntry> _cache;
-    private readonly TimeSpan _cacheTimeout;
-
-    protected override async Task RunAsync(CancellationToken cancellationToken)
-    {
-        _cache = await StateManager.GetOrAddAsync<IReliableDictionary<string, CacheEntry>>("Cache");
-
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            using (var tx = StateManager.CreateTransaction())
-            {
-                var entry = await _cache.TryGetValueAsync(tx, "key");
-                if (entry.HasValue && !entry.Value.IsExpired(_cacheTimeout))
-                {
-                    // Use cached value
-                    ProcessValue(entry.Value);
-                }
-                else
-                {
-                    // Refresh cache
-                    var newValue = await FetchValueAsync();
-                    await _cache.SetAsync(tx, "key", new CacheEntry(newValue));
-                }
-
-                await tx.CommitAsync();
-            }
-        }
-    }
-}
-```
-
-## Key Migration Considerations
-
-### 1. State Partitioning
-- Choose appropriate partition scheme
-- Consider data locality
-- Handle partition rebalancing
-- Implement partition-aware operations
-
-### 2. Transaction Management
-- Use transactions consistently
-- Handle transaction timeouts
-- Implement retry logic
-- Consider transaction scope
-
-### 3. Data Consistency
-- Implement proper validation
-- Handle concurrent updates
-- Consider eventual consistency
-- Implement conflict resolution
-
-### 4. Performance
-- Use batch operations
-- Implement caching
-- Optimize collection usage
-- Monitor performance metrics
-
-## Additional Resources
-
-- [Service Fabric Documentation](https://docs.microsoft.com/azure/service-fabric)
-- [Reliable Collections](https://docs.microsoft.com/azure/service-fabric/service-fabric-reliable-services-reliable-collections)
-- [State Management](https://docs.microsoft.com/azure/service-fabric/service-fabric-reliable-services-state-management)
-- [Service Fabric Samples](https://github.com/Azure-Samples/service-fabric-dotnet-getting-started) 
