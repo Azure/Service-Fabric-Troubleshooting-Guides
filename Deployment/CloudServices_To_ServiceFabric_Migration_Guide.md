@@ -295,7 +295,7 @@ Use Visual Studio to create Service Fabric applications
 2. [Create a new Stateless Service - Service Fabric project](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-reliable-services-quick-start)
 3. [Create a new Stateful Service - Service Fabric project](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-create-your-first-application-in-visual-studio):
 
-### 3. Migrating Cloud Service Web Roles
+### 3. Migrating Cloud Service Web Roles - [Comprehensive Example](./WebRole_Migration_Example.md)
 
 1. Create a stateless service with ASP.NET Core
 2. Migrate controllers and views
@@ -374,7 +374,7 @@ internal sealed class WebFrontEnd : StatelessService
 }
 ```
 
-### 4. Migrating Cloud Service Worker Roles
+### 4. Migrating Cloud Service Worker Roles - [Comprehensive Example](./WorkerRole_Migration_Example.md)]
 
 1. Create a stateless service with background processing
 2. Move worker logic to RunAsync method
