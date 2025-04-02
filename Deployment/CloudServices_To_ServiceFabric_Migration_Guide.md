@@ -189,6 +189,8 @@ Minimal changes to application architecture, focusing on adapting existing code 
 - Doesn't fully leverage Service Fabric capabilities
 - May require future refactoring to optimize
 
+**Important Limitation**: Service Fabric Managed Clusters currently **do not support containers**. If your application requires IIS, Windows-specific server components, or other dependencies that would be best containerized, you will need to use a traditional Service Fabric cluster with Windows Container support instead of a Managed Cluster. Consider this limitation carefully when planning your lift-and-shift migration approach.
+
 #### Refactor to Microservices
 Decompose application into microservices for greater scalability and easier maintenance.
 
@@ -202,10 +204,25 @@ Decompose application into microservices for greater scalability and easier main
 - Requires architectural expertise
 - Longer migration timeline
 
-### 2. Migration Phases
+### 2. Migration Approaches Based on Application Requirements
 
-1. **Setup Service Fabric Managed Cluster Environment**
-   - Create a managed cluster using [Service Fabric Managed Cluster deployment tutorial](https://learn.microsoft.com/en-us/azure/service-fabric/tutorial-managed-cluster-deploy)
+#### When to Use Managed Clusters:
+- Applications built on .NET that can be directly migrated to Service Fabric services
+- ASP.NET Core web applications that can run without IIS
+- Applications with lightweight dependencies
+- New applications written specifically for Service Fabric
+
+#### When to Use Traditional Service Fabric Clusters:
+- Applications requiring Windows Containers
+- Workloads with IIS dependencies
+- Applications with complex server component dependencies
+- Scenarios requiring containerization
+
+### 3. Migration Phases
+
+1. **Setup Service Fabric Environment**
+   - For applications without container dependencies: Create a managed cluster using [Service Fabric Managed Cluster deployment tutorial](https://learn.microsoft.com/en-us/azure/service-fabric/tutorial-managed-cluster-deploy)
+   - For applications requiring containers: Create a traditional Service Fabric cluster with [Windows Container support](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started-containers-windows)
    - Configure networking and security
    - Establish CI/CD pipeline for Service Fabric
 
@@ -214,7 +231,7 @@ Decompose application into microservices for greater scalability and easier main
    - Migrate environment settings to Service Fabric parameters
 
 3. **Migrate Code**
-   - Adapt Web Roles to Stateless Services 
+   - Adapt Web Roles to Stateless Services or containerized applications
    - Adapt Worker Roles to Stateless Services or Reliable Services
    - Migrate Startup Tasks to Service Fabric setup code
 
