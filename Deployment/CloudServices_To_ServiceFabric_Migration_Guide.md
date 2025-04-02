@@ -74,41 +74,78 @@ Map your Cloud Services components to Service Fabric architectural patterns:
 
 ### 3. Service Fabric Cluster Structure for Managed Clusters
 
-**Basic Managed Cluster Structure:**
+For setting up a Service Fabric Managed Cluster, refer to the official ARM templates available in the [Azure QuickStart Templates repository](https://github.com/Azure/azure-quickstart-templates/tree/master/quickstarts/microsoft.servicefabric/sf-managed-cluster).
+
+A basic managed cluster ARM template looks like this (as shown in the [official documentation](https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-managed-cluster-template)):
 
 ```json
 {
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "defaultValue": "GEN-UNIQUE",
+      "metadata": {
+        "description": "Name of your cluster - Between 3 and 23 characters. Letters and numbers only."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Remote desktop user Id"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Remote desktop user password. Must be a strong password"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location of the Cluster"
+      }
+    }
+  },
+  "variables": {
+    "sfManagedClusterName": "[parameters('clusterName')]",
+    "managedNodeType": "NT1"
+  },
   "resources": [
     {
+      "apiVersion": "2021-11-01-preview",
       "type": "Microsoft.ServiceFabric/managedClusters",
-      "apiVersion": "2022-01-01",
-      "name": "[parameters('clusterName')]",
+      "name": "[variables('sfManagedClusterName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "Standard"
+        "name": "Basic"
       },
       "properties": {
-        "dnsName": "[parameters('clusterName')]",
-        "adminUserName": "[parameters('adminUserName')]",
-        "adminPassword": "[parameters('adminPassword')]",
-        "clientConnectionPort": 19000,
-        "httpGatewayConnectionPort": 19080,
-        "clientCertificateCommonNames": [],
-        "clientCertificateThumbprints": [],
-        "nodeTypes": [
-          {
-            "name": "FrontEnd",
-            "primaryCount": 5,
-            "vmInstanceCount": 5,
-            "dataDiskSizeGB": 100,
-            "vmImagePublisher": "MicrosoftWindowsServer",
-            "vmImageOffer": "WindowsServer",
-            "vmImageSku": "2019-Datacenter",
-            "vmImageVersion": "latest",
-            "vmSize": "Standard_D2s_v3",
-            "isPrimary": true
-          }
-        ]
+        "dnsName": "[variables('sfManagedClusterName')]",
+        "adminUserName": "[parameters('adminUsername')]",
+        "adminPassword": "[parameters('adminPassword')]"
+      }
+    },
+    {
+      "apiVersion": "2021-11-01-preview",
+      "type": "Microsoft.ServiceFabric/managedClusters/nodeTypes",
+      "name": "[concat(variables('sfManagedClusterName'), '/', variables('managedNodeType'))]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.ServiceFabric/managedClusters/', variables('sfManagedClusterName'))]"
+      ],
+      "sku": {
+        "name": "Standard",
+        "tier": "Standard"
+      },
+      "properties": {
+        "isPrimary": true,
+        "vmInstanceCount": 5,
+        "dataDiskSizeGB": 100,
+        "vmSize": "Standard_D2s_v3"
       }
     }
   ]
@@ -198,27 +235,43 @@ Decompose application into microservices for greater scalability and easier main
 
 ### 1. Setting Up a Service Fabric Managed Cluster
 
-```powershell
-# Deploy a Service Fabric managed cluster with Azure PowerShell
-New-AzResourceGroupDeployment `
-  -ResourceGroupName "myResourceGroup" `
-  -TemplateFile "sfmanagedcluster.json" `
-  -TemplateParameterFile "sfmanagedcluster.parameters.json"
+To deploy a Service Fabric managed cluster, use the Azure portal, Azure CLI, or ARM templates as documented in [Deploy a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/tutorial-managed-cluster-deploy).
+
+**Using Azure CLI:**
+
+```bash
+# Create a resource group
+az group create --name myResourceGroup --location eastus
+
+# Deploy the managed cluster
+az deployment group create \
+  --resource-group myResourceGroup \
+  --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/quickstarts/microsoft.servicefabric/sf-managed-cluster/azuredeploy.json \
+  --parameters clusterName=mysfcluster adminUsername=myadmin adminPassword=Password#1234
 ```
 
 For a portal-based setup, follow the [Quickstart: Create a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-managed-cluster-portal) tutorial.
 
 ### 2. Creating Service Fabric Application Projects
 
-- Install Service Fabric SDK and tools
-- Create Service Fabric application projects for each component:
+Use Visual Studio or the .NET CLI to create Service Fabric applications as documented in the [official tutorials](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-create-your-first-application-in-visual-studio):
 
-```powershell
+**Using Visual Studio:**
+1. Create a new project
+2. Select "Service Fabric Application"
+3. Choose service type (stateless/stateful)
+
+**Using .NET CLI:**
+
+```bash
+# Install the Service Fabric .NET SDK
+dotnet tool install --global Microsoft.ServiceFabric.ApplicationTemplates
+
 # Create a new Service Fabric application
-dotnet new sfreliable-services-app -n MyServiceFabricApp
+dotnet new sfreliable-services-app --name MyServiceFabricApp
 
 # Add a new stateless service
-dotnet new sfreliable-services-service --stateless -n MyStatelessService -na MyServiceFabricApp
+dotnet new sfreliable-services-service --name MyStatelessService --target-framework net6.0 --service-type Stateless --add-to-application MyServiceFabricApp
 ```
 
 ### 3. Migrating Cloud Service Web Roles
