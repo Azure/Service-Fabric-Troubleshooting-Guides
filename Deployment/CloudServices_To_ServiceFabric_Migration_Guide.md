@@ -235,22 +235,39 @@ Decompose application into microservices for greater scalability and easier main
 
 ### 1. Setting Up a Service Fabric Managed Cluster
 
-To deploy a Service Fabric managed cluster, use the Azure portal, Azure CLI, or ARM templates as documented in [Deploy a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/tutorial-managed-cluster-deploy).
+To deploy a Service Fabric managed cluster, you can use PowerShell commands as documented in [Tutorial: Deploy a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/tutorial-managed-cluster-deploy).
 
-**Using Azure CLI:**
+**Using PowerShell:**
 
-```bash
-# Create a resource group
-az group create --name myResourceGroup --location eastus
+```powershell
+# Connect to your Azure account
+Login-AzAccount
+Set-AzContext -SubscriptionId <your-subscription>
 
-# Deploy the managed cluster
-az deployment group create \
-  --resource-group myResourceGroup \
-  --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/quickstarts/microsoft.servicefabric/sf-managed-cluster/azuredeploy.json \
-  --parameters clusterName=mysfcluster adminUsername=myadmin adminPassword=Password#1234
+# Create a new resource group
+$resourceGroup = "myResourceGroup"
+$location = "EastUS2"
+New-AzResourceGroup -Name $resourceGroup -Location $location
+
+# Create a Service Fabric managed cluster
+$clusterName = "<unique cluster name>"
+$password = "Password4321!@#" | ConvertTo-SecureString -AsPlainText -Force
+$clientThumbprint = "<certificate thumbprint>"  # Client certificate for authentication
+$clusterSku = "Standard"
+
+New-AzServiceFabricManagedCluster -ResourceGroupName $resourceGroup -Location $location -ClusterName $clusterName -ClientCertThumbprint $clientThumbprint -ClientCertIsAdmin -AdminPassword $password -Sku $clusterSKU -Verbose
+
+# Add a primary node type to the cluster
+$nodeType1Name = "NT1"
+New-AzServiceFabricManagedNodeType -ResourceGroupName $resourceGroup -ClusterName $clusterName -Name $nodeType1Name -Primary -InstanceCount 5
 ```
 
-For a portal-based setup, follow the [Quickstart: Create a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-managed-cluster-portal) tutorial.
+Important notes:
+- For production deployments, use the Standard SKU (Basic SKU is only for testing)
+- You need to provide a client certificate thumbprint for accessing the cluster
+- Every Service Fabric cluster requires at least one primary node type
+
+You can also use the Azure portal or Azure CLI for deployment. For a portal-based setup, follow the [Quickstart: Create a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-managed-cluster-portal) tutorial.
 
 ### 2. Creating Service Fabric Application Projects
 
