@@ -50,17 +50,21 @@ New-ServiceFabricService -ApplicationName "fabric:/MyWebApp" -ServiceName "fabri
 ### New Service Fabric Stateless Service (.csproj)
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
+
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AzureFunctionsJobHost>true</AzureFunctionsJobHost>
-    <RootNamespace>MyWebService</RootNamespace>
-    <AssemblyName>MyWebService</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsServiceFabricServiceProject>True</IsServiceFabricServiceProject>
+    <ServerGarbageCollection>True</ServerGarbageCollection>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>True</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ServiceFabric.Services.AspNetCore" Version="6.0.0" />
-    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="6.0.0" />
+    <PackageReference Include="Microsoft.ServiceFabric.AspNetCore.Kestrel" Version="7.0.1949" />
   </ItemGroup>
+
 </Project>
 ```
 
@@ -80,87 +84,50 @@ public class WebRole : RoleEntryPoint
 
 ### New Service Fabric Stateless Service
 ```csharp
-public class WebService : StatelessService
+internal sealed class WebService : StatelessService
 {
-    private readonly ILogger<WebService> _logger;
-    private readonly IConfiguration _configuration;
-
-    public WebService(
-        StatelessServiceContext context,
-        ILogger<WebService> logger,
-        IConfiguration configuration)
+    public WebService(StatelessServiceContext context)
         : base(context)
-    {
-        _logger = logger;
-        _configuration = configuration;
-    }
+    { }
 
+    /// <summary>
+    /// Optional override to create listeners (like tcp, http) for this service instance.
+    /// </summary>
+    /// <returns>The collection of listeners.</returns>
     protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
     {
         return new ServiceInstanceListener[]
         {
             new ServiceInstanceListener(serviceContext =>
-                new KestrelListener(serviceContext, "ServiceEndpoint", (url, listener) =>
+                new KestrelCommunicationListener(serviceContext, "ServiceEndpoint", (url, listener) =>
                 {
-                    return new WebHostBuilder()
-                        .UseKestrel()
-                        .ConfigureServices(
-                            services => services
-                                .AddSingleton<StatelessServiceContext>(serviceContext)
-                                .AddSingleton<ILoggerFactory>(new LoggerFactory())
-                                .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
-                                .AddMvc())
-                        .UseContentRoot(Directory.GetCurrentDirectory())
-                        .UseStartup<Startup>()
-                        .UseUrls(url)
-                        .Build();
+                    ServiceEventSource.Current.ServiceMessage(serviceContext, $"Starting Kestrel on {url}");
+
+                    var builder = WebApplication.CreateBuilder();
+
+                    builder.Services.AddSingleton<StatelessServiceContext>(serviceContext);
+                    builder.WebHost
+                                .UseKestrel()
+                                .UseContentRoot(Directory.GetCurrentDirectory())
+                                .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.None)
+                                .UseUrls(url);
+                    builder.Services.AddControllersWithViews();
+                    var app = builder.Build();
+                    if (!app.Environment.IsDevelopment())
+                    {
+                    app.UseExceptionHandler("/Home/Error");
+                    }
+                    app.UseStaticFiles();
+                    app.UseRouting();
+                    app.UseAuthorization();
+                    app.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                    
+                    return app;
+
                 }))
         };
-    }
-}
-```
-
-## Startup Configuration
-
-```csharp
-public class Startup
-{
-    public Startup(IConfiguration configuration)
-    {
-        Configuration = configuration;
-    }
-
-    public IConfiguration Configuration { get; }
-
-    public void ConfigureServices(IServiceCollection services)
-    {
-        // Add services to the container
-        services.AddControllers();
-        services.AddSwaggerGen();
-        
-        // Add custom services
-        services.AddSingleton<IMyService, MyService>();
-        
-        // Configure options
-        services.Configure<MyOptions>(Configuration.GetSection("MySettings"));
-    }
-
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-    {
-        if (env.IsDevelopment())
-        {
-            app.UseDeveloperExceptionPage();
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
-        app.UseHttpsRedirection();
-        app.UseRouting();
-        app.UseAuthorization();
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapControllers();
-        });
     }
 }
 ```
@@ -230,19 +197,34 @@ public class WebApiApplication : System.Web.HttpApplication
 
 ### New Service Fabric Program.cs
 ```csharp
-public class Program
+internal static class Program
 {
-    public static void Main(string[] args)
+    /// <summary>
+    /// This is the entry point of the service host process.
+    /// </summary>
+    private static void Main()
     {
-        CreateHostBuilder(args).Build().Run();
-    }
+        try
+        {
+            // The ServiceManifest.XML file defines one or more service type names.
+            // Registering a service maps a service type name to a .NET type.
+            // When Service Fabric creates an instance of this service type,
+            // an instance of the class is created in this host process.
 
-    public static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseStartup<Startup>();
-            });
+            ServiceRuntime.RegisterServiceAsync("WebServiceType",
+                context => new WebService(context)).GetAwaiter().GetResult();
+
+            ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(WebService).Name);
+
+            // Prevents this host process from terminating so services keeps running. 
+            Thread.Sleep(Timeout.Infinite);
+        }
+        catch (Exception e)
+        {
+            ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
+            throw;
+        }
+    }
 }
 ```
 
