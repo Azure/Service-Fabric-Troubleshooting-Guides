@@ -119,13 +119,22 @@ For detailed setup instructions, see [Quickstart: Deploy a Service Fabric manage
 
 ### 4. Security Considerations
 
-Service Fabric security must be properly configured to ensure application and data protection:
+Service Fabric Managed Clusters automatically handle most security configurations, including:
+- Automatic cluster certificate rotation
+- Default secure node-to-node communication
+- Encryption of cluster configuration data
+- Built-in network security rules
 
-- **Cluster Security**: Follow the [Service Fabric Cluster Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security) guidelines
+For client authentication to clusters, you'll need to configure client certificates:
+- **Client Certificates**: For accessing cluster and Service Fabric Explorer
+  - Use either self-signed certificates (for development/testing) or
+  - CA-issued certificates (recommended for production)
+  - Add client certificates to your managed cluster configuration
+
 - **Application Security**: Implement [Application and Service Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-application-and-service-security) recommendations
 - **Network Security**: Configure NSGs and firewalls according to [Service Fabric Best Practices for Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-best-practices-security)
 
-For managed clusters, many security configurations are handled automatically, but you should still follow security best practices in your application code.
+With Managed Clusters, you can focus primarily on application-level security and controlled access to your cluster, while Microsoft handles the underlying cluster security infrastructure.
 
 ## Migration Strategy
 
