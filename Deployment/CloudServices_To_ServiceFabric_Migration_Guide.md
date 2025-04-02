@@ -271,25 +271,12 @@ You can also use the Azure portal or Azure CLI for deployment. For a portal-base
 
 ### 2. Creating Service Fabric Application Projects
 
-Use Visual Studio or the .NET CLI to create Service Fabric applications as documented in the [official tutorials](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-create-your-first-application-in-visual-studio):
+Use Visual Studio to create Service Fabric applications 
 
 **Using Visual Studio:**
-1. Create a new project
-2. Select "Service Fabric Application"
-3. Choose service type (stateless/stateful)
-
-**Using .NET CLI:**
-
-```bash
-# Install the Service Fabric .NET SDK
-dotnet tool install --global Microsoft.ServiceFabric.ApplicationTemplates
-
-# Create a new Service Fabric application
-dotnet new sfreliable-services-app --name MyServiceFabricApp
-
-# Add a new stateless service
-dotnet new sfreliable-services-service --name MyStatelessService --target-framework net6.0 --service-type Stateless --add-to-application MyServiceFabricApp
-```
+1. [Prepare your development environment on Windows](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started)
+2. [Create a new Stateless Service - Service Fabric project](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-reliable-services-quick-start)
+3. [Create a new Stateful Service - Service Fabric project](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-create-your-first-application-in-visual-studio):
 
 ### 3. Migrating Cloud Service Web Roles
 
@@ -622,9 +609,9 @@ Service Fabric managed clusters support [manual scaling](https://learn.microsoft
 
 Follow security best practices:
 - Apply [Service Fabric security best practices](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-best-practices-security)
-- Regularly update certificates
+- Regularly update client certificates
 - Review network security
-- Implement proper authentication and authorization
+- Implement proper authentication and authorization in applications
 
 ## Troubleshooting Guide
 
@@ -651,7 +638,7 @@ Follow security best practices:
 | Error | Possible Cause | Resolution |
 |-------|----------------|------------|
 | Service activation failed | Missing dependencies | Verify all dependencies are included in service package |
-| Communication failures | Network/firewall issues | Check NSG rules and service endpoints |
+| Communication failures | Network/firewall issues | Check LoadBalancer Rules/Probes, NSG rules, and service endpoints |
 | Configuration errors | Parameter mismatches | Validate configuration settings across all layers |
 | Scaling issues | Cluster capacity | Review node resource utilization and increase capacity if needed |
 
@@ -670,6 +657,7 @@ For a comprehensive example of migrating state management to Service Fabric, inc
 
 - [Azure Service Fabric Documentation](https://learn.microsoft.com/en-us/azure/service-fabric/)
 - [Service Fabric Managed Clusters Overview](https://learn.microsoft.com/en-us/azure/service-fabric/overview-managed-cluster)
+- [Connect to a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/how-to-managed-cluster-connect)
 - [Service Fabric Programming Models](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-choose-framework)
 - [Service Fabric Architecture](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-architecture)
 - [Service Fabric Production Readiness Checklist](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-production-readiness-checklist)
@@ -678,3 +666,4 @@ For a comprehensive example of migrating state management to Service Fabric, inc
 - [Service Fabric Cluster Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security)
 - [Microsoft Learn Path: Azure Service Fabric](https://learn.microsoft.com/en-us/training/paths/azure-service-fabric/)
 - [Service Fabric Sample Applications](https://github.com/Azure-Samples/service-fabric-dotnet-getting-started) 
+- [Service Fabric managed cluster configuration options](https://learn.microsoft.com/en-us/azure/service-fabric/how-to-managed-cluster-configuration)
