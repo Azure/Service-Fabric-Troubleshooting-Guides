@@ -283,6 +283,7 @@ Important notes:
 - For production deployments, use the Standard SKU (Basic SKU is only for testing)
 - You need to provide a client certificate thumbprint for accessing the cluster
 - Every Service Fabric cluster requires at least one primary node type
+- [Visualize your cluster with Service Fabric Explorer](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-visualizing-your-cluster)
 
 You can also use the Azure portal or Azure CLI for deployment. For a portal-based setup, follow the [Quickstart: Create a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-managed-cluster-portal) tutorial.
 
@@ -576,7 +577,7 @@ You can also use [Azure DevOps pipelines for automated deployments](https://lear
 
 ### 1. Monitoring and Diagnostics
 
-[Visualize your cluster with Service Fabric Explorer](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-visualizing-your-cluster?utm_source=chatgpt.com)
+[Visualize your cluster with Service Fabric Explorer](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-visualizing-your-cluster)
 
 Configure [Service Fabric monitoring and diagnostics](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-diagnostics-overview) for your application:
 
