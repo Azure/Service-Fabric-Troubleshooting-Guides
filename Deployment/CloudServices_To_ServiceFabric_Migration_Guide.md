@@ -282,7 +282,7 @@ New-AzServiceFabricManagedNodeType -ResourceGroupName $resourceGroup -ClusterNam
 Important notes:
 - For production deployments, use the Standard SKU (Basic SKU is only for testing)
 - You need to provide a client certificate thumbprint for accessing the cluster
-- Every Service Fabric cluster requires at least one primary node type
+- Every Service Fabric cluster requires one primary node type and may have one or more secondary node types
 - [Visualize your cluster with Service Fabric Explorer](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-visualizing-your-cluster)
 
 You can also use the Azure portal or Azure CLI for deployment. For a portal-based setup, follow the [Quickstart: Create a Service Fabric managed cluster](https://learn.microsoft.com/en-us/azure/service-fabric/quickstart-managed-cluster-portal) tutorial.
