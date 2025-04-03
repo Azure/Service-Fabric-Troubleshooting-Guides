@@ -110,6 +110,7 @@ internal sealed class WebService : StatelessService
                                 .UseKestrel()
                                 .UseContentRoot(Directory.GetCurrentDirectory())
                                 .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.None)
+                                .UseStartup<Startup>()
                                 .UseUrls(url);
                     builder.Services.AddControllersWithViews();
                     var app = builder.Build();
