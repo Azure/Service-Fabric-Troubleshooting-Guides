@@ -1,6 +1,6 @@
 # Web Role Migration Example: Azure Cloud Services to Service Fabric
 
-This document provides a comprehensive example of migrating an ASP.NET Web Role from Azure Cloud Services to a Service Fabric Stateless Service. It includes detailed code examples, configuration changes, and best practices.
+This document provides a comprehensive step-by-step guide for migrating an ASP.NET Web Role from Azure Cloud Services to a Service Fabric Stateless Service. It includes detailed code comparisons between the original Web Role and the new Service Fabric implementation, covering project structure, configuration files, service implementation, middleware components, and deployment strategies. Each section contains practical examples with side-by-side code samples to illustrate the migration path and necessary changes to successfully transition your web applications to the Service Fabric platform.
 
 ## Table of Contents
 1. [Project Structure Migration](#project-structure-migration)
