@@ -375,7 +375,7 @@ internal sealed class WebFrontEnd : StatelessService
 }
 ```
 
-### 4. Migrating Cloud Service Worker Roles - [Comprehensive Example](./WorkerRole_Migration_Example.md)]
+### 4. Migrating Cloud Service Worker Roles - [Comprehensive Example](./WorkerRole_Migration_Example.md)
 
 1. Create a stateless service with background processing
 2. Move worker logic to RunAsync method
