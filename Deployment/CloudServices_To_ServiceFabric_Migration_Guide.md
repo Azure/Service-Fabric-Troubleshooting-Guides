@@ -654,7 +654,7 @@ Follow security best practices:
 
 | Error | Possible Cause | Resolution |
 |-------|----------------|------------|
-| Service activation failed | Missing dependencies | Verify all dependencies are included in service package |
+| Service activation failed | Missing dependencies or configuration | Verify all dependencies and configuration values are included in service package |
 | Communication failures | Network/firewall issues | Check LoadBalancer Rules/Probes, NSG rules, and service endpoints |
 | Configuration errors | Parameter mismatches | Validate configuration settings across all layers |
 | Scaling issues | Cluster capacity | Review node resource utilization and increase capacity if needed |
