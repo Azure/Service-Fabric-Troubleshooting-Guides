@@ -646,7 +646,7 @@ Follow security best practices:
 
 ### 3. Performance Issues
 - Analyze resource usage
-- Check partition load
+- Check [partition load](https://learn.microsoft.com/en-us/powershell/module/servicefabric/get-servicefabricpartitionloadinformation?view=azureservicefabricps)
 - Validate scaling policies
 - Review service code for bottlenecks
 
