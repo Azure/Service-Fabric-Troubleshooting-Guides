@@ -662,13 +662,13 @@ Follow security best practices:
 ## Common Migration Scenarios
 
 ### 1. Web Role Migration
-For a comprehensive example of migrating a Web Role to Service Fabric, including detailed code examples, configuration changes, and best practices, see [Web Role Migration Example](./WebRole_Migration_Example.md).
+For a comprehensive step-by-step guide on migrating ASP.NET Web Roles to Service Fabric Stateless Services, see [Web Role Migration Example](./WebRole_Migration_Example.md). This guide provides detailed code comparisons between original Web Roles and Service Fabric implementations, covering project structure, configuration files, middleware migration, and deployment strategies with side-by-side code samples.
 
 ### 2. Worker Role Migration
-For a comprehensive example of migrating a Worker Role to Service Fabric, including detailed code examples, configuration changes, and best practices, see [Worker Role Migration Example](./WorkerRole_Migration_Example.md).
+For a detailed guide on transforming Worker Role background processing to Service Fabric, see [Worker Role Migration Example](./WorkerRole_Migration_Example.md). This guide demonstrates the architectural transition from Cloud Services background processing to reliable task execution in Service Fabric, including implementations for reliable timers, queue processing, and state persistence with practical code examples.
 
 ### 3. State Management Migration
-For a comprehensive example of migrating state management to Service Fabric, including detailed code examples, configuration changes, and best practices, see [State Management Migration Example](./StateManagement_Migration_Example.md).
+For in-depth guidance on migrating application state management to Service Fabric, see [State Management Migration Example](./StateManagement_Migration_Example.md). This technical guide covers transitioning to Reliable Collections with implementation patterns for session management, workflow processing, and caching, as well as data migration strategies, backup/restore procedures, and hybrid approaches combining Service Fabric state management with external stores.
 
 ## Additional Resources
 

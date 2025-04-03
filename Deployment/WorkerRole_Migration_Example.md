@@ -1,6 +1,6 @@
 # Worker Role Migration Example: Azure Cloud Services to Service Fabric
 
-This document provides a comprehensive example of migrating a Worker Role from Azure Cloud Services to a Service Fabric Stateless Service. It includes detailed code examples, configuration changes, and best practices for background processing.
+This document provides a comprehensive step-by-step guide for migrating a Worker Role from Azure Cloud Services to a Service Fabric Stateless Service. It demonstrates the architectural transition from traditional background processing in Cloud Services to the reliable task execution patterns in Service Fabric. The guide includes side-by-side code comparisons showing how to implement reliable timers, queue processing, state persistence, and health monitoring. Each section contains practical implementation examples to help you successfully transform your background processing workloads to leverage Service Fabric's resilience features and distributed architecture.
 
 ## Table of Contents
 1. [Project Structure Migration](#project-structure-migration)

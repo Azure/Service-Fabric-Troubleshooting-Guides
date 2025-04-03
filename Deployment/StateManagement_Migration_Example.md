@@ -8,7 +8,7 @@
 >
 > However, if your current external state store is working well for your needs, you can keep using it with Service Fabric services. The services can still access external stores while running in Service Fabric.
 
-This document provides a comprehensive example of migrating state management from Azure Cloud Services to Service Fabric's Reliable Collections. It includes detailed code examples, configuration changes, and best practices for state management.
+This document provides a detailed technical guide for migrating application state management from external storage solutions to Service Fabric's native state management capabilities. It covers the transition to Reliable Collections with practical implementation patterns, data migration strategies, and state persistence techniques. You'll find concrete code examples for common scenarios like session state management, workflow processing, and caching implementations, along with guidance on backup, restore, and disaster recovery procedures. The examples demonstrate both complete migration to Reliable Collections and hybrid approaches that combine Service Fabric state management with external data stores.
 
 ## Table of Contents
 1. [Overview](#overview)
