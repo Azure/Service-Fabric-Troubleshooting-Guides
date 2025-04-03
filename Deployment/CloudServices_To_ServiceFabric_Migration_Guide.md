@@ -576,6 +576,8 @@ You can also use [Azure DevOps pipelines for automated deployments](https://lear
 
 ### 1. Monitoring and Diagnostics
 
+[Visualize your cluster with Service Fabric Explorer](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-visualizing-your-cluster?utm_source=chatgpt.com)
+
 Configure [Service Fabric monitoring and diagnostics](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-diagnostics-overview) for your application:
 
 - Enable Application Insights
