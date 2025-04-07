@@ -684,6 +684,6 @@ For in-depth guidance on migrating application state management to Service Fabri
 - [Service Fabric Best Practices for Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-best-practices-security)
 - [Service Fabric Application and Service Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-application-and-service-security)
 - [Service Fabric Cluster Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security)
-- [Microsoft Learn Path: Azure Service Fabric](https://learn.microsoft.com/en-us/training/paths/azure-service-fabric/)
+- [Microsoft Training: Introduction to Azure Service Fabric](https://learn.microsoft.com/en-us/training/modules/intro-to-azure-service-fabric/)
 - [Service Fabric Sample Applications](https://github.com/Azure-Samples/service-fabric-dotnet-getting-started) 
 - [Service Fabric managed cluster configuration options](https://learn.microsoft.com/en-us/azure/service-fabric/how-to-managed-cluster-configuration)
