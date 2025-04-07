@@ -468,4 +468,4 @@ $status = Invoke-RestMethod -Uri "http://localhost:19080/Applications/$applicati
 - [Service Fabric Backup and Restore Service](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-backuprestoreservice-quickstart-azurecluster)
 - [Configure Periodic Backup](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-backuprestoreservice-configure-periodic-backup)
 - [Backup and Restore Service REST API Reference](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-backup-restore-service-rest-api-reference)
-- [Service Fabric Backup and Restore Service Overview](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-backuprestoreservice-overview)
+- [Service Fabric Backup and Restore Service Overview](https://learn.microsoft.com/en-us/rest/api/servicefabric/sfclient-index-backuprestore)
