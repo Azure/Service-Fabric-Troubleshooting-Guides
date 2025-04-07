@@ -332,6 +332,6 @@ New-ServiceFabricApplication -ApplicationName "fabric:/MyWorkerApp" -Application
 
 ## Additional Resources
 
-- [Service Fabric Documentation](https://docs.microsoft.com/azure/service-fabric)
-- [Reliable Collections](https://docs.microsoft.com/azure/service-fabric/service-fabric-reliable-services-reliable-collections)
+- [Service Fabric Documentation](https://learn.microsoft.com/azure/service-fabric)
+- [Reliable Collections](https://learn.microsoft.com/azure/service-fabric/service-fabric-reliable-services-reliable-collections)
 - [Service Fabric Samples](https://github.com/Azure-Samples/service-fabric-dotnet-getting-started) 

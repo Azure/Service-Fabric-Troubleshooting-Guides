@@ -325,6 +325,6 @@ New-ServiceFabricApplication -ApplicationName "fabric:/MyWebApp" -ApplicationTyp
 
 ## Additional Resources
 
-- [Service Fabric Documentation](https://docs.microsoft.com/azure/service-fabric)
-- [ASP.NET Core in Service Fabric](https://docs.microsoft.com/azure/service-fabric/service-fabric-reliable-services-communication-aspnetcore)
+- [Service Fabric Documentation](https://learn.microsoft.com/azure/service-fabric)
+- [ASP.NET Core in Service Fabric](https://learn.microsoft.com/azure/service-fabric/service-fabric-reliable-services-communication-aspnetcore)
 - [Service Fabric Samples](https://github.com/Azure-Samples/service-fabric-dotnet-getting-started) 
