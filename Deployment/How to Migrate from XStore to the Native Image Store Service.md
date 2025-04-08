@@ -4,7 +4,7 @@ The following steps outline the process for migrating from a specific XStore to 
 
 ## Prerequisites
 
-* **Restriction of image store migration:** Any change to the image store should not be allowed during the migration. If the content is copied from the original image store to the target image store, and before the cluster is switched to the target image store by fabric upgrade; any new changes on the original image store, brought by provision/un-provision/creation/upgrade/deletion, will be lost at the target image store and cause image store inconsistence problem. 
+* **Restriction of image store migration:** Any change to the image store should not be allowed during the migration. If the content is copied from the original image store to the target image store, and before the cluster is switched to the target image store by fabric upgrade; any new changes on the original image store, brought by provision/un-provision/creation/upgrade/deletion, will be lost at the target image store, leading to image store inconsistencies. 
 
 * **Ensure that the current cluster manifest has been provisioned:** It’s just the same as what any fabric upgrade demands. In case of failure of fabric upgrade, the provision of the original cluster manifest is required for the rollback. If it hasn’t been done yet, using the following commands to copy current cluster package to image store:
 
