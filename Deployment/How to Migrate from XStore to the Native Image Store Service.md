@@ -46,7 +46,7 @@ The following steps outline the process for migrating from a specific XStore to 
   ImageStoreCopier.exe /ConnectionEndpoint:"localhost:19000" /SourceImageStore:"xstore:DefaultEndpointsProtocol=https;AccountName=imagestorecopyer;AccountKey=xxxxx;Container=xstore6" /Compare
   ```
 
-  The target manifest should contain <Section Name="ImageStoreService">, like the following:
+  The target manifest should contain `<Section Name="ImageStoreService">`, like the following:
 
   ```xml
   <Section Name="ImageStoreService">
@@ -56,7 +56,7 @@ The following steps outline the process for migrating from a specific XStore to 
   </Section>
   ```
 
-  The target manifest should also contain <Parameter Name="ImageStoreConnectionString" Value="fabric:ImageStore" /> under the management section, like the following:
+  The target manifest should also contain `<Parameter Name="ImageStoreConnectionString" Value="fabric:ImageStore" />` under the management section, like the following:
 
   ```xml
   <Parameter Name="ImageStoreConnectionString" Value="fabric:ImageStore" />
