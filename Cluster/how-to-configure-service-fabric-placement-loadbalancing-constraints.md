@@ -1,58 +1,62 @@
-# todo: use 'placement properties' are on the node type 'placement constraints' use the 'placement properties'
+# How to Configure Service Fabric Placement Properties and Loadbalancing Constraints
 
-# todo: add best practices
-
-    - not using nodename (single point of failure)
-    - nodetype is preferred
-    - application manifest is preferred as configuration will not be lost during application upgrade
-
-# How to Configure Service Fabric Placement and Load Balancing Constraints
-
-This article explains how to configure Service Fabric placement and load balancing (PLB) constraints. It is based on the official documentation and provides a step-by-step guide with examples.
-
-PLB is a feature of Service Fabric that allows you to control the placement of services and replicas on nodes in the cluster. Typically, this is done with default built-in node properties `NodeType` or `NodeName`, but you can also define custom constraints to optimize the placement of services and replicas based on specific requirements.
+This article explains how to configure Service Fabric node placement properties and load balancing (PLB) constraints. PLB is a feature of Service Fabric Cluster Resource Manager (CRM) that allows you to control the placement of services and replicas on nodes in the cluster. Typically, this is done with default built-in node properties `NodeType` or `NodeName`, but you can also define custom constraints to optimize the placement of services and replicas based on specific requirements.
 
 PLB is enabled at the cluster level and constraints are specified statically in application manifest or dynamically with powershell for the Service Fabric application and as tags on a node. Use the `PlacementConstraints` and `NodeProperties` elements to define constraints that control where services and replicas are placed in the cluster.
 
-PLB can be configured to constrain the placement of services and replicas based on node properties such as capacity, load, or other custom attributes. PLB constraints are used to ensure that services and replicas are distributed evenly across the cluster, or to optimize the placement of services and replicas based on specific requirements. PLB constraints are configured by specifying key-value pairs for node properties and placement constraints in the application manifest file.
+PLB can also be configured to constrain the placement of services and replicas based on node properties such as capacity, load, or other custom attributes. PLB constraints are used to ensure that services and replicas are distributed evenly across the cluster, or to optimize the placement of services and replicas based on specific requirements.
 
 ## PLB Alternatives
 
-Related to PLB, there are other features and concepts in Service Fabric that can be used to control the placement of services and replicas in the cluster. These include:
+Here are some other features and concepts in Service Fabric that can be used to control the placement of services and replicas in the cluster. These include:
 
 ### Dynamic Node Tags
 
-Dynamic node tags are used to assign custom properties to nodes in the cluster based on specific requirements. Node tags can be used to optimize the placement of services and replicas in the cluster by specifying constraints based on the custom properties assigned to nodes. These are dynamic only by design and are configured using PowerShell. Dynamic node tags however do not use expressions like PLB constraints. See [Introduction to dynamic node tags](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-node-tagging) for more information.
+Dynamic node tags are used to assign custom properties to nodes in the cluster based on specific requirements. Node tags can be used to optimize the placement of services and replicas in the cluster by specifying the tag on nodes. These are dynamic only by design and are configured using PowerShell. Dynamic node tags however do not use expressions like PLB constraints. See [Introduction to dynamic node tags](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-node-tagging) for more information.
 
 ### Service Fabric Cluster Resource Manager
 
-The Service Fabric Cluster Resource Manager is responsible for balancing the placement of services and replicas in the cluster based on the constraints specified in the application manifest file. The Cluster Resource Manager uses the Placement and Load Balancing (PLB) service to optimize the placement of services and replicas in the cluster based on the constraints specified in the application manifest file. See [Service Fabric Cluster Resource Manager](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-balancing) for more information. CRM is a metrics based cluster level balancing mechanism.
+The Service Fabric Cluster Resource Manager (CRM) is responsible for balancing the placement of services and replicas in the cluster based on the constraints configured, metrics, and advanced placement rules. See [Service Fabric Cluster Resource Manager](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-resource-manager-balancing) for more information. CRM uses both default and custom metrics to determine the placement of services and replicas in the cluster. The default metrics are PrimaryCount, ReplicaCount, and Count of all services. CRM is also uses metrics from Resource Governance to determine the placement of services and replicas in the cluster.
+
+### Resource Governance
+
+Resource governance is a feature of Service Fabric that allows you to control the resource usage of services and replicas in the cluster. Resource governance can be used to optimize the placement of services and replicas based on resource usage, such as CPU and memory. See [Service Fabric Resource Governance](https://learn.microsoft.com/azure/service-fabric/service-fabric-resource-governance) for more information.
 
 ## Placement Design
 
-Determining the key-value pairs for the node properties and placement constraints is the first step in configuring PLB constraints. You can use `NodeType` or `NodeName` as built-in properties, or define custom properties based on your requirements.
+Determining the key-value pairs for the node properties and placement constraints is the first step in configuring PLB constraints. For example, you can use `NodeType` as built-in property, or define custom properties based on your requirements.
 
 Resource capacity, load, or other custom attributes can be used as node properties to optimize the placement of services and replicas in the cluster. You can define custom properties in the application manifest file and assign values to nodes in the cluster.
 
+## Best Practices
+
+- Use `NodeType` as it is a built-in property.
+- Do not use `NodeName` as it is a single point of failure.
+- Use custom properties if needed to optimize the placement of services and replicas based on specific requirements.
+- Use the application manifest file to define placement constraints. This ensures that the configuration is not lost during application upgrades.
+
 ## Process
 
-1. Determine the key-value pairs for node properties and placement constraints.
-2. If not using default properties, assign values to nodes in the cluster based on the custom properties.
-3. Define expression using node properties in the application manifest file.
-4. Deploy the application with the PLB constraints specified in the application manifest file.
-5. Monitor the placement of services and replicas in the cluster to ensure that they are distributed according to the PLB constraints.
+1. Determine which PLB solution to use if any for your application.
+2. Determine the key-value pairs for node properties and placement constraints.
+3. If not using default properties, assign values to nodes in the cluster based on the custom properties.
+4. Define constraint expression using node properties in the application manifest file.
+5. Deploy the application with the PLB constraints specified in the application manifest file.
+6. Monitor the placement of services and replicas in the cluster to ensure that they are distributed according to the PLB constraints.
 
 ## Step by Step Guide
 
-### Step 1: Determine the key-value pairs for node properties and placement constraints
+### Step 1: Determine which PLB solution to use if any for your application
 
-### Step 2: Assign values to node type in the cluster based on the custom properties
+### Step 2: Determine the key-value pairs for node properties and placement constraints
 
-### Step 3: Define expression using node properties in the application manifest file
+### Step 3: Assign values to node type in the cluster based on the custom properties
 
-### Step 4: Deploy the application with the PLB constraints specified in the application manifest file or dynamically using PowerShell
+### Step 4: Define expression using node properties in the application manifest file
 
-### Step 5: Monitor the placement of services and replicas in the cluster
+### Step 5: Deploy the application with the PLB constraints specified in the application manifest file or dynamically using PowerShell
+
+### Step 6: Monitor the placement of services and replicas in the cluster
 
 ## Example PowerShell Commands
 
