@@ -17,8 +17,6 @@ This document provides a detailed technical guide for migrating application stat
 4. [Implementation Examples](#implementation-examples)
 5. [Data Migration](#data-migration)
 6. [State Backup and Restore](#state-backup-and-restore)
-7. [Performance Optimization](#performance-optimization)
-8. [Key Migration Considerations](#key-migration-considerations)
 
 ## Overview
 

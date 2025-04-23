@@ -6,13 +6,12 @@ This document provides a comprehensive step-by-step guide for migrating an ASP.N
 1. [Project Structure Migration](#project-structure-migration)
 2. [Project File Updates](#project-file-updates)
 3. [Service Implementation](#service-implementation)
-4. [Startup Configuration](#startup-configuration)
-5. [Configuration Migration](#configuration-migration)
-6. [Middleware Migration](#middleware-migration)
-7. [Dependency Injection Setup](#dependency-injection-setup)
-8. [Health Monitoring](#health-monitoring)
-9. [Deployment Configuration](#deployment-configuration)
-10. [Key Migration Considerations](#key-migration-considerations)
+4. [Configuration Migration](#configuration-migration)
+5. [Middleware Migration](#middleware-migration)
+6. [Dependency Injection Setup](#dependency-injection-setup)
+7. [Health Monitoring](#health-monitoring)
+8. [Deployment Configuration](#deployment-configuration)
+9. [Key Migration Considerations](#key-migration-considerations)
 
 ## Project Structure Migration
 
