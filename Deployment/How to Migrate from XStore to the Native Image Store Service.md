@@ -14,6 +14,23 @@ The following steps outline the process for migrating from a specific XStore to 
   Register-WindowsFabricClusterPackage -ClusterManifestPath CurrentClusterManifest.xml -CodePackagePath WindowsFabricRC.3.3.45.9490.msi
   ```
 
+## Identify whether or not you're using XStore as your ImageStore provider
+
+* Check your Service Fabric cluster manifest's management section to verify your ImageStore provider. A typical XStore based ImageStore config value for XStore would be typically of the pattern:
+
+  ```xml
+  <Parameter Name="ImageStoreConnectionString" Value="dsms:EndpointSuffix=core.windows.net;SourceLocation=<storage-account-location-url>;Container=<storage-container-name>" />
+  ```
+
+* If your config's `ImageStoreConnectionString` value is set to `fabric:ImageStore`, as shown below, you're already using native ImageStore and don’t have to do anything.
+
+  ```xml
+  <Section Name="Management">
+    <Parameter Name="CleanupApplicationPackageOnProvisionSuccess" Value="false />
+    <Parameter Name="EnableDeploymentAtDataRoot" Value="true" />
+    <Parameter Name="ImageStoreConnectionString" Value="fabric:ImageStore" />
+  ```
+
 ## Migration steps
 
 1. Prepare two updated cluster manifest files and provision. Update the current cluster manifest by adding the following `ImageStoreService` configuration and setting the `Enabled` flag to `true`. These modifications create the new native image store.
