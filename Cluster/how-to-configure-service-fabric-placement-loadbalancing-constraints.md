@@ -6,9 +6,9 @@ PLB is enabled at the cluster level and constraints are specified statically in 
 
 PLB can also be configured to constrain the placement of services and replicas based on node properties such as capacity, load, or other custom attributes. PLB constraints are used to ensure that services and replicas are distributed evenly across the cluster, or to optimize the placement of services and replicas based on specific requirements.
 
-## PLB Alternatives
+## PLB Constraint Alternatives
 
-Here are some other features and concepts in Service Fabric that can be used to control the placement of services and replicas in the cluster. These include:
+Here are some alternative options in Service Fabric that can be used to control the placement of services and replicas in the cluster. These include:
 
 ### Dynamic Node Tags
 
@@ -24,23 +24,22 @@ Resource governance is a feature of Service Fabric that allows you to control th
 
 ## Placement Design
 
-Determining the key-value pairs for the node properties and placement constraints is the first step in configuring PLB constraints. For example, you can use `NodeType` as built-in property, or define custom properties based on your requirements.
-
-Resource capacity, load, or other custom attributes can be used as node properties to optimize the placement of services and replicas in the cluster. You can define custom properties in the application manifest file and assign values to nodes in the cluster.
+After confirming PLB constraints is the best solution to implement that meets all requirements, the next step is to determine the key-value pairs for the node properties and placement constraints. For example, using `NodeType` as built-in property, or defining custom properties based on requirements. Determine if any expressions are needed. Having configurations with integer values or multiple possible values are examples. Ensure design allows for maintenance and upgrades of cluster resources using upgrade domains.
 
 ## Best Practices
 
 - Use `NodeType` as it is a built-in property.
 - Do not use `NodeName` as it is a single point of failure.
-- Use custom properties if needed to optimize the placement of services and replicas based on specific requirements.
+- Use custom properties if needed to optimize the placement of services and replicas based on specific requirements if default properties are not sufficient.
 - Use the application manifest file to define placement constraints. This ensures that the configuration is not lost during application upgrades.
+- Ensure design allows for maintenance and upgrades of cluster resources using upgrade domains.
 
 ## Process
 
 1. Determine which PLB solution to use if any for your application.
 2. Determine the key-value pairs for node properties and placement constraints.
-3. If not using default properties, assign values to nodes in the cluster based on the custom properties.
-4. Define constraint expression using node properties in the application manifest file.
+3. If not using default properties, assign key-value pairs to node types in the cluster based on the custom properties.
+4. Define `PlacementConstraints` in the application manifest file.
 5. Deploy the application with the PLB constraints specified in the application manifest file.
 6. Monitor the placement of services and replicas in the cluster to ensure that they are distributed according to the PLB constraints.
 
@@ -48,17 +47,29 @@ Resource capacity, load, or other custom attributes can be used as node properti
 
 ### Step 1: Determine which PLB solution to use if any for your application
 
-### Step 2: Determine the key-value pairs for node properties and placement constraints
+Use resources provided in this article to determine if you need to use PLB for your application. If so, determine which solution to use. For example, if you need to optimize the placement of services and replicas based on resource usage, you can use Resource Governance. If you need to control the placement of services and replicas based on custom properties, you can use PLB constraints. If not PLB constraints for example dynamic tagging, then use steps provided for that feature instead of this document.
 
-### Step 3: Assign values to node type in the cluster based on the custom properties
+### Step 2: Determine the key-value pairs for node type properties and placement constraints
 
-### Step 4: Define expression using node properties in the application manifest file
+Determine the key-value pairs for node type properties and placement constraints based on your requirements. For example, you can use `NodeType` as a built-in property, or define custom properties such as `HasSSD`, `IsHighMemory`, etc.
+
+### Step 3: Assign node properties to node type in the cluster based on the custom properties
+
+Using ARM template or PowerShell, assign the key-value pairs to the node types in the cluster. This can be done using the `placementProperties` element in the ARM template or using PowerShell commands to update the node properties. See [Example ARM Template](#example-arm-template) and [PowerShell Commands](#powershell-commands) below for more information. This will initiate a cluster upgrade and the nodes Service Fabric services will be restarted.
+
+### Step 4: Define `PlacementConstraints` in the application manifest file
+
+Update the application manifest file to include the placement constraints using the `PlacementConstraints` element. This can be done using the `PlacementConstraint` element in the application manifest file. See [Example ApplicationManifest.xml](#example-applicationmanifestxml) and [Placement Expression Examples](#placement-expression-examples) below for more information.
 
 ### Step 5: Deploy the application with the PLB constraints specified in the application manifest file or dynamically using PowerShell
 
+Deploy the application using the updated application manifest file. This can be done using PowerShell commands or using the Service Fabric SDK. See [Create a new service with placement constraints](#create-a-new-service-with-placement-constraints) and [Update an existing service with placement constraints](#update-an-existing-service-with-placement-constraints) below for more information.
+
 ### Step 6: Monitor the placement of services and replicas in the cluster
 
-## Example PowerShell Commands
+After deploying the application, monitor the placement of services and replicas in the cluster to ensure that they are distributed according to the PLB constraints. This can be done using PowerShell commands or Service Fabric Explorer (SFX). See [Troubleshooting](#troubleshooting) below for troubleshooting information if having issues.
+
+## PowerShell Commands
 
 To configure PLB constraints dynamically using PowerShell, you can use the following commands:
 
@@ -70,6 +81,8 @@ From an admin machine with [Service Fabric SDK](https://learn.microsoft.com/azur
 Import-Module ServiceFabric
 # Install-Module -Name Az.Accounts -AllowClobber -Scope CurrentUser
 # Install-Module -Name Az.Resources -AllowClobber -Scope CurrentUser
+Import-Module Az.Accounts
+Import-Module Az.Resources
 
 # Connect to the cluster has many options, here is an example using X509 certificate
 Connect-ServiceFabricCluster -ConnectionEndpoint "mycluster.westus.cloudapp.azure.com:19000" `
@@ -81,7 +94,7 @@ Connect-ServiceFabricCluster -ConnectionEndpoint "mycluster.westus.cloudapp.azur
 Connect-AzAccount
 ```
 
-### Add / Update / Remove key-value pairs for node properties
+### Add / Update / Remove key-value pairs for node properties on node types
 
 ```powershell
 #Requires -PSEdition Core
@@ -106,14 +119,18 @@ Export-AzResourceGroup -ResourceGroupName $resourceGroupName `
 
 $cluster = ConvertFrom-Json -AsHashTable (Get-Content -Raw $jsonFile)
 
-foreach($nodeType in $cluster.resources.properties.nodeTypes) {
-    if($nodeType.name -ine $nodeTypeName) { continue }
-    if($addOrRemove -ieq "add"){
-        if($nodeType.placementProperties -eq $null) {
+foreach ($nodeType in $cluster.resources.properties.nodeTypes) {
+    if ($nodeType.name -ine $nodeTypeName) {
+        Write-Host "Skipping nodetype $($nodeType.name) does not match $nodeTypeName"
+        continue 
+    }
+    $found = $true
+    if ($addOrRemove -ieq "add") {
+        if ($nodeType.placementProperties -eq $null) {
             Write-Host "Setting placement properties for node type $nodeTypeName"
-            $nodeType.placementProperties = @{$key = $value}
+            $nodeType.placementProperties = @{$key = $value }
         }
-        elseif($nodeType.placementProperties.ContainsKey($key)) {
+        elseif ($nodeType.placementProperties.ContainsKey($key)) {
             Write-Host "Updating placement properties for node type $nodeTypeName"
             $nodeType.placementProperties.$key = $value
         }
@@ -122,9 +139,9 @@ foreach($nodeType in $cluster.resources.properties.nodeTypes) {
             $nodeType.placementProperties.Add($key, $value)
         }
     }
-    elseif($addOrRemove -ieq "remove") {
-        if($nodeType.placementProperties -ne $null `
-            -and $nodeType.placementProperties.ContainsKey($key)) {
+    elseif ($addOrRemove -ieq "remove") {
+        if ($nodeType.placementProperties -ne $null `
+                -and $nodeType.placementProperties.ContainsKey($key)) {
             Write-Host "Removing placement properties for node type $nodeTypeName"
             $nodeType.placementProperties.Remove($key)
         }
@@ -134,14 +151,24 @@ foreach($nodeType in $cluster.resources.properties.nodeTypes) {
     }
 }
 
-$cluster | ConvertTo-Json -Depth 100 | Out-File -Path $jsonFile -Force
-New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
-  -TemplateFile $jsonFile `
-  -Mode Incremental `
-  -Verbose
+if ($found) {
+    Write-Host "Updating cluster $clusterName in resource group $resourceGroupName"
+    $cluster | ConvertTo-Json -Depth 100 | Out-File -Path $jsonFile -Force
+    New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
+        -TemplateFile $jsonFile `
+        -Mode Incremental `
+        -Verbose
+}
+else {
+    Write-Host "Node type $nodeTypeName not found in cluster $clusterName"
+}
 ```
 
-### Create a new service with placement constraints
+### Add / Update service with placement constraints
+
+To configure PLB constraints dynamically using PowerShell, you can use the following commands:
+
+#### Create a new service with placement constraints
 
 ```powershell
 New-ServiceFabricService -ApplicationName $applicationName `
@@ -153,7 +180,7 @@ New-ServiceFabricService -ApplicationName $applicationName `
   -PlacementConstraint "HasSSD == true && SomeProperty >= 4"
 ```
 
-### Update an existing service with placement constraints
+#### Update an existing service with placement constraints
 
 ```powershell
 Update-ServiceFabricService -ServiceName $serviceName `
@@ -268,13 +295,25 @@ Expressions for placement constraints and node properties are specified using th
 
 ## Troubleshooting
 
-### PowerShell Commands
+### Service Fabric Explorer (SFX)
 
-- `Get-ServiceFabricClusterManifest` - Retrieves the cluster manifest for the Service Fabric cluster.
-- `Get-ServiceFabricNode` - Retrieves information about the nodes in the Service Fabric cluster.
-- `Get-ServiceFabricDeployedApplication` - Retrieves information about the applications deployed in the Service Fabric cluster on a node.
-- `Get-ServiceFabricService -Application <fabric:/Application Name>` - Retrieves information about the services deployed in the Service Fabric cluster.
-- `Get-ServiceFabricReplica` - Retrieves information about the replicas deployed in the Service Fabric cluster.
+Use Service Fabric Explorer (SFX) to monitor and manage Service Fabric clusters. You can use SFX to view the status of services and replicas in the cluster, as well as the placement of services and replicas based on PLB constraints.
+
+- Open SFX in a browser by navigating to `https://<cluster-name>:19080/Explorer`.
+- Click on the "Applications" to view the list of applications deployed in the cluster.
+- Click on the application name to view the details of the application.
+- Select 'Manifest' to view the application manifest file and the placement constraints defined in the file.
+- Ensure that the placement constraints are correctly defined and that the services and replicas are distributed according to the constraints.
+
+### Example PowerShell Commands
+
+- [`Connect-ServiceFabricCluster`](https://learn.microsoft.com/powershell/module/servicefabric/connect-servicefabriccluster?view=azureservicefabricps) - Connects to the Service Fabric cluster.
+- [`Get-ServiceFabricClusterManifest`](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricclustermanifest?view=azureservicefabricps) - Retrieves the cluster manifest for the Service Fabric cluster.
+- [`Get-ServiceFabricApplicationManifest`](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricapplicationmanifest?view=azureservicefabricps) - Retrieves the application manifest for the Service Fabric application.
+- [`Get-ServiceFabricNode`](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricnode?view=azureservicefabricps) - Retrieves information about the nodes in the Service Fabric cluster.
+- [`Get-ServiceFabricDeployedApplication`](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricdeployedapplication?view=azureservicefabricps) - Retrieves information about the applications deployed in the Service Fabric cluster on a node.
+- [`Get-ServiceFabricService -Application fabric:/<Application Name>`](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricservice?view=azureservicefabricps) - Retrieves information about the services deployed in the Service Fabric cluster.
+- [`Get-ServiceFabricReplica`](https://learn.microsoft.com/powershell/module/servicefabric/get-servicefabricreplica?view=azureservicefabricps) - Retrieves information about the replicas deployed in the Service Fabric cluster.
 
 ## Reference
 
