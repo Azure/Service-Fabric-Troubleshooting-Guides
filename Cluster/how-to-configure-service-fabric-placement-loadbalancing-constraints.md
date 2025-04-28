@@ -45,7 +45,7 @@ Import-Module Az.Accounts
 Import-Module Az.Resources
 
 # Connect to the cluster has many options, here is an example using X509 certificate
-Connect-ServiceFabricCluster -ConnectionEndpoint "mycluster.westus.cloudapp.azure.com:19000" `
+Connect-ServiceFabricCluster -ConnectionEndpoint "<cluster name>.<region>.cloudapp.azure.com:19000" `
     -X509Credential `
     -ServerCertThumbprint "<server thumbprint>" `
     -FindType FindByThumbprint `
@@ -211,7 +211,7 @@ Update-ServiceFabricService -ServiceName $serviceName `
         "partitionDescription": {
             "partitionScheme": "Singleton"
         },
-        "placementConstraints": "(HasSSD == true && NodeType==NodeType0)", // todo: confirm this
+        "placementConstraints": "(HasSSD == true && NodeType==NodeType0)",
         "serviceLoadMetrics": [],
         "servicePlacementPolicies": [],
         "defaultMoveCost": ""
@@ -222,11 +222,13 @@ Update-ServiceFabricService -ServiceName $serviceName `
 ## Placement Expression Syntax
 
 Available operators:
+
 - Comparison: `==`, `!=`, `>`, `<`, `>=`, `<=`
 - Logical: `&&`, `||`, `!`
 - Grouping: `(`, `)`
 
 **Examples:**
+
 - `NodeType == "FrontEnd"`
 - `NodeType != "BackEnd"`
 - `NodeType == "FrontEnd" && NodeName == "Node1"`
@@ -239,6 +241,7 @@ Available operators:
 ### Service Fabric Explorer (SFX)
 
 Verify constraints are correctly applied:
+
 1. Open SFX at `https://<cluster-name>:19080/Explorer`
 2. Navigate to Applications → [Your Application] → Manifest
 3. Check that placement constraints are defined correctly
