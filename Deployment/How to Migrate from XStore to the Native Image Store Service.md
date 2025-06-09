@@ -16,7 +16,13 @@ The following steps outline the process for migrating from a specific XStore to 
 
 ## Identify whether or not you're using XStore as your ImageStore provider
 
-* Check your Service Fabric cluster manifest's management section to verify your ImageStore provider. A typical XStore based ImageStore config value for XStore would be typically of the pattern:
+* Check your Service Fabric cluster manifest's management section to verify your ImageStore provider. A typical XStore based ImageStore config value for XStore would typically be in one of the two following formats. Either:
+
+  ```xml
+  <Parameter Name="ImageStoreConnectionString" Value="xstore:EndpointSuffix=core.windows.net;SourceLocation=<storage-account-location-url>;Container=<storage-container-name>" />
+  ```
+
+  Or:
 
   ```xml
   <Parameter Name="ImageStoreConnectionString" Value="dsms:EndpointSuffix=core.windows.net;SourceLocation=<storage-account-location-url>;Container=<storage-container-name>" />
