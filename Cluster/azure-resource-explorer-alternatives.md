@@ -1,26 +1,26 @@
 # Azure Resource Explorer Alternatives
 
-With the deprecation of Azure Resource Explorer `https://resources.azure.com/`, there are alternatives to manage and explore their Azure resources. Below are some that can be used instead of Azure Resource Explorer:
+With the deprecation of Azure Resource Explorer `https://resources.azure.com/`, some alternatives to manage Azure resources are below:
 
 1. **Azure Portal**: The Azure Portal is the primary interface for managing Azure resources. It provides a graphical interface to view and manage resources, including resource groups, virtual machines, storage accounts, and more.
     - **Advantages**: User-friendly, comprehensive, and integrated with other Azure services.
-    - **Disadvantages**: May not provide the same level of detail as Resource Explorer for certain resources.
+    - **Disadvantages**: Requires a browser. Users may find it cumbersome for large-scale operations or automation tasks.
 
-2. **Azure CLI**: The Azure Command-Line Interface (CLI) is a cross-platform command-line tool that allows you to manage Azure resources. It provides commands for creating, updating, and deleting resources, as well as querying resource information.
+1. **Azure PowerShell**: Azure PowerShell is a set of cmdlets for managing Azure resources from the command line. It is particularly useful for Windows users and integrates well with other PowerShell scripts and modules.
+    - **Advantages**: Powerful scripting capabilities commonly used in automation for Azure with ability to access detailed resource information.
+    - **Disadvantages**: Requires knowledge of PowerShell syntax and may not be as user-friendly for those unfamiliar with PowerShell.
+
+1. **Azure CLI**: Similar to Azure PowerShell, the Azure Command-Line Interface (CLI) is a cross-platform command-line tool that allows you to manage Azure resources. It provides commands for creating, updating, and deleting resources, as well as querying resource information.
     - **Advantages**: Scriptable, can be used in automation scripts, and provides detailed information about resources.
     - **Disadvantages**: Requires knowledge of command-line syntax and may not be as user-friendly for those unfamiliar with CLI tools.
 
-3. **Azure PowerShell**: Similar to Azure CLI, Azure PowerShell is a set of cmdlets for managing Azure resources from the command line. It is particularly useful for Windows users and integrates well with other PowerShell scripts and modules.
-    - **Advantages**: Powerful scripting capabilities, integrates with existing PowerShell scripts, and provides detailed resource information.
-    - **Disadvantages**: Requires knowledge of PowerShell syntax and may not be as user-friendly for those unfamiliar with PowerShell.
-
 ## Azure Portal
+
+The Azure Portal provides blades for managing and for viewing Azure resources. [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) blade is most similar to `Azure Resource Explorer` that allows graphical navigation however it is read only. [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) can be used to view or modify resources but requires knowledge of the resource's ID and API version. Here are steps to view and modify resources:
 
 ### Using Azure Portal to view resources
 
-The Azure Portal provides an interface for managing and exploring Azure resources. Here are some steps to explore resources using the Azure Portal:
-
-1. Open [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) to view the resource. If intent is to modify resource, copy the resource uri with api version for modification.
+1. Open [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) to browse and view resources.
 
 2. Select the specific subscription, resource group, and then resource under 'Resources':
 
@@ -35,13 +35,11 @@ The Azure Portal provides an interface for managing and exploring Azure resource
 
     ![Resource Explorer](../media/azure-resource-explorer-alternatives/resource-explorer-1.png)
 
-3. If intent is to modify this resource, triple-click to copy the complete resource uri with api version from the read-only box to the right of `Open Blade` button. Example:
+3. If intent is to modify this resource, triple-click to copy the complete resource uri with api version from the read-only box to the right of `Open Blade` button for modification using `API Playground` described below. Example:
 
     ![Resource Explorer copy uri](../media/azure-resource-explorer-alternatives/resource-explorer-copy-resource-uri.png)
 
 ### Using Azure Portal to update resources
-
-The Azure Portal can also be used to update resources. Here are steps to update resources using API Playground in the Azure Portal:
 
 To use `API Playground` to modify the configuration of a resource, the resource uri with api version must be provided. Use the [Using Azure Portal to view resources](#using-azure-portal-to-view-resources) steps above to copy the resource uri with api version from Resource Explorer. Another option is to get the resource uri from the `Resource JSON` views that are available on resources in the Azure Portal. The `Resource JSON` view can be accessed by selecting the `JSON View` link on the top right side resource blade. This will open a new window with the JSON representation of the resource, including the resource uri and api version.
 
@@ -130,7 +128,7 @@ Use the following steps to update resources with PowerShell:
 Use the [`Export-AzResourceGroup`](https://learn.microsoft.com/powershell/module/az.resources/export-azresourcegroup) cmdlet to export an ARM template for a specific resource or resource group. The exported template can be modified used to modify the resource configuration. The `-SkipAllParameterization` parameter is used to skip parameterization of all properties in the exported template. The `-Force` parameter is used to overwrite the existing file if it already exists.
 
 > [!NOTE]
-> Exporting Service Fabric clusters (unmanaged) with a basic load balancer at the resource group level is not supported. There are known issues with load balancer rules being exported. If using `Export-AzResourceGroup` for unmanaged clusters with a basic load balancer, specify the resource Id of the resource to update instead of the resource group. This is not an issue with standard load balancers.
+> Exporting Service Fabric clusters (unmanaged) with a basic load balancer at the resource group level is not supported. There are known issues with exporting load balancer rules for a basic load balancer. If using `Export-AzResourceGroup` for unmanaged clusters with a basic load balancer, specify the resource Id of the resource to update instead of the resource group. This is not an issue with standard load balancers.
 
 Variables used in the following examples:
 
@@ -150,7 +148,7 @@ Use the following steps to export ARM template with PowerShell for a specific re
     -Force
   ```
 
-Use the following steps to export ARM template with PowerShell for a resource group:
+Use the following steps to export ARM template with PowerShell for entire resource group:
 
   ```powershell
   Export-AzResourceGroup -ResourceGroupName $resourceGroupName `
@@ -161,7 +159,7 @@ Use the following steps to export ARM template with PowerShell for a resource gr
 
 ### Using PowerShell to deploy ARM template
 
-Use the [`New-AzResourceGroupDeployment`](https://learn.microsoft.com/powershell/module/az.resources/new-azresourcegroupdeployment) cmdlet to deploy an ARM template. The `-TemplateFile` parameter is used to specify the path to the updated template file.
+Use the [`New-AzResourceGroupDeployment`](https://learn.microsoft.com/powershell/module/az.resources/new-azresourcegroupdeployment) cmdlet to deploy the modified ARM template. The `-TemplateFile` parameter is used to specify the path to the updated template file.
 
 ```powershell
 New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
@@ -169,7 +167,7 @@ New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
   -Verbose
 ```
 
-## Resource ID
+## Resource ID Options
 
 ### Obtaining Resource ID
 
@@ -188,15 +186,37 @@ Alternatively, the resource ID and API version can be obtained from the `JSON Vi
 
 #### Azure PowerShell
 
+  There are multiple commands that can obtain the resource ID using Azure PowerShell, as noted above, one that can be used is [`Get-AzResource`](https://learn.microsoft.com/powershell/module/az.resources/get-azresource) cmdlet. This cmdlet retrieves resources in a specified resource group or subscription using different parameters.
+
+  Examples:
+
+   ```powershell
+   Get-AzResource -ResourceGroupName <resource group name>
+   ```
+  
+  ```powershell
+  Get-AzResource -ResourceGroupName <resource group name> -Name <resource name>
+  ```
+  
+  ```powershell
+  Get-AzResource -ResourceGroupName <resource group name> -ResourceType <resource type>
+  ```
+
 #### Azure CLI
 
 ### Generating Resource ID
 
-## API Version
+The resource ID can be generated using the following format, where `<subscription id>`, `<resource group name>`, `<resource provider>`, `<resource type>`, `<resource name>`, and `<api version>` are replaced with the appropriate values for the resource:
+
+```text
+/<subscription id>/resourceGroups/<resource group name>/providers/<resource provider>/<resource type>/<resource name>?api-version=<api version>
+```
+
+## API Version Options
+
+All Azure resources have a specific API version that is used to interact with the resource. The API version can be obtained from the Azure Portal, Azure PowerShell, or Azure CLI. It can also be found in the Microsoft Learn documentation for the specific resource.
 
 ### Obtaining API Version
-
-### Listing available API Versions
 
 #### Azure Portal
 
@@ -204,6 +224,7 @@ Alternatively, the resource ID and API version can be obtained from the `JSON Vi
 
 #### Azure CLI
 
-## Frequently Asked Questions
+#### Microsoft Learn
 
-## Reference
+You can find the API version for a specific resource in the Microsoft Learn documentation. Each resource type has its own documentation page that includes the API version information.
+Search for the resource type in the Microsoft Learn documentation, and look for the API version information in the "REST API" section of the page.
