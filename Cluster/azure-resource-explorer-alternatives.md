@@ -223,32 +223,18 @@ Besides using the [Resource Explorer](#using-azure-portal-to-view-resources) bla
 
 #### Azure PowerShell
 
-  There are multiple commands that can obtain the resource ID using Azure PowerShell, as noted above, one that can be used is [`Get-AzResource`](https://learn.microsoft.com/powershell/module/az.resources/get-azresource) cmdlet. This cmdlet retrieves resources in a specified resource group or subscription using different parameters.
+There are multiple commands that can obtain the resource ID using Azure PowerShell, as noted above, one that can be used is [`Get-AzResource`](https://learn.microsoft.com/powershell/module/az.resources/get-azresource) cmdlet. This cmdlet retrieves resources in a specified resource group or subscription using different parameters.
 
-  Examples:
+Examples:
 
-   ```powershell
-   Get-AzResource -ResourceGroupName <resource group name>
-   ```
-  
   ```powershell
-  Get-AzResource -ResourceGroupName <resource group name> -Name <resource name>
-  ```
-  
-  ```powershell
-  Get-AzResource -ResourceGroupName <resource group name> -ResourceType <resource type>
+  Get-AzResource -ResourceGroupName <resource group name> [-Name <resource name>] [-ResourceType <resource type>]
   ```
 
 #### Azure CLI
 
 ```bash
 az resource show --resource-group <resource group name> --name <resource name> --resource-type <resource type> --query "id"
-```
-
-Example for Service Fabric clusters:
-
-```bash
-az resource show --resource-group "servicefabriccluster" --name "servicefabriccluster" --resource-type "Microsoft.ServiceFabric/clusters" --query "id"
 ```
 
 ### Generating Resource ID
@@ -284,12 +270,6 @@ $apiVersions
 
 ```bash
 az provider show --namespace <resource provider name> --query "resourceTypes[?resourceType=='<resource type>'].apiVersions" -o json
-```
-
-Example for Service Fabric clusters:
-
-```bash
-az provider show --namespace "Microsoft.ServiceFabric" --query "resourceTypes[?resourceType=='clusters'].apiVersions" -o json
 ```
 
 #### Microsoft Learn
