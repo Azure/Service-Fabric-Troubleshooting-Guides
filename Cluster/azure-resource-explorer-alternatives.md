@@ -1,6 +1,6 @@
 # Azure Resource Explorer Alternatives
 
-With the deprecation of Azure Resource Explorer `https://resources.azure.com/`, some alternatives to manage Azure resources are below:
+With the deprecation of `Azure Resource Explorer` `https://resources.azure.com/`, some alternatives to manage Azure resources are below. [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in Azure Portal is the most similar, but it is read-only. The alternatives listed below provide ways to view and modify Azure resources programmatically or through a graphical interface:
 
 1. **Azure Portal**: Azure Portal is the primary interface for managing Azure resources. It provides a graphical interface to view and manage resources, including resource groups, virtual machines, storage accounts, and more.
     - **Advantages**: User-friendly, comprehensive, and integrated with other Azure services.
@@ -16,7 +16,7 @@ With the deprecation of Azure Resource Explorer `https://resources.azure.com/`, 
 
 ## Azure Portal
 
-Azure Portal provides blades for managing and for viewing Azure resources. [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) blade is most similar to `Azure Resource Explorer` that allows graphical navigation however it is read only. [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) can be used to view or modify resources but requires knowledge of the resource's ID and API version. Here are steps to view and modify resources:
+Azure Portal provides blades for managing and for viewing Azure resources. [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) blade allows graphical navigation however it is read only. [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) can be used to view or modify resources but requires knowledge of the resource's ID and API version. Here are steps to view and modify resources:
 
 ### Using Azure Portal to view resources
 
@@ -199,15 +199,9 @@ Use the [`az resource update`](https://learn.microsoft.com/cli/azure/resource#az
 ### Microsoft Learn
 
 You can find resource schema and API version for a specific resource in the Microsoft Learn documentation. Each resource type has its own documentation page that includes the API version information.
-Search for the resource type in the Microsoft Learn documentation, and look for the API version information in the "REST API" section of the page.
+Search for the resource type in the Microsoft Learn documentation and select API version dropdown at the top of page.
 
 [Azure Templates](https://learn.microsoft.com/azure/templates/) contains comprehensive information for all Azure Resources.
-
-Example for Service Fabric clusters:
-
-[Service Fabric Cluster Resource](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters)
-
-![Service Fabric Cluster Resource](../media/azure-resource-explorer-alternatives/service-fabric-cluster-resource.png)
 
 ### Obtaining Resource ID
 
@@ -297,3 +291,11 @@ Example for Service Fabric clusters:
 ```bash
 az provider show --namespace "Microsoft.ServiceFabric" --query "resourceTypes[?resourceType=='clusters'].apiVersions" -o json
 ```
+
+#### Microsoft Learn
+
+Example for Service Fabric clusters:
+
+[Service Fabric Cluster Resource](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters)
+
+![Service Fabric Cluster Resource](../media/azure-resource-explorer-alternatives/service-fabric-cluster-resource.png)
