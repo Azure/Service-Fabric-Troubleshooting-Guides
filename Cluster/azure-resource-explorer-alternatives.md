@@ -2,7 +2,7 @@
 
 With the deprecation of Azure Resource Explorer `https://resources.azure.com/`, some alternatives to manage Azure resources are below:
 
-1. **Azure Portal**: The Azure Portal is the primary interface for managing Azure resources. It provides a graphical interface to view and manage resources, including resource groups, virtual machines, storage accounts, and more.
+1. **Azure Portal**: Azure Portal is the primary interface for managing Azure resources. It provides a graphical interface to view and manage resources, including resource groups, virtual machines, storage accounts, and more.
     - **Advantages**: User-friendly, comprehensive, and integrated with other Azure services.
     - **Disadvantages**: Requires a browser. Users may find it cumbersome for large-scale operations or automation tasks.
 
@@ -16,7 +16,7 @@ With the deprecation of Azure Resource Explorer `https://resources.azure.com/`, 
 
 ## Azure Portal
 
-The Azure Portal provides blades for managing and for viewing Azure resources. [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) blade is most similar to `Azure Resource Explorer` that allows graphical navigation however it is read only. [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) can be used to view or modify resources but requires knowledge of the resource's ID and API version. Here are steps to view and modify resources:
+Azure Portal provides blades for managing and for viewing Azure resources. [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) blade is most similar to `Azure Resource Explorer` that allows graphical navigation however it is read only. [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) can be used to view or modify resources but requires knowledge of the resource's ID and API version. Here are steps to view and modify resources:
 
 ### Using Azure Portal to view resources
 
@@ -41,7 +41,7 @@ The Azure Portal provides blades for managing and for viewing Azure resources. [
 
 ### Using Azure Portal to update resources
 
-To use `API Playground` to modify the configuration of a resource, the resource uri with api version must be provided. Use the [Using Azure Portal to view resources](#using-azure-portal-to-view-resources) steps above to copy the resource uri with api version from Resource Explorer. Another option is to get the resource uri from the `Resource JSON` views that are available on resources in the Azure Portal. The `Resource JSON` view can be accessed by selecting the `JSON View` link on the top right side resource blade. This will open a new window with the JSON representation of the resource, including the resource uri and api version.
+To use `API Playground` to modify the configuration of a resource, the resource uri with api version must be provided. Use the [Using Azure Portal to view resources](#using-azure-portal-to-view-resources) steps above to copy the resource uri with api version from Resource Explorer. Another option is to get the resource uri from the `Resource JSON` views that are available on resources in Azure Portal. The `Resource JSON` view can be accessed by selecting the `JSON View` link on the top right side resource blade. This will open a new window with the JSON representation of the resource, including the resource uri and api version.
 
 The resource uri format is as follows:
 
@@ -70,7 +70,7 @@ The resource uri format is as follows:
 ## PowerShell
 
 > [!NOTE]
-> These steps assume you have Azure PowerShell 'Az' modules installed. Specifically `Az.Accounts` and `Az.Resources` are the two modules being used. If these are not installed, you can install by using the following command(s):
+> These steps require Azure PowerShell 'Az' modules. Specifically `Az.Accounts` and `Az.Resources` are the two modules being used. If these are not installed, you can install by using the following command(s):
 
 Connect to Azure account  with [`Connect-AzAccount`](https://learn.microsoft.com/powershell/module/az.accounts/connect-azaccount) cmdlet. This will prompt for credentials and allow you to select the subscription you want to work with. If you have multiple subscriptions, you can specify the subscription name or ID using the `-Subscription` parameter.
 
@@ -167,22 +167,65 @@ New-AzResourceGroupDeployment -ResourceGroupName $resourceGroupName `
   -Verbose
 ```
 
-## Resource ID Options
+## Azure CLI
+
+> [!NOTE]
+> These steps require Azure CLI. If Azure CLI is not installed, you can install it by following the instructions in the [Azure CLI installation guide](https://learn.microsoft.com/cli/azure/install-azure-cli).
+
+Connect to Azure account with [`az login`](https://learn.microsoft.com/cli/azure/authenticate-azure-cli) command. This will prompt for credentials and allow you to select the subscription you want to work with. If you have multiple subscriptions, you can specify the subscription name or ID using the `--subscription` parameter.
+
+### Using Azure CLI to view resources
+
+Use the following steps to view resources with Azure CLI:
+
+Use the [`az resource list`](https://learn.microsoft.com/cli/azure/resource#az_resource_list) command to list all resources in a specific resource group:
+
+   ```bash
+   az resource list --resource-group <resource group name>
+   ```
+
+### Using Azure CLI to update resources
+
+Use the following steps to update resources with Azure CLI:
+
+Use the [`az resource update`](https://learn.microsoft.com/cli/azure/resource#az_resource_update) command to update the resource. For example, to update a property of a resource:
+
+   ```bash
+   az resource update --ids <resource id> --set <property name>=<new value>
+   ```
+
+## Additional Information
+
+### Microsoft Learn
+
+You can find resource schema and API version for a specific resource in the Microsoft Learn documentation. Each resource type has its own documentation page that includes the API version information.
+Search for the resource type in the Microsoft Learn documentation, and look for the API version information in the "REST API" section of the page.
+
+[Azure Templates](https://learn.microsoft.com/azure/templates/) contains comprehensive information for all Azure Resources.
+
+Example for Service Fabric clusters:
+
+[Service Fabric Cluster Resource](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters)
+
+![Service Fabric Cluster Resource](../media/azure-resource-explorer-alternatives/service-fabric-cluster-resource.png)
 
 ### Obtaining Resource ID
 
-The resource ID is a unique identifier for an Azure resource. It can be obtained using the Azure Portal, Azure PowerShell, or Azure CLI. It can also be generated using the resource ID format below.
+The resource ID is a unique identifier for an Azure resource. It can be obtained from different blades in Azure Portal, Azure PowerShell, or Azure CLI. It can also be generated using the resource ID format below.
 
 #### Azure Portal
 
-1. Open the Azure Portal and navigate to the resource group containing the resource you want to obtain the resource ID for.
-2. Select the resource and in the resource blade, select `Properties` from the left-hand menu to view the resource ID.
-3. The resource ID will be displayed in the `Resource ID` field.
+Besides using the [Resource Explorer](#using-azure-portal-to-view-resources) blade in Azure Portal, you can also obtain the resource ID from the resource blade. The resource ID is displayed in the `Properties` section of the resource blade or in the `JSON View` of the resource. The API version can also be found in the `JSON View` of the resource.
 
-Alternatively, the resource ID and API version can be obtained from the `JSON View` of the resource. The `JSON View` can be accessed by selecting the `JSON View` link on the top right side resource blade. This will open a new window with the JSON representation of the resource, including the resource ID.
+1. Open Azure Portal and navigate to the resource group containing the resource you want to obtain the resource ID for.
+2. Select the resource and in the resource blade, select `JSON View` link on the top right side resource blade. This will open a new window with the JSON representation of the resource, including the resource ID and API version.
+  
+    ![Resource View](../media/azure-resource-explorer-alternatives/portal-resource-view.png)
 
-- The resource ID will be displayed in the `id` field of the JSON representation.
-- The api version can be found in the `apiVersion` field of the JSON representation.
+- The resource ID will be displayed in the `Resource ID` field of the JSON representation.
+- The api version can be found in the `API Versions` field of the JSON representation.
+
+  ![Json View](../media/azure-resource-explorer-alternatives/portal-json-view.png)
 
 #### Azure PowerShell
 
@@ -204,6 +247,16 @@ Alternatively, the resource ID and API version can be obtained from the `JSON Vi
 
 #### Azure CLI
 
+```bash
+az resource show --resource-group <resource group name> --name <resource name> --resource-type <resource type> --query "id"
+```
+
+Example for Service Fabric clusters:
+
+```bash
+az resource show --resource-group "servicefabriccluster" --name "servicefabriccluster" --resource-type "Microsoft.ServiceFabric/clusters" --query "id"
+```
+
 ### Generating Resource ID
 
 The resource ID can be generated using the following format, where `<subscription id>`, `<resource group name>`, `<resource provider>`, `<resource type>`, `<resource name>`, and `<api version>` are replaced with the appropriate values for the resource:
@@ -212,19 +265,35 @@ The resource ID can be generated using the following format, where `<subscriptio
 /<subscription id>/resourceGroups/<resource group name>/providers/<resource provider>/<resource type>/<resource name>?api-version=<api version>
 ```
 
-## API Version Options
-
-All Azure resources have a specific API version that is used to interact with the resource. The API version can be obtained from the Azure Portal, Azure PowerShell, or Azure CLI. It can also be found in the Microsoft Learn documentation for the specific resource.
-
 ### Obtaining API Version
+
+All Azure resources have a specific API version that is used to interact with the resource. The API version can be obtained from Azure Portal, Azure PowerShell, or Azure CLI. It can also be found in the Microsoft Learn documentation for the specific resource.
 
 #### Azure Portal
 
+As noted above, the API version can be found in the `JSON View` of the resource in Azure Portal. The API version is displayed in the `API Versions` field of the JSON representation of the resource.
+
+![Json View](../media/azure-resource-explorer-alternatives/portal-json-view.png)
+
 #### Azure PowerShell
+
+Use the `Get-AzResourceProvider` cmdlet to get the available API versions for a specific resource type. The API versions are listed under the `ApiVersions` property of the resource type.
+
+```powershell
+$resourceProvider = Get-AzResourceProvider -ProviderNamespace "<resource provider name>" # Microsoft.ServiceFabric, Microsoft.Compute, etc.
+$resourceTypeInfo = $resourceProvider.ResourceTypes | Where-Object ResourceTypeName -ieq "<resource type>" # clusters, managedClusters, etc.
+$apiVersions = $resourceTypeInfo.ApiVersions
+$apiVersions
+```
 
 #### Azure CLI
 
-#### Microsoft Learn
+```bash
+az provider show --namespace <resource provider name> --query "resourceTypes[?resourceType=='<resource type>'].apiVersions" -o json
+```
 
-You can find the API version for a specific resource in the Microsoft Learn documentation. Each resource type has its own documentation page that includes the API version information.
-Search for the resource type in the Microsoft Learn documentation, and look for the API version information in the "REST API" section of the page.
+Example for Service Fabric clusters:
+
+```bash
+az provider show --namespace "Microsoft.ServiceFabric" --query "resourceTypes[?resourceType=='clusters'].apiVersions" -o json
+```
