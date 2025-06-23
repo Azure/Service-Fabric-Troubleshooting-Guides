@@ -26,6 +26,7 @@
     More information about the Mirantis installer, see: https://docs.mirantis.com/mcr/20.10/install/mcr-windows.html
 
 .NOTES
+    v 1.0.5 set downloadurl before checking versions
     v 1.0.4 adding support for docker ce using 
         https://github.com/microsoft/Windows-Containers/tree/Main/helpful_tools/Install-DockerCE 
         https://docs.docker.com/desktop/install/windows-install/
@@ -178,6 +179,11 @@ function Main() {
     # temp fix
     Add-UseBasicParsing -ScriptFile $installFile
 
+    if ($dockerCe) {
+        $global:downloadUrl = $dockerCeRepo
+    }
+    Write-Host "Download url: $global:downloadUrl"
+
     $dockerVersion = Set-DockerVersion -dockerVersion $dockerVersion
     $installedVersion = Get-InstalledDockerVersion
 
@@ -217,10 +223,6 @@ function Main() {
 
         if ($global:restart) {
             [void]$dockerInstallArgs.Add('noServiceStarts', $null)
-        }
-
-        if ($dockerCe) {
-            $global:downloadUrl = $dockerCeRepo
         }
 
         if (!$installContainerD) {
@@ -329,7 +331,7 @@ function Download-File($url, $outputFile) {
         Write-Error "failure downloading file:$($error | out-string)"
         $global:result = $false
     }
-    elseif($whatIf) {
+    elseif ($whatIf) {
         [io.file]::delete($outputFile)
     }
 }
@@ -441,10 +443,10 @@ function Install-Feature([string]$name) {
 # Invoke the MCR installer (this will require a reboot)
 function Invoke-Script([string]$script, [string] $arguments = $null, [hashtable] $argumentsTable = @{}, [bool]$checkError = $true) {
     $scriptResult = $null
-    if($argumentsTable.Count -gt 0) {
-        foreach($arg in $argumentsTable.GetEnumerator()) {
+    if ($argumentsTable.Count -gt 0) {
+        foreach ($arg in $argumentsTable.GetEnumerator()) {
             $argValue = $null
-            if($arg.Value) {
+            if ($arg.Value) {
                 $argValue = " '$($arg.Value)'"
             }
             $arguments += " -$($arg.Key)$argValue"
