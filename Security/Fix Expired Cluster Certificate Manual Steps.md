@@ -194,7 +194,7 @@ If you previously encountered a race condition where `FabricInstallerService.exe
 
 
 
-14. Open Task Manager and wait for a couple minutes to verify that **FabricGateway.exe** is running 
+14. Open Task Manager and wait for a couple minutes to verify that **FabricGateway.exe** is running. It’s important to note that it is okay if FabricGateway.exe is not immediately visible after applying the changes on a single node. The process will appear once you have completed all necessary steps on all seed nodes and at least three or more non-primary nodes. This is expected behavior and does not indicate an issue.
 
 ## } 
 
