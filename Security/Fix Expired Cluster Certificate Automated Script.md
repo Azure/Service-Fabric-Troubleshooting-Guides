@@ -12,10 +12,10 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
 ## [Verify Certificate Expired Status on Node]
 
-* [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node
-  * Open the Certificate Manager for 'Local Computer' (certlm.msc) and check below details
-  * Make sure certificate is ACL'd to network service
-  * Verify the Certificate Expiry, if it is expired, follow below steps  
+1. [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node
+1. Open the Certificate Manager for 'Local Computer' (certlm.msc) and check below details
+1. Make sure certificate is ACL'd to network service
+1. Verify the Certificate Expiry, if it is expired, follow below steps  
 
     ![](../media/certlm1.png)  
 
@@ -123,6 +123,8 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
     ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-vmss-get-succeeded.png)
 
+## [Execute FixExpiredCert.ps1 script on all nodes]
+
 > ![IMPORTANT]
 > The following needs to be performed on all nodes in all nodetypes by using [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to connect to each node in the cluster.
 
@@ -160,8 +162,7 @@ To prevent this issue in the future, consider using the CA signed certificate wi
         -X509Credential `
         -ServerCertThumbprint $certThumbprint  `
         -FindType FindByThumbprint `
-        -FindValue $certThumbprint `
-        -StoreLocation CurrentUser
+        -FindValue $certThumbprint
     ```
 
     **Note**: Please give the cluster 5-10 minutes to reconfigure.  Generally speaking you will see Fabric.exe startup in the Task Manager and a few minutes later FabricGateway.exe will start when the nodes have finished reconfiguration.  At this point the cluster should be running using the new certificate and SFX endpoint and PowerShell endpoints should be accessible.
@@ -268,8 +269,12 @@ Verify the cluster resource model to ensure the new certificate is correctly con
 
 ## Verify Cluster Applications
 
-Verify the cluster application resource model to ensure the new certificate is correctly configured.
+Verify applications on the cluster are functioning correctly. If not, investigate potential issues related to the new certificate. An application may be configured to use the cluster certificate for secure communication. If the application is not functioning, ensure the application configuration is using the new certificate thumbprint.
 
 ## Reference
+
+[Manage certificates in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificate-management)
+
+[X.509 Certificate-based authentication in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificates)
 
 [Azure Resource Explorer Alternatives](../cluster/azure-resource-explorer-alternatives.md)
