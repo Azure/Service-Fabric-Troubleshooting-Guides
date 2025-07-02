@@ -11,9 +11,9 @@ This document outlines the automated process to upgrade from Basic to Standard S
 
 - Updates front-end public IP addresses to Standard SKU and static assignment.
 - Upgrades the Basic Load Balancer configuration to a new LB on Standard SKU ensuring configuration and feature parity.
-- Adds outbound rule to LB for VMMS.
-- Upgrades backend pool of VMMS to use the LB on Standard SKU.
-- Creates and associates a new Network Security Group (NSG) for connectivity to the VMMS if one is not configured in the scale set network configuration. LB on Standard SKU requires this due to the default deny policy. Name will be 'NSG-\<scale set name\>'
+- Adds outbound rule to LB for VMSS.
+- Upgrades backend pool of VMSS to use the LB on Standard SKU.
+- Creates and associates a new Network Security Group (NSG) for connectivity to the VMSS if one is not configured in the scale set network configuration. LB on Standard SKU requires this due to the default deny policy. Name will be 'NSG-\<scale set name\>'
 
 ### Pre-requisites for migration
 
@@ -22,6 +22,7 @@ Perform the following before starting the migration to a LB on Standard SKU.
 - Verify that ASF cluster configuration is documented. If deploying cluster via ARM template verify template is latest version. If the ARM template is not available, a non-deployable template with the imperfect configuration can be exported from the Azure portal in the clusters resource group view by selecting 'Export template' to start with.
 - Verify application configuration deployed on cluster is documented. If deploying cluster applications via ARM template verify template is current. Application port settings are configured in the application's manifest file.
 - In Service Fabric Explorer (SFX), verify cluster is in a green state and currently healthy.
+- Verify there are no resource locks on the cluster resource group or any resources in the cluster resource group. Resource locks will prevent the migration from completing successfully. See [Get-AzResourceLock](https://learn.microsoft.com/powershell/module/az.resources/get-azresourcelock) for more information.
 - Perform the migration process on a non-production cluster to catch any challenges with the process and downtime.
 - Install latest version of [PowerShell on Windows](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
 - Install latest version of [Azure PowerShell Az module](https://docs.microsoft.com/powershell/azure/install-az-ps).
@@ -30,7 +31,7 @@ Perform the following before starting the migration to a LB on Standard SKU.
 
 Below are PowerShell commands assuming Azure PowerShell Az module are already installed. See the link above for additional configurations are that are available.
 
-A warning will be displayed for VMMS that have Service Fabric VM extension installed
+A warning will be displayed for VMSS that have Service Fabric VM extension installed
 
 ```text
 WARNING: 2023-05-08T11:25:49-04 [Warning]:[Test-SupportedMigrationScenario] VMSS appears to be a Service Fabric cluster based on extension profile. SF Clusters experienced potentially significant downtime during migration using this PowerShell module. In testing, a 5-node Bronze cluster was unavailable for about 30 minutes and a 5-node Silver cluster was unavailable for about 45 minutes. Shutting down the cluster VMSS prior to initiating migration will result in a more consistent experience of about 5 minutes to complete the LB migration. For Service Fabric clusters that require minimal / no connectivity downtime, adding a new node type with standard load balancer and IP resources is a better solution.
@@ -45,6 +46,12 @@ if(!(Get-AzContext)) { Connect-AzAccount }
 if(!(Get-Module -listAvailable -Name AzureBasicLoadBalancerUpgrade)) {
     Install-Module -Name AzureBasicLoadBalancerUpgrade -Repository PSGallery -Force
 }
+
+if(Get-AzResourceLock -ResourceGroupName $resourceGroupName) {
+    Write-Host "Resource locks found in resource group $resourceGroupName. Remove locks before proceeding." -ForegroundColor Red
+    return
+}
+
 Start-AzBasicLoadBalancerUpgrade -ResourceGroupName $resourceGroupName `
     -BasicLoadBalancerName $loadBalancerName `
     -FollowLog
