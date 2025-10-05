@@ -2,14 +2,14 @@
 
 This troubleshooting guide describes the steps to rotate Storage Account Keys for the storage account used for Service Fabric diagnostic logs. This guide is applicable for Service Fabric clusters only. Service Fabric Managed clusters do not use storage account keys for connectivity to the storage account. [EventStore Overview](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-eventstore)
 
-Best practice is to provision and manage Service Fabric clusters using ARM templates. This guide describes the steps to rotate Storage Account Keys using ARM templates. If you are not using ARM templates to provision and manage Service Fabric clusters, you can use [resources.azure.com](https://resources.azure.com) to modify the Service Fabric resource to rotate Storage Account Keys.
+Best practice is to provision and manage Service Fabric clusters using ARM templates. This guide describes the steps to rotate Storage Account Keys using ARM templates. If you are not using ARM templates to provision and manage Service Fabric clusters, you can use the Azure Portal to modify the Service Fabric resource to rotate Storage Account Keys. See [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md) for detailed instructions.
 
 ## Process
 
 1. Verify cluster state before starting process.
 2. Verify cluster configuration for storage account keys.
     1. Determine current active storage account key.
-3. Using ARM Template method or https://resources.azure.com, modify each node type to rotate storage account key.
+3. Using ARM Template method or Azure Portal, modify each node type to rotate storage account key.
     1. Setting inactive storage account key.
     1. Setting active storage account key.
 4. Verify cluster state after completing process.
@@ -184,13 +184,13 @@ Use the following steps to validate current configuration of Service Fabric reso
 
 6. After template updates have been deployed, verify successful configuration by reviewing cluster state in Service Fabric Explorer. The cluster nodes should not have any new warnings or errors related to the storage account.
 
-## Modify using resources.azure.com
+## Modify using Azure Portal
 
 ### Validate current configuration
 
 Use the following steps to validate current active storage account key in the Service Fabric resource configuration. See [Microsoft.ServiceFabric clusters](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters) for reference.
 
-1. In <https://resources.azure.com>, navigate to the service fabric cluster:
+1. Using Resource Explorer in the Azure Portal, navigate to the Service Fabric cluster:
 
     ```text
         subscriptions
@@ -204,6 +204,8 @@ Use the following steps to validate current active storage account key in the Se
     ```
 
     ![Azure Resource Explorer](../media/resourcemgr10.png)
+    
+    For detailed instructions on using Resource Explorer, see [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md).
 
 2. The 'protectedAccountKeyName' value in 'diagnosticsStorageAccountConfig' section under Service Fabric resource of the ARM template contains the active key name.
 
@@ -221,7 +223,7 @@ Use the following steps to validate current active storage account key in the Se
 
 1. Rotate inactive Storage Account Key. In this guide, 'StorageAccountKey2' of storage account is inactive. Rotate 'StorageAccountKey2' of storage account by clicking 'Rotate key' in the storage account 'Access Keys'. See [Manually Rotate Access Keys](https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#manually-rotate-access-keys") for detailed steps.
 
-2. For each node type, navigate to the virtual machine scale set configured for the cluster:
+2. For each node type, navigate to the Virtual Machine Scale Set configured for the cluster using Resource Explorer and API Playground:
 
     ```text
         subscriptions
@@ -235,8 +237,10 @@ Use the following steps to validate current active storage account key in the Se
     ```
 
     ![Azure Resource Explorer](../media/resourcemgr1.png)
+    
+    For detailed instructions, see [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md).
 
-3. At top of page, click "Read/Write" permission and "Edit" to edit configuration.
+3. Using API Playground, execute GET to retrieve the current configuration, then modify the configuration.
 
 4. Navigate to '/properties/virtualMachineProfile/extensionProfile/extensions'. In the Service Fabric extension, add 'protectedSettings' section. Add the storage account key name and value for the new inactive key. Replace '\<StorageAccountKey2>' with the key of the storage account.
 
@@ -256,13 +260,13 @@ Use the following steps to validate current active storage account key in the Se
     ...
     ```
 
-5. At top of page, click PUT.
+5. Using API Playground, execute PUT to update the configuration.
 
-6. **Wait** for the virtual machine scale set 'Updating' 'provisioningState' for the storage keys to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to re-query scale set.
+6. **Wait** for the Virtual Machine Scale Set 'Updating' 'provisioningState' for the storage keys to complete. Execute GET requests to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically execute GET to re-query the scale set.
 
-    ![resources.azure.com vmss provisioningstate succeeded](../media/resourcemgr11.png)
+    ![VMSS provisioning state succeeded](../media/resourcemgr11.png)
 
-7. **Optional:** To verify configuration, set the value of 'protectedAccountKeyName' to 'StorageAccountKey2' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource. Click "Read/Write" permission and "Edit" to edit configuration.
+7. **Optional:** To verify configuration, set the value of 'protectedAccountKeyName' to 'StorageAccountKey2' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource using API Playground.
 
     ```diff
     "diagnosticsStorageAccountConfig": {
