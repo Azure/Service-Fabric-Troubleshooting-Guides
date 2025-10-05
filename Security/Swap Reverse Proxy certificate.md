@@ -15,7 +15,9 @@ https://github.com/ChackDan/Service-Fabric/tree/master/ARM%20Templates/ReversePr
     c. Create and Upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
 
 
-2. Go to <https://resources.azure.com> and find your subscription \-- \> resource group \-- \> providers/Microsoft.Compute/virtualMachineScaleSets \-- \> your VMSS
+2. Using the Azure Portal, navigate to your Virtual Machine Scale Set resource. For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](../Cluster/azure-resource-explorer-alternatives.md).
+
+   Find your subscription → resource group → providers/Microsoft.Compute/virtualMachineScaleSets → your VMSS
 
 ![Azure Resource Explorer](../media/resourcemgr1.png)
 
