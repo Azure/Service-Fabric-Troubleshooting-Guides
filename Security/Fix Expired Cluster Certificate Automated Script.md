@@ -8,14 +8,14 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
 * Cluster will show 'Upgrade Service not reachable' warning message
 * Unable to see the SF Nodes in the Portal or SFX
-* Error message related to Certificate in  '%SystemRoot%\System32\Winevt\Logs\Microsoft-ServiceFabric%4Admin.evtx'  event log from 'transport' resource
+* Error message related to Certificate in '%SystemRoot%\System32\Winevt\Logs\Microsoft-ServiceFabric%4Admin.evtx' event log from 'transport' resource
 
 ## [Verify Certificate Expired Status on Node]
 
 1. [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node
-2. Open the Certificate Manager for 'Local Computer' (certlm.msc) and check below details
+2. Open the Certificate Manager for 'Local Computer' (certlm.msc) and check the following details
 3. Make sure certificate is ACL'd to network service
-4. Verify the Certificate Expiry, if it is expired, follow below steps
+4. Verify the Certificate Expiry, if it is expired, follow the steps below
 
    ![local machine certificate store](../media/certlm1.png)
 
@@ -28,7 +28,7 @@ To prevent this issue in the future, consider using the CA signed certificate wi
    > a. Create with any reputable CA
    > b. Generate self-signed certs using Azure Portal -> Key Vault.
    > c. Create and upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
-   >
+
 2. Go to [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) and navigate to the virtual machine scale set configured for the cluster:
 
    ```text
@@ -51,7 +51,7 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-vmss-get.png)
 7. Set the request method to `PUT`, select `Request Body`, and paste the copied response body.
-8. Modify **"virtualMachineProfile / osProfile / secrets"**, to add (deploy) the new certificate to each of the nodes in the nodetype. Choose one of the options below:
+8. Modify **"virtualMachineProfile / osProfile / secrets"** to add (deploy) the new certificate to each of the nodes in the node type. Choose one of the options below:
 
    a. If the new certificate is in the **same Key Vault** as the Primary, add **"certificateUrl"** and **"certificateStore"** to existing array of **"vaultCertificates"** as shown below:
 
@@ -115,13 +115,13 @@ To prevent this issue in the future, consider using the CA signed certificate wi
    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-vmss-put-updating.png)
 10. **Wait** for the virtual machine scale set `ProvisioningStatus` value "Succeeded" for the certificate update as shown above. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
 
-  >[!NOTE]
-  >If the cluster is configured with Silver or higher Durability the repair task will be blocked. Contact Microsoft Support for assistance with unblocking tenantupdate job.
+> [!NOTE]
+> If the cluster is configured with Silver or higher Durability, the repair task will be blocked. Contact Microsoft Support for assistance with unblocking tenantupdate job.
 
 ## [Execute FixExpiredCert.ps1 script on all nodes]
 
->[!IMPORTANT]
->The following needs to be performed on all nodes in all nodetypes by using [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to connect to each node in the cluster.
+> [!IMPORTANT]
+> The following needs to be performed on all nodes in all node types by using [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to connect to each node in the cluster.
 
 1. [On each node] Open Administrative powershell.exe
 2. [On each node] Download [FixExpiredCert.ps1](../Scripts/FixExpiredCert.ps1) either to admin machine and copy to each node through RDP clipboard or download directly from within RDP session on node.
@@ -144,8 +144,8 @@ To prevent this issue in the future, consider using the CA signed certificate wi
    .\FixExpiredCert.ps1 -localOnly -oldThumbprint $oldThumbprint -newThumbprint $newThumbprint
    ```
 
-   Note: If there are any errors or issues when running the script you can attempt to fix\correct these and just rerun the script, changes made by the script are idempotent.  In some cases if there are many nodes and you know the mitigation was already successful on some nodes before the script failed then you can remove those from the nodeIpArray to speed things up, but there is no harm if the mitigation is run multiple times on the same node.
-4. Services should be restarting and when ready you should able to reconnect to the cluster over SFX and PowerShell from a node in the cluster or your development computer. *(Make sure you have installed the new Cert to `CurrentUser\My`)*
+   Note: If there are any errors or issues when running the script, you can attempt to fix/correct these and just rerun the script; changes made by the script are idempotent. In some cases, if there are many nodes and you know the mitigation was already successful on some nodes before the script failed, then you can remove those from the nodeIpArray to speed things up, but there is no harm if the mitigation is run multiple times on the same node.
+4. Services should be restarting and when ready you should be able to reconnect to the cluster over SFX and PowerShell from a node in the cluster or your development computer. *(Make sure you have installed the new Cert to `CurrentUser\My`)*
 
    ```PowerShell
    $clusterName= "<cluster name>.<cluster region>.cloudapp.azure.com:19000"
@@ -162,7 +162,7 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
 ## [Contact Microsoft Support]
 
- **Contact Microsoft Support to request the updating thumbprint in Service Fabric Resource Provider (SFRP)**. The cluster will not display Nodes or Applications or reflect the new Thumbprint yet because the SFRP record for this cluster has to be updated with the new thumbprint by Microsoft Support.
+**Contact Microsoft Support to request an update of the thumbprint in Service Fabric Resource Provider (SFRP)**. The cluster will not display Nodes or Applications or reflect the new Thumbprint yet because the SFRP record for this cluster has to be updated with the new thumbprint by Microsoft Support.
 
 ## [Verify VMSS resource models]
 
@@ -181,7 +181,7 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
                            └───%virtual machine scale set name%
    ```
 
-2. Ensure the correct KeyVault for the new cert is listed. If needed, update the "sourceVault" and "certificateUrl" properties using API Playground as described using same steps as above.
+2. Ensure the correct Key Vault for the new cert is listed. If needed, update the "sourceVault" and "certificateUrl" properties using API Playground as described using the same steps as above.
 
    ```json
    "virtualMachineProfile": {
@@ -201,7 +201,7 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
        ],
    ```
 
-3. Ensure the "thumbprint" (or "thumbprintSecondary" if exists) properties are correct. Update with the new certificate thumbprint if needed using API Playground as described using same steps as above.
+3. Ensure the "thumbprint" (and "thumbprintSecondary" if it exists) properties are correct. Update with the new certificate thumbprint if needed using API Playground as described using the same steps as above.
 
    ```json
    "virtualMachineProfile": {
@@ -235,7 +235,7 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
 
 Verify the cluster resource model to ensure the new certificate is correctly configured. This can be done using Resource Explorer or API Playground as described below.
 
-1. Go to [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) and navigate to the cluster resource:
+1. Navigate to [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) and navigate to the cluster resource:
 
    ```text
    subscriptions
@@ -248,7 +248,7 @@ Verify the cluster resource model to ensure the new certificate is correctly con
                            └───%cluster name%
    ```
 
-2. Ensure the correct KeyVault for the new cert is listed. If needed, update the "certificate" property using API Playground as described using same steps as above.
+2. Ensure the correct Key Vault for the new cert is listed. If needed, update the "certificate" property using API Playground as described using the same steps as above.
 
    ```json
    "certificate": {
@@ -258,7 +258,7 @@ Verify the cluster resource model to ensure the new certificate is correctly con
    }
    ```
 
-3. Search for any other references to the old certificate thumbprint in the cluster resource model. For example, reverse proxy, and client certificates. If found, update them with the new certificate thumbprint using API Playground as described using same steps as above.
+3. Search for any other references to the old certificate thumbprint in the cluster resource model. For example, reverse proxy and client certificates. If found, update them with the new certificate thumbprint using API Playground as described using the same steps as above.
 
 ## Verify Cluster Applications
 
