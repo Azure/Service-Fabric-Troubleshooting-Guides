@@ -10,14 +10,15 @@ Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher
    * Error message related to Certificate in  '%SystemRoot%\System32\Winevt\Logs\Microsoft-ServiceFabric%4Admin.evtx'  event log from 'transport' resource  
 
 ## [Verify Certificate Expired Status on Node]
-   * [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node
-        * Open the Certificate Manager for 'Local Computer' (certlm.msc) and check below details  
-        * Make sure certificate is ACL'd to network service  
-        * Verify the Certificate Expiry, if it is expired, follow below steps  
 
-![](../media/certlm1.png)  
+1. [RDP](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-remote-connect-to-azure-cluster-node) to any node
+2. Open the Certificate Manager for 'Local Computer' (certlm.msc) and check the following details
+3. Make sure certificate is ACL'd to network service
+4. Verify the Certificate Expiry, if it is expired, follow the steps below  
 
-![](../media/certlm2.png)  
+   ![local machine certificate store](../media/certlm1.png)
+
+   ![local machine certificate store](../media/certlm2.png)  
 
 ## [Fix Expired Cert steps] 
 
@@ -27,27 +28,34 @@ Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher
   > b. Generate self-signed certs using Azure Portal -> Key Vault.  
   > c. Create and upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
 
-2. Deploy new cert to all nodes in VMSS, go to <https://resources.azure.com>, navigate to the virtual machine scale set configured for the cluster:
+2. Go to [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) and navigate to the virtual machine scale set configured for the cluster:
 
-```
-    subscriptions
-    └───%subscription name%
-        └───resourceGroups
-            └───%resource group name%
-                └───providers
-                    └───Microsoft.Compute
-                        └───virtualMachineScaleSets
-                            └───%virtual machine scale set name%
-```
+   ```text
+       subscriptions
+       └───%subscription name%
+           └───resourceGroups
+               └───%resource group name%
+                   └───providers
+                       └───Microsoft.Compute
+                           └───virtualMachineScaleSets
+                               └───%virtual machine scale set name%
+   ```
 
-![Azure Resource Explorer](../media/resourcemgr1.png)
+3. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) as described below. Example:
 
-3. Click "Read/Write" permission and "Edit" to edit configuration.
+   ![Resource Explorer](../media/azure-resource-explorer-alternatives/portal-resource-explorer-vmss-resource-highlight.png)
 
-![Read/Write](../media/resourcemgr3.png)  
-![Edit](../media/resourcemgr2.png)
+4. Navigate to [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource URI with API version from Resource Explorer into the input box to the right of the HTTP Request Method.
 
-4. Modify **"virtualMachineProfile / osProfile / secrets"**, to add (deploy) the new certificate to each of the nodes in the nodetype. Choose one of the options below:
+5. Select `Execute` to view the configuration of the specified resource.
+
+6. The `Response Body` will display the configuration of the resource similar to the Resource Explorer view. This response body can be copied and pasted into `Request Body` field above to modify the configuration. Example:
+
+   ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-vmss-get.png)
+
+7. Set the request method to `PUT`, select `Request Body`, and paste the copied response body.
+
+8. Modify **"virtualMachineProfile / osProfile / secrets"** to add (deploy) the new certificate to each of the nodes in the node type. Choose one of the options below:
 
 > a. If the new certificate is in the **same Key Vault** as the Primary, add **"certificateUrl"** and **"certificateStore"** to existing array of **"vaultCertificates"** as shown below:
 
@@ -106,15 +114,14 @@ Service Fabric clusters running 6.5 CU3 or later (version 6.5.658.9590 or higher
     ]
 ```
 
-5. At top of page, click PUT.
+9. Select `Execute` to modify the configuration. In the `Response Body`, verify that `Status Code` is '200' and `provisioningState` is 'Updating' or 'Succeeded'. Example:
 
-![Click PUT](../media/resourcemgr7.png)
+   ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-vmss-put-updating.png)
 
-6. **Wait** for the virtual machine scale set Updating the secondary certificate to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.  If the cluster is configured with Silver or higher Durability it's possible a repair task may block this operation.  If the status does not move into a "Succeeded" state in a timely manner please contact Support for assistance to confirm and unblock.
+10. **Wait** for the virtual machine scale set `ProvisioningStatus` value "Succeeded" for the certificate update as shown above. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
 
-![GET](../media/resourcemgr2.png)
-
-![resources.azure.com vmss provisioningstate succeeded](../media/resourcemgr11.png)
+> [!NOTE]
+> If the cluster is configured with Silver or higher Durability, the repair task will be blocked. Contact Microsoft Support for assistance with unblocking tenantupdate job.
 
 ## For each node { 
 
@@ -220,45 +227,79 @@ If you previously encountered a race condition where `FabricInstallerService.exe
 **Note 2**: The cluster will not display Nodes/applications/or reflect the new Thumbprint yet because the Service Fabric Resource Provider (SFRP) record for this cluster has not been updated with the new thumbprint.  To correct this Contact Azure support to **create a support ticket from the Azure Portal for this cluster** to request the final update to the SFRP record with the new thumbprint.
 
 
-16. The last step will be to update the cluster ARM template to reflect the location of the new Cert / Keyvault 
+16. The last step will be to update the cluster ARM template to reflect the location of the new Cert / Key Vault
 
-    * Go to https://resources.azure.com --> Resource Group --> providers --> Microsoft.Compute --> vmss 
+## [Verify VMSS resource models]
 
+Verify the VMSS resource model to ensure the new certificate is correctly configured. This can be done using the Azure Resource Explorer or API Playground as described below.
 
-Ensure the correct KeyVault for the new cert is listed, update the "sourceVault" and "certificateUrl" properties
+1. Go to [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) and navigate to the virtual machine scale set configured for the cluster:
 
-```json
-            "secrets": [
-            {
-                "sourceVault": {
-                "id": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/xxxxxx/providers/Microsoft.KeyVault/vaults/xxxxxxxx"
-                },
-                "vaultCertificates": [
-                {
-                    "certificateUrl": "https://xxxxxx.vault.azure.net/secrets/xxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                    "certificateStore": "My"
-                }
-                ]
-            }
-```
+   ```text
+   subscriptions
+   └───%subscription name%
+       └───resourceGroups
+           └───%resource group name%
+               └───providers
+                   └───Microsoft.Compute
+                       └───virtualMachineScaleSets
+                           └───%virtual machine scale set name%
+   ```
 
-Update the "thumbprint" propert with the new certificate thumbprint 
+2. Ensure the correct Key Vault for the new cert is listed. If needed, update the "sourceVault" and "certificateUrl" properties using API Playground as described using the same steps as above.
 
-```json
-            "extensionProfile": {
-                "extensions": [
-                {
-                    "properties": {
-                    "autoUpgradeMinorVersion": true,
-                    "settings": {
-                        "clusterEndpoint": "https://xxxxx.servicefabric.azure.com/runtime/clusters/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                        "nodeTypeRef": "sys",
-                        "dataPath": "D:\\\\SvcFab",
-                        "durabilityLevel": "Bronze",
-                        "enableParallelJobs": true,
-                        "nicPrefixOverride": "10.0.0.0/24",
-                        "certificate": {
-                        "thumbprint": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-                        "x509StoreName": "My"
-                        }
-```
+   ```json
+   "virtualMachineProfile": {
+     "osProfile": {
+       "secrets": [
+         {
+           "sourceVault": {
+             "id": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/xxxxxx/providers/Microsoft.KeyVault/vaults/xxxxxxxx"
+           },
+           "vaultCertificates": [
+             {
+               "certificateUrl": "https://xxxxxx.vault.azure.net/secrets/xxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+               "certificateStore": "My"
+             }
+           ]
+         }
+       ],
+   ```
+
+3. Ensure the "thumbprint" (and "thumbprintSecondary" if it exists) properties are correct. Update with the new certificate thumbprint if needed using API Playground as described using the same steps as above.
+
+   ```json
+   "virtualMachineProfile": {
+     "extensionProfile": {
+       "extensions": [
+         {
+           "name": "nodetype0_ServiceFabricNode",
+           "properties": {
+             "autoUpgradeMinorVersion": true,
+             "publisher": "Microsoft.Azure.ServiceFabric",
+             "type": "ServiceFabricNode",
+             "typeHandlerVersion": "1.1",
+             "settings": {
+               "clusterEndpoint": "https://xxxxx.servicefabric.azure.com/runtime/clusters/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+               "nodeTypeRef": "nodetype0",
+               "dataPath": "D:\\SvcFab",
+               "durabilityLevel": "Silver",
+               "enableParallelJobs": true,
+               "nicPrefixOverride": "10.0.0.0/24",
+               "certificate": {
+                 "thumbprint": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                 "thumbprintSecondary": "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
+                 "x509StoreName": "My"
+               }
+             }
+           }
+         },
+   ```
+
+## Reference
+
+[Manage certificates in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificate-management)
+
+[X.509 Certificate-based authentication in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificates)
+
+[Azure Resource Explorer Alternatives](../cluster/azure-resource-explorer-alternatives.md)
