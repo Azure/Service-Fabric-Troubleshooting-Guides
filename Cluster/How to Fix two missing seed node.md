@@ -74,9 +74,9 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
 2.  Increase the VMSS instance count by +2, for this example from 5 to 7 
 
     - This can be done 
-        - From <https://resources.azure.com>
-        - From Azure Portal -> Resource Group -> Scaling
-        - From PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
+        - Using Azure Portal - Resource Group -> Scaling
+        - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
+        - For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md)
 
     - In our example we will assume these new nodes are called _sys_7 and _sys_8 
 
@@ -214,10 +214,10 @@ Save the file
 17. Once _sys_3 and _sys_4 are disabled, you can reduce the VMSS instance count by 2 from the Azure Portal to remove the two VM's we temporarily added (_sys_7 & _sys_8)
 
     - This can be done 
-        - From <https://resources.azure.com>
-        - From Azure Portal -> Resource Group -> Scaling
-        - From PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
-        - Azure Portal -> vmms -> instances (manually delete the nodes _sys_7 and _sys_8)
+        - Using Azure Portal - Resource Group -> Scaling
+        - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
+        - Using Azure Portal - vmss -> instances (manually delete the nodes _sys_7 and _sys_8)
+        - For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md)
 
         ![Delete the two fake seed nodes](../media/twoseednode006.PNG)
 
@@ -244,7 +244,7 @@ Save the file
 
 **Note 2**: In some cases a seed node (say _sys_1) was removed from the VMMS but is still showing as in SFX in a **Down** state, you can follow these step.
 
-1.  Increase the VM instance count by 1 from <https://resources.azure.com>
+1.  Increase the VM instance count by 1 using the Azure Portal. For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md).
 
 2.  Disable the node - **Disable-ServiceFabricNode -NodeName _sys_1 -Intent RemoveNode**  (This will trigger a complete UD walk)
 
