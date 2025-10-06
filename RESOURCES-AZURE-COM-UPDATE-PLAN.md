@@ -11,7 +11,7 @@ This document tracks the comprehensive update of Service Fabric Troubleshooting 
 
 **Reference Documents:**
 - `Security/Fix Expired Cluster Certificate Automated Script.md` (already updated in PR #318)
-- `Cluster/resource-explorer-steps.md` (comprehensive guide for alternatives)
+- `Cluster/managing-azure-resources.md` (comprehensive guide for alternatives)
 
 **Replacement Pattern:**
 Replace `https://resources.azure.com` with:
@@ -108,7 +108,7 @@ Replace `https://resources.azure.com` with:
 - Line 244: Update verification instructions
 **Additional:**
 - Verify managed cluster specific considerations
-- Add link to resource-explorer-steps.md
+- Add link to managing-azure-resources.md
 
 ### Priority 2: Cluster Documentation
 
@@ -339,7 +339,7 @@ For each updated file:
 - [ ] Links are functional
 - [ ] Grammar and style guidelines followed
 - [ ] ThumbprintSecondary added where applicable
-- [ ] Cross-references to resource-explorer-steps.md added
+- [ ] Cross-references to managing-azure-resources.md added
 - [ ] JSON examples are valid and formatted
 - [ ] Markdown syntax is correct
 
@@ -358,7 +358,7 @@ For each updated file:
 ## Notes
 
 - PR #318 provides excellent template for detailed updates
-- resource-explorer-steps.md is comprehensive reference
+- managing-azure-resources.md is comprehensive reference
 - Some files may require less detailed updates (just link to alternatives doc)
 - Consider creating a single detailed example and linking to it from simpler updates
 - Verify managed cluster considerations separately from classic clusters

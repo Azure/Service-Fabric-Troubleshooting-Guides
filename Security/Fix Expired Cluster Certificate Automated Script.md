@@ -272,4 +272,4 @@ Verify applications on the cluster are functioning correctly. If not, investigat
 
 ## Reference
 
-[Azure Resource Explorer Alternatives](../Cluster/resource-explorer-steps.md)
+[Managing Azure Resources](../Deployment/managing-azure-resources.md)

@@ -272,4 +272,4 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
 
 ## Reference
 
-[Azure Resource Explorer Alternatives](../Cluster/resource-explorer-steps.md)
+[Managing Azure Resources](../Deployment/managing-azure-resources.md)

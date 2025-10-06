@@ -1,6 +1,6 @@
-# Azure Resource Explorer Steps
+# Managing Azure Resources
 
-With the deprecation of `Azure Resource Explorer` (`https://resources.azure.com/`), alternative methods are available to manage Azure resources. The [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in Azure Portal is the most similar replacement, but it is read-only. The alternatives listed below provide comprehensive ways to view and modify Azure resources programmatically or through a graphical interface:
+Alternative methods are available to manage Azure resources. The [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in Azure Portal is the most similar replacement, but it is read-only. The alternatives listed below provide comprehensive ways to view and modify Azure resources programmatically or through a graphical interface:
 
 1. **Azure Portal**: Azure Portal is the primary interface for managing Azure resources. It provides a graphical interface to view and manage resources, including resource groups, virtual machines, storage accounts, and more.
 

@@ -76,7 +76,7 @@ To unblock Node deletion operation initiated through VMSS and get the cluster ba
 
         "reliabilityLevel": "Bronze",
 
-2. Redeploy the ARM template. If using the Azure Portal, PUT the changes using API Playground. For detailed instructions, see [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md).
+2. Redeploy the ARM template. If using the Azure Portal, PUT the changes using API Playground. For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
     **Observed / Expected behaviors while the change is being applied**
 

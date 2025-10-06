@@ -71,7 +71,7 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
     - This can be done 
         - Using Azure Portal - Resource Group -> Scaling
         - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
-        - For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./resource-explorer-steps.md)
+        - For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md)
 
     - In our example we will assume these new nodes are called _sys_7 and _sys_8 
 
@@ -143,7 +143,7 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
         - Using Azure Portal - Resource Group -> Scaling
         - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
         - Using Azure Portal - vmss -> instances (manually delete the nodes _sys_7 and _sys_8)
-        - For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./resource-explorer-steps.md)
+        - For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md)
 
         ![Delete the two fake seed nodes](../media/twoseednode006.PNG)
 

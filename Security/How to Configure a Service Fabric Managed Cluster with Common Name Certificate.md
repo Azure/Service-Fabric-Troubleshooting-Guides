@@ -34,7 +34,7 @@ If using an ARM template for deployment, add a new 'clients' element to array as
 
 ### Using Azure Portal to add common name certificate configuration
 
-- Navigate to {{subscription id}}/resourceGroups/{{resource group}}/providers/Microsoft.ServiceFabric/managedClusters/{{cluster name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md).
+- Navigate to {{subscription id}}/resourceGroups/{{resource group}}/providers/Microsoft.ServiceFabric/managedClusters/{{cluster name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 - Populate provided 'clients' new element template
   - isAdmin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
   - commonName - certificate 'SubjectName' without the 'CN='
@@ -109,7 +109,7 @@ If using an ARM template for deployment, add a new 'vmSecrets' element to array 
 
 ### Using Azure Portal to add common name certificate to node type configuration
 
-- Navigate to {{subscription id}}/resourceGroups/{{resource group}}/providers/Microsoft.ServiceFabric/managedClusters/{{cluster name}}/nodeTypes/{{nodetype name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md).
+- Navigate to {{subscription id}}/resourceGroups/{{resource group}}/providers/Microsoft.ServiceFabric/managedClusters/{{cluster name}}/nodeTypes/{{nodetype name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 - Populate provided 'vmSecrets' new element template
   - id - Azure key vault id. Example: '/subscriptions/{{subscription id}}/resourceGroups/xxxxxxx/providers/Microsoft.KeyVault/vaults/{{vault name}}'
   - certificateStore - 'My'
@@ -239,7 +239,7 @@ invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubl
   TcpTestSucceeded : True
   ```
 
-- Verify Service Fabric server certificate thumbprint as this is automatically regenerated on average every 90 days. This thumbprint is viewable in the Azure Portal or using the PowerShell commands documented above [PowerShell commands to get cluster server certificate thumbprint](#powershell-commands-to-get-cluster-server-certificate-thumbprint). For detailed instructions on viewing resources in the Azure Portal, see [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md).
+- Verify Service Fabric server certificate thumbprint as this is automatically regenerated on average every 90 days. This thumbprint is viewable in the Azure Portal or using the PowerShell commands documented above [PowerShell commands to get cluster server certificate thumbprint](#powershell-commands-to-get-cluster-server-certificate-thumbprint). For detailed instructions on viewing resources in the Azure Portal, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
 ## Reference
 

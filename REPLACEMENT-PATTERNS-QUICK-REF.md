@@ -188,7 +188,7 @@ Add at end of document:
 
 [X.509 Certificate-based authentication in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificates)
 
-[Azure Resource Explorer Alternatives](../Cluster/resource-explorer-steps.md)
+[Managing Azure Resources](../Deployment/managing-azure-resources.md)
 ```
 
 ---
@@ -275,7 +275,7 @@ Safe global replacements (but verify context):
 
 Example:
 ```markdown
-Update the configuration using [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) or [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). For detailed instructions, see [Azure Resource Explorer Alternatives](../Cluster/resource-explorer-steps.md).
+Update the configuration using [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) or [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 ```
 
 ### Detailed (full workflow):
@@ -313,7 +313,7 @@ Update [filename] for resources.azure.com deprecation #314
 - Update screenshots to current Azure Portal interface
 - Add thumbprintSecondary to certificate examples #315
 - Standardize terminology and improve grammar
-- Add reference to resource-explorer-steps.md
+- Add reference to managing-azure-resources.md
 ```
 
 ---

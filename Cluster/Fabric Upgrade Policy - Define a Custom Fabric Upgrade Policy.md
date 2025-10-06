@@ -124,4 +124,4 @@ There are some scenarios where it is necessary to force the node to restart duri
 
 [ClusterUpgradePolicy](https://docs.microsoft.com/en-us/dotnet/api/microsoft.azure.management.servicefabric.models.clusterupgradepolicy?view=azure-dotnet)
 
-[Azure Resource Explorer Alternatives](./resource-explorer-steps.md)
+[Managing Azure Resources](../Deployment/managing-azure-resources.md)

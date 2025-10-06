@@ -69,7 +69,7 @@ Select one of the following Mitigation options to allow Repair job to resume pro
 
 ## Option 1 Mitigation Example
 
-Determine the original method used for application deployment. ARM deployed applications configuration is stored in ARM and should be updated via ARM either with an updated template or by using the Azure Portal. For detailed instructions on modifying resources, see [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md). 
+Determine the original method used for application deployment. ARM deployed applications configuration is stored in ARM and should be updated via ARM either with an updated template or by using the Azure Portal. For detailed instructions on modifying resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md). 
 
 ### Normally Deployed Application
 

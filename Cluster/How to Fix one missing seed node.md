@@ -74,7 +74,7 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
     - This can be done 
         - Using Azure Portal - Resource Group -> Scaling
         - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
-        - For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./resource-explorer-steps.md)
+        - For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md)
 
     - In our example we will assume this new node is called _sys_7 
 
@@ -187,7 +187,7 @@ Disabling _sys_4 with the RemoveNode intent will cause a cluster upgrade which w
     - This can be done 
         - Using Azure Portal - Resource Group -> Scaling
         - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
-        - For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./resource-explorer-steps.md)
+        - For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md)
 
 17. From the PowerShell window you can now remove the nodestate for all the nodes marked as (Down)
 
@@ -207,7 +207,7 @@ Disabling _sys_4 with the RemoveNode intent will cause a cluster upgrade which w
 
 **Note 2**: In some cases the seed node (say _sys_1) was removed from the VMMS but is still showing as in SFX in a **Down** state, you can follow these step.
 
-1.  Increase the VM instance count by 1 using the Azure Portal. For detailed instructions on modifying VMSS resources, see [Alternatives to resources.azure.com](./resource-explorer-steps.md).
+1.  Increase the VM instance count by 1 using the Azure Portal. For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
 2.  Disable the node - **Disable-ServiceFabricNode -NodeName _sys_1 -Intent RemoveNode**  (This will trigger a complete UD walk)
 
