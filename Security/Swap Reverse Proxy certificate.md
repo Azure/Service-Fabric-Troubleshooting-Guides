@@ -167,9 +167,7 @@ Succeeded
     }
 ```
 
-9. Execute PUT in API Playground to update the Service Fabric cluster resource. **Wait** for the SF cluster Updating the secondary certificate to complete
-
-![Azure Portal •  Service Fabric cluster  • status  • Updating user certificate](../media/resourcemgr6.png)
+9. Execute PUT in API Playground to update the Service Fabric cluster resource. **Wait** for the SF cluster Updating the secondary certificate to complete. You can monitor the cluster status in the Azure Portal.
 
 * FAQ: [Why do cluster upgrades take so long](../Cluster/Why%20do%20cluster%20upgrades%20take%20so%20long.md)
 
