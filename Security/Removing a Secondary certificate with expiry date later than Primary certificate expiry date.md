@@ -10,7 +10,7 @@ There may be situations where it is necessary to remove the secondary certificat
 
 2. ARM template is available for ARM deployed clusters
 
-3. For portal deployed clusters, access is available to the configuration for the cluster using the Azure Portal. See [Alternatives to resources.azure.com](../Cluster/azure-resource-explorer-alternatives.md) for detailed instructions.
+3. For portal deployed clusters, access is available to the configuration for the cluster using the Azure Portal. See [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md) for detailed instructions.
 
 4. Certificate is provisioned on the VMs through OsProfile.Secrets in VMSS configuration
 
@@ -22,7 +22,7 @@ There may be situations where it is necessary to remove the secondary certificat
 
 ## Tasks to remove the secondary certificate
 
-**NOTE:** Following assumes ARM template. When using the Azure Portal, make the changes in the corresponding sections of the resource configurations. See [Alternatives to resources.azure.com](../Cluster/azure-resource-explorer-alternatives.md) for detailed instructions.
+**NOTE:** Following assumes ARM template. When using the Azure Portal, make the changes in the corresponding sections of the resource configurations. See [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md) for detailed instructions.
 
 **DO NOT** take these steps if the primary certificate is expired, or if it is not installed on every node of the cluster.
 

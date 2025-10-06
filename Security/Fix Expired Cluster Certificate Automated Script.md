@@ -44,12 +44,12 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
 3. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) as described below. Example:
 
-   ![Resource Explorer](../media/azure-resource-explorer-alternatives/portal-resource-explorer-vmss-resource-highlight.png)
+   ![Resource Explorer](../media/resource-explorer-steps/portal-resource-explorer-vmss-resource-highlight.png)
 4. Navigate to [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource URI with API version from Resource Explorer into the input box to the right of the HTTP Request Method.
 5. Select `Execute` to view the configuration of the specified resource.
 6. The `Response Body` will display the configuration of the resource similar to the Resource Explorer view. This response body can be copied and pasted into `Request Body` field above to modify the configuration. Example:
 
-   ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-vmss-get.png)
+   ![Resource Explorer](../media/resource-explorer-steps/api-playground-vmss-get.png)
 7. Set the request method to `PUT`, select `Request Body`, and paste the copied response body.
 8. Modify **"virtualMachineProfile / osProfile / secrets"** to add (deploy) the new certificate to each of the nodes in the node type. Choose one of the options below:
 
@@ -112,7 +112,7 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
 9. Select `Execute` to modify the configuration. In the `Response Body`, verify that `Status Code` is '200' and `provisioningState` is 'Updating' or 'Succeeded'. Example:
 
-   ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-vmss-put-updating.png)
+   ![Resource Explorer](../media/resource-explorer-steps/api-playground-vmss-put-updating.png)
 10. **Wait** for the virtual machine scale set `ProvisioningStatus` value "Succeeded" for the certificate update as shown above. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
 
 > [!NOTE]
@@ -272,4 +272,4 @@ Verify applications on the cluster are functioning correctly. If not, investigat
 
 ## Reference
 
-[Azure Resource Explorer Alternatives](../Cluster/azure-resource-explorer-alternatives.md)
+[Azure Resource Explorer Alternatives](../Cluster/resource-explorer-steps.md)

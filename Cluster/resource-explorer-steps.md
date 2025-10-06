@@ -33,11 +33,11 @@ The Azure Portal provides dedicated blades for managing and viewing Azure resour
                         └───<resource name>
     ```
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/resource-explorer-1.png)
+    ![Resource Explorer](../media/resource-explorer-steps/resource-explorer-1.png)
 
 3. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using `API Playground` as described below. Example:
 
-    ![Resource Explorer copy uri](../media/azure-resource-explorer-alternatives/resource-explorer-copy-resource-uri.png)
+    ![Resource Explorer copy uri](../media/resource-explorer-steps/resource-explorer-copy-resource-uri.png)
 
 ### Using Azure Portal to update resources
 
@@ -53,19 +53,19 @@ The resource URI format is as follows:
 
 2. Select `Execute` to view the configuration of the specified resource. Example:
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-get.png)
+    ![Resource Explorer](../media/resource-explorer-steps/api-playground-get.png)
 
 3. The `Response Body` will display the configuration of the resource similar to the Resource Explorer view. This response body can be copied and pasted into the `Request Body` above to modify the configuration. Example:
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-get-response.png)
+    ![Resource Explorer](../media/resource-explorer-steps/api-playground-get-response.png)
 
 4. Set the request method to `PUT` or `PATCH` depending on update type, select `Request Body`, and paste the copied response body. Modify the configuration as needed. Example:
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-patch.png)
+    ![Resource Explorer](../media/resource-explorer-steps/api-playground-patch.png)
 
 5. Select `Execute` to modify the configuration. In the `Response Body`, verify the `Status Code` is '200' and the `provisioningState` is 'Updating' or 'Succeeded'. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) or [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). Example:
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-patch-response.png)
+    ![Resource Explorer](../media/resource-explorer-steps/api-playground-patch-response.png)
 
 ## Azure PowerShell
 
@@ -219,12 +219,12 @@ Besides using the [Resource Explorer](#using-azure-portal-to-view-resources) bla
 1. Open Azure Portal and navigate to the resource group containing the resource for which the resource ID is needed.
 2. Select the resource and in the resource blade, select the `JSON View` link on the top right side of the resource blade. This will open a new window with the JSON representation of the resource, including the resource ID and API version.
   
-    ![Resource View](../media/azure-resource-explorer-alternatives/portal-resource-view.png)
+    ![Resource View](../media/resource-explorer-steps/portal-resource-view.png)
 
 - The resource ID will be displayed in the `Resource ID` field of the JSON representation.
 - The API version can be found in the `API Versions` field of the JSON representation.
 
-  ![Json View](../media/azure-resource-explorer-alternatives/portal-json-view.png)
+  ![Json View](../media/resource-explorer-steps/portal-json-view.png)
 
 #### Obtaining Resource ID via Azure PowerShell
 
@@ -258,7 +258,7 @@ All Azure resources have a specific API version that is used to interact with th
 
 As noted above, the API version can be found in the `JSON View` of the resource in Azure Portal. The API version is displayed in the `API Versions` field of the JSON representation of the resource.
 
-![Json View](../media/azure-resource-explorer-alternatives/portal-json-view.png)
+![Json View](../media/resource-explorer-steps/portal-json-view.png)
 
 #### Obtaining API Version via Azure PowerShell
 
@@ -283,4 +283,4 @@ Example for Service Fabric clusters:
 
 [Service Fabric Cluster Resource](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/clusters)
 
-![Service Fabric Cluster Resource](../media/azure-resource-explorer-alternatives/service-fabric-cluster-resource.png)
+![Service Fabric Cluster Resource](../media/resource-explorer-steps/service-fabric-cluster-resource.png)

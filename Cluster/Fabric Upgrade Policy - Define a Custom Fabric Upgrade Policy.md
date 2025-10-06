@@ -50,7 +50,7 @@ To view the Fabric Upgrade Policy, navigate to the Service Fabric Cluster resour
 
 If custom settings have been defined, the settings can be viewed by selecting the `JSON View` in the top right corner on `Overview` page, using [`Resource Explorer`](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade), or by using PowerShell cmdlet [Get-AzServiceFabricCluster](https://docs.microsoft.com/powershell/module/az.servicefabric/get-azservicefabriccluster). For standalone clusters, use PowerShell cmdlet [Get-ServiceFabricClusterConfiguration](https://docs.microsoft.com/powershell/module/servicefabric/get-servicefabricclusterconfiguration?view=azureservicefabricps).
 
-![Resource view in Azure Portal](../media/azure-resource-explorer-alternatives/portal-resource-view.png)
+![Resource view in Azure Portal](../media/resource-explorer-steps/portal-resource-view.png)
 
 ## Modify default Fabric Upgrade Policy Settings
 
@@ -69,7 +69,7 @@ To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster reso
                         └───<cluster resource name>
     ```
 
-    ![Resource Explorer cluster resource highlight](../media/azure-resource-explorer-alternatives/portal-resource-explorer-cluster-resource-highlight.png)
+    ![Resource Explorer cluster resource highlight](../media/resource-explorer-steps/portal-resource-explorer-cluster-resource-highlight.png)
 
 1. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) as described below.
 
@@ -79,17 +79,17 @@ To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster reso
 
 1. The `Response Body` will display the configuration of the resource similar to the Resource Explorer view. This response body can be copied and pasted into `Request Body` field above to modify the configuration. Example:
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-cluster-get.png)
+    ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-get.png)
 
 1. Set the request method to `PUT`, select `Request Body`, and paste the copied response body.
 
 1. Modify the configuration as needed. Example:
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-cluster-put.png)
+    ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-put.png)
 
 1. Select `Execute` to modify the configuration. In the `Response Body`, verify that `Status Code` is '200' and `provisioningState` is 'Updating' or 'Succeeded'. Example:
 
-    ![Resource Explorer](../media/azure-resource-explorer-alternatives/api-playground-cluster-put-response.png)
+    ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-put-response.png)
 
 1. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground).
 
@@ -124,4 +124,4 @@ There are some scenarios where it is necessary to force the node to restart duri
 
 [ClusterUpgradePolicy](https://docs.microsoft.com/en-us/dotnet/api/microsoft.azure.management.servicefabric.models.clusterupgradepolicy?view=azure-dotnet)
 
-[Azure Resource Explorer Alternatives](./azure-resource-explorer-alternatives.md)
+[Azure Resource Explorer Alternatives](./resource-explorer-steps.md)

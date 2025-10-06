@@ -2,7 +2,7 @@
 
 This troubleshooting guide describes the steps to rotate Storage Account Keys for the storage account used for Service Fabric diagnostic logs. This guide is applicable for Service Fabric clusters only. Service Fabric Managed clusters do not use storage account keys for connectivity to the storage account. [EventStore Overview](https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-eventstore)
 
-Best practice is to provision and manage Service Fabric clusters using ARM templates. This guide describes the steps to rotate Storage Account Keys using ARM templates. If you are not using ARM templates to provision and manage Service Fabric clusters, you can use the Azure Portal to modify the Service Fabric resource to rotate Storage Account Keys. See [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md) for detailed instructions.
+Best practice is to provision and manage Service Fabric clusters using ARM templates. This guide describes the steps to rotate Storage Account Keys using ARM templates. If you are not using ARM templates to provision and manage Service Fabric clusters, you can use the Azure Portal to modify the Service Fabric resource to rotate Storage Account Keys. See [Alternatives to resources.azure.com](./resource-explorer-steps.md) for detailed instructions.
 
 ## Process
 
@@ -205,7 +205,7 @@ Use the following steps to validate current active storage account key in the Se
 
     ![Azure Resource Explorer](../media/resourcemgr10.png)
     
-    For detailed instructions on using Resource Explorer, see [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md).
+    For detailed instructions on using Resource Explorer, see [Alternatives to resources.azure.com](./resource-explorer-steps.md).
 
 2. The 'protectedAccountKeyName' value in 'diagnosticsStorageAccountConfig' section under Service Fabric resource of the ARM template contains the active key name.
 
@@ -238,7 +238,7 @@ Use the following steps to validate current active storage account key in the Se
 
     ![Azure Resource Explorer](../media/resourcemgr1.png)
     
-    For detailed instructions, see [Alternatives to resources.azure.com](./azure-resource-explorer-alternatives.md).
+    For detailed instructions, see [Alternatives to resources.azure.com](./resource-explorer-steps.md).
 
 3. Using API Playground, execute GET to retrieve the current configuration, then modify the configuration.
 

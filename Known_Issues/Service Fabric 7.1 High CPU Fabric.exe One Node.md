@@ -41,7 +41,7 @@ This issue should not have any impact to cluster environment other than high cpu
 
 This issue was fixed in Service Fabric 7.1 CU5 and the mitigation settings should be removed if you have upgraded your cluster to 7.1 CU5 (or higher).
 
-Please remove the PlacementAndLoadBalancing setting and parameters form the fabricSettings section of the Service Fabric resource and Patch deployment using PowerShell or the Azure Portal. Refer to [Service Fabric Cluster Config Upgrade](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-config-upgrade-azure) for modifying and deploying settings. For detailed instructions on modifying Service Fabric resources, see [Alternatives to resources.azure.com](../Cluster/azure-resource-explorer-alternatives.md).
+Please remove the PlacementAndLoadBalancing setting and parameters form the fabricSettings section of the Service Fabric resource and Patch deployment using PowerShell or the Azure Portal. Refer to [Service Fabric Cluster Config Upgrade](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-config-upgrade-azure) for modifying and deploying settings. For detailed instructions on modifying Service Fabric resources, see [Alternatives to resources.azure.com](../Cluster/resource-explorer-steps.md).
 
 ```json
 // "fabricSettings": [
