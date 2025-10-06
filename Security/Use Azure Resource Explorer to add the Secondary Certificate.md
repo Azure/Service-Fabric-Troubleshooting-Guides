@@ -22,7 +22,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 1. In the Azure Portal, select the **Resource Explorer** from the left navigation menu or search for "Resource Explorer".
    
-   ![Resource Explorer menu](../media/azure-resource-explorer-alternatives/01-resource-explorer-menu.png)
+   ![Resource Explorer menu](../media/azure-resource-explorer-alternatives/resource-explorer-1.png)
 
 2. Navigate to the Virtual Machine Scale Set resource:
    ```
@@ -36,7 +36,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
                            └───%virtual machine scale set name%
    ```
    
-   ![Navigate to VMSS](../media/azure-resource-explorer-alternatives/02-navigate-to-resource.png)
+   ![Navigate to VMSS](../media/azure-resource-explorer-alternatives/portal-resource-view.png)
 
 3. Review the current configuration, specifically the `virtualMachineProfile / osProfile / secrets` section.
 
@@ -44,15 +44,15 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 1. In the Azure Portal, select **API Playground** from the left navigation menu or search for "API Playground".
    
-   ![API Playground menu](../media/azure-resource-explorer-alternatives/05-api-playground-menu.png)
+   ![API Playground menu](../media/azure-resource-explorer-alternatives/api-playground-get.png)
 
 2. Copy the Resource URI from Resource Explorer and paste it into the API Playground URI field.
    
-   ![Copy URI](../media/azure-resource-explorer-alternatives/06-copy-resource-uri.png)
+   ![Copy URI](../media/azure-resource-explorer-alternatives/resource-explorer-copy-resource-uri.png)
 
 3. Select **GET** from the Method dropdown and click **Execute** to retrieve the current configuration.
    
-   ![Execute GET](../media/azure-resource-explorer-alternatives/07-api-playground-get.png)
+   ![Execute GET](../media/azure-resource-explorer-alternatives/api-playground-get-response.png)
 
 4. Copy the Response body to a text editor.
 
@@ -153,13 +153,13 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 2. In API Playground, select **PUT** from the Method dropdown.
    
-   ![Select PUT method](../media/azure-resource-explorer-alternatives/08-api-playground-put.png)
+   ![Select PUT method](../media/azure-resource-explorer-alternatives/api-playground-patch.png)
 
 3. Paste the modified JSON into the Request body field.
 
 4. Click **Execute** to submit the update.
    
-   ![Execute PUT](../media/azure-resource-explorer-alternatives/09-api-playground-execute-put.png)
+   ![Execute PUT](../media/azure-resource-explorer-alternatives/api-playground-patch-response.png)
 
 #### 7. **Wait** for the Virtual Machine Scale Set update to complete
 
@@ -169,7 +169,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the scale set.
    
-   ![Check provisioning state](../media/azure-resource-explorer-alternatives/10-check-provisioning-state.png)
+   ![Check provisioning state](../media/azure-resource-explorer-alternatives/api-playground-get-response.png)
 
 #### 8. **Perform steps 2 - 7 for each node type (Virtual Machine Scale Set)**
 
