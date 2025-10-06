@@ -28,7 +28,7 @@ In cluster manifest:
     </Section>
 ```
 
-Using [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) and [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) in [Azure Portal](https://portal.azure.com/), add or modify the following section to the Service Fabric resource under 'fabricSettings'. For detailed instructions, see [Azure Resource Explorer Alternatives](../cluster/azure-resource-explorer-alternatives.md):
+Using [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) and [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) in [Azure Portal](https://portal.azure.com/), add or modify the following section to the Service Fabric resource under 'fabricSettings'. For detailed instructions, see [Azure Resource Explorer Alternatives](../Cluster/azure-resource-explorer-alternatives.md):
 
 ```json
       {
@@ -128,7 +128,7 @@ without explicit user consent.
 
    **Note**: Please give the cluster 5-10 minutes to reconfigure.  Generally speaking you will see Fabric.exe startup in the Task Manager and a few minutes later FabricGateway.exe will start when the nodes have finished reconfiguration.  At this point the cluster should be running again and the PowerShell endpoints should be accessible.  If you do not see this happening, review the Application event log and the Service Fabric Admin event logs to troubleshoot the reason.  
 
-6. After successful connection to cluster, as verified using PowerShell Connect-ServiceFabricCluster command, set [AcceptExpiredPinnedClusterCertificate](#AcceptExpiredPinnedClusterCertificate) in the Service Fabric resource using [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) and [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) *before* applying any other changes in that resource to prevent changes made from script execution from being overwritten. For detailed instructions, see [Azure Resource Explorer Alternatives](../cluster/azure-resource-explorer-alternatives.md).
+6. After successful connection to cluster, as verified using PowerShell Connect-ServiceFabricCluster command, set [AcceptExpiredPinnedClusterCertificate](#AcceptExpiredPinnedClusterCertificate) in the Service Fabric resource using [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) and [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) *before* applying any other changes in that resource to prevent changes made from script execution from being overwritten. For detailed instructions, see [Azure Resource Explorer Alternatives](../Cluster/azure-resource-explorer-alternatives.md).
 
 7. Follow this article to perform the certificate rollover: [Use Azure Resource Manager to manually rollover the cluster certificate](./Use%20Azure%20Resource%20Explorer%20to%20add%20the%20Secondary%20Certificate.md).
 
@@ -140,7 +140,7 @@ without explicit user consent.
 
 [Manually roll over a Service Fabric cluster certificate](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-rollover-cert-cn)
 
-[Azure Resource Explorer Alternatives](../cluster/azure-resource-explorer-alternatives.md)
+[Azure Resource Explorer Alternatives](../Cluster/azure-resource-explorer-alternatives.md)
 
 [Manage certificates in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificate-management)
 

@@ -302,4 +302,6 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
 
 [X.509 Certificate-based authentication in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificates)
 
-[Azure Resource Explorer Alternatives](../cluster/azure-resource-explorer-alternatives.md)
+## Reference
+
+[Azure Resource Explorer Alternatives](../Cluster/azure-resource-explorer-alternatives.md)
