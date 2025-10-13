@@ -70,22 +70,21 @@ Updated all documentation to use the new unified Resource Manager blade in Azure
 ## New Media Files
 
 ### Created New Directory
-- **media/managing-azure-resources/** (13 new screenshots)
+- **media/managing-azure-resources/** (12 new screenshots)
 
 ### New Screenshots
 1. `arm-api-put-vmss-nodetype0-current-state.png` - ARM API showing current VMSS state
-2. `arm-api-put-vmss-nodetype0-test.png` - ARM API test execution
-3. `arm-api-put-vmss-nodetype0.png` - ARM API PUT request for VMSS
-4. `arm-api-put-workflow.png` - Complete ARM API workflow diagram
-5. `arm-api-servicefabric-cluster.png` - ARM API with Service Fabric cluster
-6. `azure-portal-fixed.png` - Resource Manager overview page
-7. `resource-explorer-obfuscated.png` - Resource Explorer interface
-8. `resource-servicefabric-cluster.png` - Resource Explorer showing SF cluster
-9. `resource-vmss-nodetype0.png` - Resource Explorer showing VMSS details
-10. `vmss-detail-bottom.png` - VMSS detailed view (bottom section)
-11. `vmss-detail-middle.png` - VMSS detailed view (middle section)
-12. `vmss-detail-top.png` - VMSS detailed view (top section)
-13. `workflow-test-vmss-nodetype0.png` - Complete workflow test
+2. `arm-api-put-vmss-nodetype0.png` - ARM API PUT request for VMSS
+3. `arm-api-put-workflow.png` - Complete ARM API workflow diagram
+4. `arm-api-servicefabric-cluster.png` - ARM API with Service Fabric cluster
+5. `azure-portal-fixed.png` - Resource Manager overview page
+6. `resource-explorer-obfuscated.png` - Resource Explorer interface
+7. `resource-servicefabric-cluster.png` - Resource Explorer showing SF cluster
+8. `resource-vmss-nodetype0.png` - Resource Explorer showing VMSS details
+9. `vmss-detail-bottom.png` - VMSS detailed view (bottom section)
+10. `vmss-detail-middle.png` - VMSS detailed view (middle section)
+11. `vmss-detail-top.png` - VMSS detailed view (top section)
+12. `workflow-test-vmss-nodetype0.png` - Complete workflow test
 
 ### Deprecated Screenshots (To Be Reviewed)
 - `media/resourcemgr*.png` - Old Azure Resource Explorer (Preview) screenshots
