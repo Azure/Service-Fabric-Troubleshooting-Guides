@@ -85,12 +85,10 @@ We started to see disk space warning on our cluster.  After investigating where 
 ## **Answer**
 Yes, you can configure the Disagnostics setting for MaxDiskQuotaInMB which controls Disk quota in MB for Fabric log files.
 
-MaxDiskQuotaInMB can be configured as part of an ARM template, with resources.azure.com ([instructions](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-config-upgrade-azure#customize-cluster-settings-using-resource-manager-templates)), or via PowerShell:
+MaxDiskQuotaInMB can be configured as part of an ARM template, using [Resource Manager - ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) ([instructions](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-config-upgrade-azure#customize-cluster-settings-using-resource-manager-templates)), or via PowerShell:
 ```code
-Set-AzureRmServiceFabricSetting -ResourceGroupName clusterResourceGroup -Name clusterName -Section "Diagnostics" -Parameter "MaxDiskQuotaInMB" -Value "25600" 
+Set-AzureRmServiceFabricSetting -ResourceGroupName clusterResourceGroup -Name clusterName -Section "Diagnostics" -Parameter "MaxDiskQuotaInMB" -Value "25600" 
 ```
-
-
 ## **Question**
 Our D: (azure %temp% drive used for Service Fabric Data Root) drive is full. How can we see what folders at taking up the most space?
 

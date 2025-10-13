@@ -48,15 +48,15 @@ To view the Fabric Upgrade Policy, navigate to the Service Fabric Cluster resour
 
 ![Fabric Upgrade Policy in Azure Portal](../media/portal-upgrade-policy1.png)
 
-If custom settings have been defined, the settings can be viewed by selecting the `JSON View` in the top right corner on `Overview` page, using [`Resource Explorer`](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade), or by using PowerShell cmdlet [Get-AzServiceFabricCluster](https://docs.microsoft.com/powershell/module/az.servicefabric/get-azservicefabriccluster). For standalone clusters, use PowerShell cmdlet [Get-ServiceFabricClusterConfiguration](https://docs.microsoft.com/powershell/module/servicefabric/get-servicefabricclusterconfiguration?view=azureservicefabricps).
+If custom settings have been defined, the settings can be viewed by selecting the `JSON View` in the top right corner on `Overview` page, using [`Resource Explorer`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer), or by using PowerShell cmdlet [Get-AzServiceFabricCluster](https://docs.microsoft.com/powershell/module/az.servicefabric/get-azservicefabriccluster). For standalone clusters, use PowerShell cmdlet [Get-ServiceFabricClusterConfiguration](https://docs.microsoft.com/powershell/module/servicefabric/get-servicefabricclusterconfiguration?view=azureservicefabricps).
 
 ![Resource view in Azure Portal](../media/resource-explorer-steps/portal-resource-view.png)
 
 ## Modify default Fabric Upgrade Policy Settings
 
-To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster resource in <https://portal.azure.com>. Options not available in the resource portal blade can be modified using an updated ARM template or by using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). The 'upgradeDescription' section is configured in the 'properties' parent section.
+To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster resource in <https://portal.azure.com>. Options not available in the resource portal blade can be modified using an updated ARM template or by using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground). The 'upgradeDescription' section is configured in the 'properties' parent section.
 
-1. Open [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) to browse and view resources.
+1. Open [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in [Azure Portal](https://portal.azure.com/) to browse and view resources.
 
 1. Select the specific subscription, resource group, and then resource under 'Resources':
 
@@ -71,9 +71,9 @@ To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster reso
 
     ![Resource Explorer cluster resource highlight](../media/resource-explorer-steps/portal-resource-explorer-cluster-resource-highlight.png)
 
-1. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) as described below.
+1. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) as described below.
 
-1. Navigate to [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource URI with API version from Resource Explorer into the input box to the right of the HTTP Request Method.
+1. Navigate to [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource URI with API version from Resource Explorer into the input box to the right of the HTTP Request Method.
 
 1. Select `Execute` to view the configuration of the specified resource.
 
@@ -91,7 +91,7 @@ To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster reso
 
     ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-put-response.png)
 
-1. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground).
+1. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
 
 ## Use Fabric Upgrade Policy Settings to Force Node Restart During Upgrade
 

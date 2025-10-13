@@ -28,7 +28,7 @@ Using an ARM Template with CSE and extension sequencing, a dependency can be ins
 
 ### View Configuration / Resource ID in Resource Explorer
 
-1. Open [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) to view the resource and to copy the resource uri of the vmss / nodetype for modification.
+1. Open [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in [Azure Portal](https://portal.azure.com/) to view the resource and to copy the resource uri of the vmss / nodetype for modification.
 
 2. Select the specific vmss / nodetype under 'Resources' 'virtualMachineScaleSets'.:
 
@@ -49,7 +49,7 @@ Using an ARM Template with CSE and extension sequencing, a dependency can be ins
 
 ### View / Modify Configuration in API Playground with Resource ID and API Version
 
-1. Navigate to [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource uri with api version from Resource Explorer into the input box to the right of the HTTP Request Method.
+1. Navigate to [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource uri with api version from Resource Explorer into the input box to the right of the HTTP Request Method.
 
 2. Select `Execute` to view the configuration of the vmss / nodetype. Example:
 
@@ -63,7 +63,7 @@ Using an ARM Template with CSE and extension sequencing, a dependency can be ins
 
     ![Resource Explorer](../media/Installing-dependencies-on-virtual-machine-scaleset/api-playground-patch.png)
 
-5. Select `Execute` to modify the configuration. In the `Response Body`, Verify the `Status Code` is '200' and the `provisioningState` is 'Updating' or 'Succeeded'. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) or [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). Example:
+5. Select `Execute` to modify the configuration. In the `Response Body`, Verify the `Status Code` is '200' and the `provisioningState` is 'Updating' or 'Succeeded'. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) or [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground). Example:
 
     ![Resource Explorer](../media/Installing-dependencies-on-virtual-machine-scaleset/api-playground-patch-response.png)
 

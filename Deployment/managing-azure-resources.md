@@ -1,10 +1,12 @@
 # Managing Azure Resources
 
-Alternative methods are available to manage Azure resources. The [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in Azure Portal is the most similar replacement, but it is read-only. The alternatives listed below provide comprehensive ways to view and modify Azure resources programmatically or through a graphical interface:
+Multiple methods are available to manage Azure resources. The [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in Azure Portal provides a unified interface with both [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) for browsing resources and [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) for making modifications. The alternatives listed below provide comprehensive ways to view and modify Azure resources programmatically or through a graphical interface:
 
-1. **Azure Portal**: Azure Portal is the primary interface for managing Azure resources. It provides a graphical interface to view and manage resources, including resource groups, virtual machines, storage accounts, and more.
+1. **Azure Portal**: Azure Portal is the primary interface for managing Azure resources. The [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade provides integrated access to:
+   - **Resource Explorer**: Browse and view resources in a hierarchical tree structure (read-only)
+   - **ARM API Playground**: Execute GET, PUT, PATCH, and DELETE operations on Azure Resource Manager APIs
 
-   - **Advantages**: User-friendly, comprehensive, and integrated with other Azure services.
+   - **Advantages**: User-friendly, comprehensive, integrated interface for both browsing and modifying resources.
    - **Disadvantages**: Requires a browser. May be cumbersome for large-scale operations or automation tasks.
 2. **Azure PowerShell**: Azure PowerShell is a set of cmdlets for managing Azure resources from the command line. It is particularly useful for Windows environments and integrates seamlessly with other PowerShell scripts and modules.
 
@@ -17,12 +19,22 @@ Alternative methods are available to manage Azure resources. The [Resource Explo
 
 ## Azure Portal
 
-The Azure Portal provides dedicated blades for managing and viewing Azure resources. The [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) blade allows graphical navigation; however, it is read-only. The [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) can be used to view or modify resources but requires knowledge of the resource's ID and API version. The following steps demonstrate how to view and modify resources:
+The Azure Portal provides a unified [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade for managing and viewing Azure resources. This blade contains two main tools:
+
+- **[Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer)**: Allows graphical navigation and browsing of resources (read-only)
+- **[ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground)**: Enables executing ARM API operations (GET, PUT, PATCH, DELETE) to view and modify resources
+
+The following steps demonstrate how to view and modify resources using this unified interface:
 
 ### Using Azure Portal to view resources
 
-1. Open [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in [Azure Portal](https://portal.azure.com/) to browse and view resources.
-2. Select the specific subscription, resource group, and then resource under 'Resources':
+1. Open [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in [Azure Portal](https://portal.azure.com/). The Resource Manager blade provides an overview with quick access to both Resource Explorer and ARM API Playground.
+
+   ![Resource Manager Overview](../media/managing-azure-resources/azure-portal-fixed.png)
+
+2. Click on **Resource Explorer** in the left navigation or use the direct link to [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) to browse resources.
+
+3. Select the specific subscription, resource group, and then resource under 'Resources':
 
    ```text
    Subscriptions
@@ -33,14 +45,17 @@ The Azure Portal provides dedicated blades for managing and viewing Azure resour
                        └───<resource name>
    ```
 
-   ![Resource Explorer](../media/resource-explorer-steps/resource-explorer-1.png)
-3. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using `API Playground` as described below. Example:
+   ![Resource Explorer](../media/managing-azure-resources/resource-explorer-obfuscated.png)
 
-   ![Resource Explorer copy uri](../media/resource-explorer-steps/resource-explorer-copy-resource-uri.png)
+4. Expand the resource to view its properties and configuration. For example, expanding a Virtual Machine Scale Set resource shows details about the VMSS configuration:
+
+   ![VMSS Resource Details](../media/managing-azure-resources/resource-vmss-nodetype0.png)
+
+5. To modify this resource, note the resource path and API version displayed in Resource Explorer, which will be needed for the ARM API Playground in the next section.
 
 ### Using Azure Portal to update resources
 
-To use `API Playground` to modify resource configuration, the resource URI with API version must be provided. Use the [Using Azure Portal to view resources](#using-azure-portal-to-view-resources) steps above to copy the resource URI with API version from Resource Explorer. Alternatively, obtain the resource URI from the `Resource JSON` views available on resources in Azure Portal. The `Resource JSON` view can be accessed by selecting the `JSON View` link on the top right side of the resource blade. This will open a new window with the JSON representation of the resource, including the resource URI and API version.
+To use [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) to modify resource configuration, the resource URI with API version must be provided. You can obtain this from [Resource Explorer](#using-azure-portal-to-view-resources) or from the `Resource JSON` view available on most resource blades in Azure Portal. The `Resource JSON` view can be accessed by selecting the `JSON View` link on the top right side of the resource blade.
 
 The resource URI format is as follows:
 
@@ -48,19 +63,25 @@ The resource URI format is as follows:
 /<subscription id>/resourceGroups/<resource group name>/providers/<resource provider>/<resource type>/<resource name>?api-version=<api version>
 ```
 
-1. Navigate to [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource URI with API version from Resource Explorer into the input box to the right of the HTTP Request Method.
-2. Select `Execute` to view the configuration of the specified resource. Example:
+#### Workflow for modifying resources
 
-   ![Resource Explorer](../media/resource-explorer-steps/api-playground-get.png)
-3. The `Response Body` will display the configuration of the resource similar to the Resource Explorer view. This response body can be copied and pasted into the `Request Body` above to modify the configuration. Example:
+1. From the [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade, click on **ARM API Playground** in the left navigation or use the direct link to [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
 
-   ![Resource Explorer](../media/resource-explorer-steps/api-playground-get-response.png)
-4. Set the request method to `PUT` or `PATCH` depending on update type, select `Request Body`, and paste the copied response body. Modify the configuration as needed. Example:
+   ![ARM API Playground Workflow](../media/managing-azure-resources/arm-api-put-workflow.png)
 
-   ![Resource Explorer](../media/resource-explorer-steps/api-playground-patch.png)
-5. Select `Execute` to modify the configuration. In the `Response Body`, verify the `Status Code` is '200' and the `provisioningState` is 'Updating' or 'Succeeded'. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) or [API Playground](https://ms.portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground). Example:
+2. Enter the resource URI with API version in the request URL field. Select **GET** as the HTTP method and click **Execute** to retrieve the current configuration. Example showing a Service Fabric cluster resource:
 
-   ![Resource Explorer](../media/resource-explorer-steps/api-playground-patch-response.png)
+   ![ARM API Get Request](../media/managing-azure-resources/arm-api-servicefabric-cluster.png)
+
+3. The **Response** section will display the current configuration of the resource in JSON format. Copy this response body to use as the basis for your modifications.
+
+4. Switch to the **Request body** tab, paste the copied JSON, and make your desired modifications to the configuration.
+
+5. Change the HTTP method to **PUT** and click **Execute** to submit the updated configuration. Example showing a VMSS update:
+
+   ![ARM API Put Request](../media/managing-azure-resources/arm-api-put-vmss-nodetype0.png)
+
+6. The **Response** section will show the result of the operation. Verify the status code is `200 OK` and the `provisioningState` is `Updating` or `Succeeded`. You can monitor the provisioning status in the [Azure Portal](https://portal.azure.com/) or by performing additional GET requests from [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
 
 ## Azure PowerShell
 
@@ -207,10 +228,11 @@ The resource ID is a unique identifier for an Azure resource. It can be obtained
 
 #### Obtaining Resource ID via Azure Portal
 
-Besides using the [Resource Explorer](#using-azure-portal-to-view-resources) blade in Azure Portal, the resource ID can also be obtained from the resource blade. The resource ID is displayed in the `Properties` section of the resource blade or in the `JSON View` of the resource. The API version can also be found in the `JSON View` of the resource.
+The resource ID can be obtained from multiple locations in Azure Portal:
 
-1. Open Azure Portal and navigate to the resource group containing the resource for which the resource ID is needed.
-2. Select the resource and in the resource blade, select the `JSON View` link on the top right side of the resource blade. This will open a new window with the JSON representation of the resource, including the resource ID and API version.
+1. **Using [Resource Manager - Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer)**: Navigate to your resource in the hierarchical tree view. The resource path is displayed in Resource Explorer and can be combined with the subscription ID to form the complete resource ID.
+
+2. **Using the resource blade**: Open Azure Portal and navigate to the resource. Select the `JSON View` link on the top right side of the resource blade. This will open a panel with the JSON representation of the resource, including the resource ID and available API versions.
 
    ![Resource View](../media/resource-explorer-steps/portal-resource-view.png)
 
@@ -249,7 +271,11 @@ All Azure resources have a specific API version that is used to interact with th
 
 #### Obtaining API Version via Azure Portal
 
-As noted above, the API version can be found in the `JSON View` of the resource in Azure Portal. The API version is displayed in the `API Versions` field of the JSON representation of the resource.
+The API version can be found in multiple locations:
+
+1. **Resource Manager - Resource Explorer**: When viewing a resource in [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer), the API version is displayed alongside the resource information.
+
+2. **JSON View**: As noted above, the API version can be found in the `JSON View` of the resource in Azure Portal. The API version is displayed in the `API Versions` field of the JSON representation of the resource.
 
 ![Json View](../media/resource-explorer-steps/portal-json-view.png)
 

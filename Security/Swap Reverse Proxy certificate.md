@@ -15,11 +15,11 @@ https://github.com/ChackDan/Service-Fabric/tree/master/ARM%20Templates/ReversePr
     c. Create and Upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
 
 
-2. Using [Resource Explorer](https://portal.azure.com/#view/HubsExtension/ArmExplorerBlade) in the Azure Portal, navigate to your Virtual Machine Scale Set resource. For detailed instructions on modifying VMSS resources using Resource Explorer and API Playground, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+2. Using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal, navigate to your Virtual Machine Scale Set resource. For detailed instructions on modifying VMSS resources using Resource Explorer and API Playground, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
    Find your subscription → resource group → providers/Microsoft.Compute/virtualMachineScaleSets → your VMSS
 
-3. Using [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground), execute a GET request to retrieve the current VMSS configuration, then copy the response body to a text editor.
+3. Using [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), execute a GET request to retrieve the current VMSS configuration, then copy the response body to a text editor.
 
 4. Update the VirtualMachineProfile for each nodetype to add (aka **Deploy**) the new certificate to the VMSS
 
@@ -143,7 +143,7 @@ Status
 Succeeded
 ](../media/resourcemgr4.png)
 
-8. Next, using [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ArmPlayground), edit the Microsoft.ServiceFabric provider for your cluster
+8. Next, using [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), edit the Microsoft.ServiceFabric provider for your cluster
 
 * Adding \"thumbprintSecondary\": \"ED37DFE6F4ED42182998F314FD633B2F042ABC32\" setting
 
