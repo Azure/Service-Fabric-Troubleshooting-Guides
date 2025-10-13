@@ -18,3 +18,6 @@
 /.vs/Service-Fabric-Troubleshooting-Guides/v17/.wsuo
 /.vs/Service-Fabric-Troubleshooting-Guides/copilot-chat/
 /.vs/Service-Fabric-Troubleshooting-Guides/CopilotIndices/
+
+# Temporary documentation files
+RESOURCE-MANAGER-UPDATE-SUMMARY.md
