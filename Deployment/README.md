@@ -2,6 +2,9 @@ This contains the Deployment related TSG's surfaced in the Azure Portal during s
 
 ## **Category**
 
+### **Resource Management**
+* [Managing Azure Resources - Resource Explorer and API Playground Guide](./managing-azure-resources.md)
+
 ### **Image Store**
 [Image Store: Copy Application package fails with ACCESS_DENIED.md](./Image%20Store%20Copy%20Application%20package%20fails%20with%20ACCESS_DENIED.md)
 

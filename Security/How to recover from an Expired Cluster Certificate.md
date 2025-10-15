@@ -4,7 +4,7 @@ This article will demonstrate how to enable the Service Fabric cluster security 
 
 ## [Applies to]
 
-**Windows** Service Fabric clusters running 6.5 CU3 (version 6.5.644.9590 or higher), secured with **self-signed** certificates declared by thumbprint.
+**Windows** Service Fabric clusters secured with **self-signed** certificates declared by thumbprint.
 
 ## [Background]
 
@@ -28,7 +28,7 @@ In cluster manifest:
     </Section>
 ```
 
-From [https://resources.azure.com](https://resources.azure.com), add / modify the following section to the Service Fabric resource under 'fabricSettings':
+Using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) and [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in [Azure Portal](https://portal.azure.com/), add or modify the following section to the Service Fabric resource under 'fabricSettings'. For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md):
 
 ```json
       {
@@ -40,6 +40,16 @@ From [https://resources.azure.com](https://resources.azure.com), add / modify th
           }
         ]
       }
+```
+
+When updating cluster certificate configuration, ensure both "thumbprint" and "thumbprintSecondary" (if applicable) are correctly configured:
+
+```json
+"certificate": {
+  "thumbprint": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "thumbprintSecondary": "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
+  "x509StoreName": "My"
+}
 ```
 
 3. It is recommended that the cluster certificate is renewed as soon as feasible, see Additional References below.  
@@ -118,7 +128,7 @@ without explicit user consent.
 
    **Note**: Please give the cluster 5-10 minutes to reconfigure.  Generally speaking you will see Fabric.exe startup in the Task Manager and a few minutes later FabricGateway.exe will start when the nodes have finished reconfiguration.  At this point the cluster should be running again and the PowerShell endpoints should be accessible.  If you do not see this happening, review the Application event log and the Service Fabric Admin event logs to troubleshoot the reason.  
 
-6. After successful connection to cluster, as verified using PowerShell connect-serviceFabricCluster command, set [AcceptExpiredPinnedClusterCertificate](#AcceptExpiredPinnedClusterCertificate) in resources.azure.com Service Fabric resource *before* applying any other changes in that resource to prevent changes made from script execution from being overwritten.
+6. After successful connection to cluster, as verified using PowerShell Connect-ServiceFabricCluster command, set [AcceptExpiredPinnedClusterCertificate](#acceptexpiredpinnedclustercertificate) in the Service Fabric resource using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) and [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) *before* applying any other changes in that resource to prevent changes made from script execution from being overwritten. For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
 7. Follow this article to perform the certificate rollover: [Use Azure Resource Manager to manually rollover the cluster certificate](./Use%20Azure%20Resource%20Explorer%20to%20add%20the%20Secondary%20Certificate.md).
 
@@ -129,3 +139,9 @@ without explicit user consent.
 [Change cluster from certificate thumbprint to common name](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-change-cert-thumbprint-to-cn)
 
 [Manually roll over a Service Fabric cluster certificate](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-rollover-cert-cn)
+
+[Managing Azure Resources](../Deployment/managing-azure-resources.md)
+
+[Manage certificates in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificate-management)
+
+[X.509 Certificate-based authentication in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificates)

@@ -11,7 +11,7 @@ This contains the Security related TSG's surfaced in the Azure Portal during sup
 ### **Couldn't add or renew certificate**
 * [Add-AzureRmServiceFabricClusterCertificate throws error TwoCertificatesToTwoCertificatesNotAllowed](./Add-AzureRmServiceFabricClusterCertificate%20throws%20error%20TwoCertificatesToTwoCertificatesNotAllowed.md)
 * [Add_New_Cert_To_VMSS.ps1](../Scripts/Add_New_Cert_To_VMSS.ps1)
-* [How to use https://resources.azure.com to add and swap the Secondary Certificate ](./Use%20Azure%20Resource%20Explorer%20to%20add%20the%20Secondary%20Certificate.md)
+* [How to add and swap the Secondary Certificate using Azure Portal](./Use%20Azure%20Resource%20Explorer%20to%20add%20the%20Secondary%20Certificate.md)
 
 ### **Private Key Permissions**
 * [Failed to get the Certificates private key](./Failed%20to%20get%20the%20Certificates%20private%20key.md)
