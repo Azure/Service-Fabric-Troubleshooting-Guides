@@ -62,7 +62,7 @@ To unblock Node deletion operation initiated through VMSS and get the cluster ba
 ## Prerequisites ##
 
 - Ensure that the applications are healthy (other than any issues related to the blocked operation)
-- Get ARM template for the cluster. (If you created the cluster using portal, go to resource.azure.com and find the resource, select Read/Write mode and click on edit. It is recommended to use ARM templates that are checked in to source control for production environment)
+- Get ARM template for the cluster using Resource Explorer and API Playground. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions. It is recommended to use ARM templates that are checked in to source control for production environments.
 
 ## Detailed Mitigation Steps ##
 

@@ -8,22 +8,19 @@ https://github.com/ChackDan/Service-Fabric/tree/master/ARM%20Templates/ReversePr
 
 1. Create a new certificate and Upload to Key Vault (multiple options)
 
-    a. Create with any reputable CA
+   a. Create with any reputable CA
 
-    b. Generate Selfsigned, Import existing certs using Azure Portal -> Key Vault - https://blogs.technet.microsoft.com/kv/2016/09/26/get-started-with-azure-key-vault-certificates/
+   b. Generate Selfsigned, Import existing certs using Azure Portal -> Key Vault - https://blogs.technet.microsoft.com/kv/2016/09/26/get-started-with-azure-key-vault-certificates/
 
-    c. Create and Upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
+   c. Create and Upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
+2. Using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) and [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview), navigate to your Virtual Machine Scale Set resource. For detailed instructions on modifying VMSS resources using Resource Explorer and API Playground, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
-
-2. Using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal, navigate to your Virtual Machine Scale Set resource. For detailed instructions on modifying VMSS resources using Resource Explorer and API Playground, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
-
-   Find your subscription → resource group → providers/Microsoft.Compute/virtualMachineScaleSets → your VMSS
-
+   Find your subscription → resource group → Resources/Microsoft.Compute/virtualMachineScaleSets → your VMSS
 3. Using [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), execute a GET request to retrieve the current VMSS configuration, then copy the response body to a text editor.
-
 4. Update the VirtualMachineProfile for each nodetype to add (aka **Deploy**) the new certificate to the VMSS
 
 >> a. If the new certificate is in the **same Key Vault** as the Primary add it to the array of 'vaultCertificates' as shown below
+>>
 
 ```json
     "virtualMachineProfile": {
@@ -53,6 +50,7 @@ https://github.com/ChackDan/Service-Fabric/tree/master/ARM%20Templates/ReversePr
 ```
 
 >> b. If the new certificate is in a **different Key Vault** as the Primary add an additional secret to the array of 'secrets' as shown below, or alternatively use [Add new cert to VMSS](../Scripts/Add_New_Cert_To_VMSS.ps1)
+>>
 
 ```json
 "virtualMachineProfile": {
@@ -132,7 +130,6 @@ https://github.com/ChackDan/Service-Fabric/tree/master/ARM%20Templates/ReversePr
 ```
 
 6. In API Playground, select **PUT** from the Method dropdown, paste the modified JSON configuration into the Request body field, and click **Execute** to submit the update.
-
 7. Back in Azure Portal the VMMS resource will move to a 'Updating' status, **wait** to get back to \"Succeeded\" status before updating the Service Fabric cluster settings (step 8):
 
 ![WordCount
@@ -171,7 +168,6 @@ Succeeded
 
 * FAQ: [Why do cluster upgrades take so long](../Cluster/Why%20do%20cluster%20upgrades%20take%20so%20long.md)
 
-
 10. Swap the values of "reverseProxyCertificate" and "reverseProxySecondaryCertificate" properties in the VMMS resource
 
 ```json
@@ -209,7 +205,6 @@ Succeeded
 ```
 
 11. Execute PUT in API Playground to update the VMSS configuration and wait for the update to complete.
-
 12. Swap the "reverseProxyCertificate" property values for "thumbprint" and "thumbprintSecondary" for the ServiceFabric Cluster resource
 
 ```json
@@ -233,12 +228,9 @@ Succeeded
 ```
 
 13. Execute PUT in API Playground to update the Service Fabric cluster resource and wait for the update to complete.
-
 14. When the cluster updates are complete you should be able to verify the certificate thumbprints have swapped by checking from Service Fabric Explorer -> Cluster -> Manifest
     ![Manifest](../media/rpcertswap_image003.PNG)
 
 * Or in the Azure portal > Cluster -> Security
 
-    ![Portal -> Cluster -> Security](../media/rpcertswap_image004.PNG)* Feel free to delete the old certificate at this point (now in the Secondary)
-
-
+  ![Portal -> Cluster -> Security](../media/rpcertswap_image004.PNG)* Feel free to delete the old certificate at this point (now in the Secondary)

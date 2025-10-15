@@ -2,7 +2,7 @@
 
 Service Fabric managed clusters manage the certificate used by the cluster for communication and authentication automatically. This certificate, known as the 'cluster' certificate, is regenerated periodically and is not configurable. A common name certificate from a Certificate Authority can however be configured as a 'client' certificate to connect to the cluster in addition to the managed cluster certificate or as an application certificate.
 
-> ### :exclamation:NOTE: Connecting to a managed cluster endpoint, for example Service Fabric Explorer (SFX), a certificate error (NET::ERR_CERT_AUTHORITY_INVALID) will occur regardless of certificate being used or cluster configuration due to the cluster using a managed 'cluster' certificate.
+> ### ❗️NOTE: Connecting to a managed cluster endpoint, for example Service Fabric Explorer (SFX), a certificate error (NET::ERR_CERT_AUTHORITY_INVALID) will occur regardless of certificate being used or cluster configuration due to the cluster using a managed 'cluster' certificate.
 
 ## Prerequisites
 
@@ -34,8 +34,9 @@ If using an ARM template for deployment, add a new 'clients' element to array as
 
 ### Using Azure Portal to add common name certificate configuration
 
-- Navigate to {{subscription id}}/resourceGroups/{{resource group}}/providers/Microsoft.ServiceFabric/managedClusters/{{cluster name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+- In [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview), use [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) navigate to Subscriptions/{{subscription id}}/ResourceGroups/{{resource group}}/Resources/Microsoft.ServiceFabric/managedClusters/{{cluster name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 - Populate provided 'clients' new element template
+
   - isAdmin - set to true if certificate should have cluster write / management capabilities else set to false for readonly.
   - commonName - certificate 'SubjectName' without the 'CN='
   - issuerThumbprint - a comma separated string of thumbprints of the Issuing certificates for the common name certificate.
@@ -109,8 +110,9 @@ If using an ARM template for deployment, add a new 'vmSecrets' element to array 
 
 ### Using Azure Portal to add common name certificate to node type configuration
 
-- Navigate to {{subscription id}}/resourceGroups/{{resource group}}/providers/Microsoft.ServiceFabric/managedClusters/{{cluster name}}/nodeTypes/{{nodetype name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+- In [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview), use [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) to navigate to  Subscriptions/{{subscription id}}/ResourceGroups/{{resource group}}/Resources/Microsoft.ServiceFabric/managedClusters/{{cluster name}}/nodeTypes/{{nodetype name}} in the Azure Portal. For detailed instructions on viewing and modifying resources using [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 - Populate provided 'vmSecrets' new element template
+
   - id - Azure key vault id. Example: '/subscriptions/{{subscription id}}/resourceGroups/xxxxxxx/providers/Microsoft.KeyVault/vaults/{{vault name}}'
   - certificateStore - 'My'
   - certificateUrl - Azure key vault certificate secret. Example: 'https://{{vault name}}.vault.azure.net:443/secrets/{{secret name}}/{{secret}}'
@@ -128,7 +130,7 @@ If using an ARM template for deployment, add a new 'vmSecrets' element to array 
           }
         ]
       }
-  //],    
+  //],  
   ```
 
 - 'PUT' to update configuration.
@@ -169,7 +171,7 @@ For web and PowerShell connectivity to a managed cluster, the client certificate
 2. Right click on 'Certificates', select 'All Tasks' / 'Import...'
 3. Browse to certificate .pfx file to import.
 
-## Using common name for DNS resolution to connect to a managed cluster 
+## Using common name for DNS resolution to connect to a managed cluster
 
 In an unmanaged cluster, if configuring for use with a common name certificate, the 'managementEndpoint' can be modified to match the certificates SubjectName / common name for DNS resolution. For Service Fabric Managed  clusters, the managementEndpoint is not configurable. To resolve the name of the managed cluster using the certificates common name, an external configuration using DNS resolution is necessary, for example, by adding a CNAME record to DNS for the cluster FQDN address ({{cluster}}.{{location}}.cloudapp.azure.com).
 
@@ -177,14 +179,14 @@ In an unmanaged cluster, if configuring for use with a common name certificate, 
 
 Run the commands below to use PowerShell to enumerate the managed cluster 'cluster' / server certificate.
 
-  ```powershell
+```powershell
   $subscriptionId = ''
   $resourceGroupName = ''
   $managedClusterName = $resourceGroupName
   $clusterResource = Get-AzResource -ResourceId "/subscriptions/$subscriptionId/resourcegroups/$resourceGroupName/providers/Microsoft.ServiceFabric/managedClusters/$managedClusterName"
   $serverThumbprint = $clusterResource.Properties.clusterCertificateThumbprints
   write-host "server thumbprint:$serverThumbprint"
-  ```
+```
 
 ## PowerShell command to connect to cluster
 
@@ -217,20 +219,16 @@ invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubl
 ## Troubleshooting
 
 - Verify the common name certificate is time valid and not revoked.
-
 - Verify there are not multiple certificates installed with same common name.
-
 - Verify the common name certificate being used is installed on machine where PowerShell commands are being executed. Opening Certmgr.msc on machine will open the 'CurrentUser' certificate store.
-
 - Verify that all of the Issuer certificates thumbprints are configured for 'issuerThumbprint' in cluster 'clients' configuration for common name certificate. Renewed certificates may not have the same Issuer thumbprints.
-
 - Verify network connectivity to the managed cluster. By default, PowerShell connects to Service Fabric over port 19000. Use 'test-netConnection' to test network connectivity.
 
   ```powershell
   $clusterEndpoint = 'sfcluster.eastus.cloudapp.azure.com' # {{cluster name}}.{{location}}.cloudapp.azure.com
   $managementPort = 19000
   Test-NetConnection -computername $clusterEndpoint -port $managementPort
-    
+
   ComputerName     : sfcluster.eastus.cloudapp.azure.com
   RemoteAddress    : xxx.xxx.xxx.xxx
   RemotePort       : 19000

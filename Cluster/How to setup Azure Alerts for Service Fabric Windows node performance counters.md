@@ -16,25 +16,22 @@ If cluster is deployed and maintained by using ARM template, edit template.json 
 
 ![vscode wadcfg](../media/template-wadcfg.png)
 
-If cluster was deployed from Azure portal and template was not saved, use [Resource Manager - Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal. For detailed instructions on viewing and modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md). Navigate to 'subscription', 'resourceGroups', {{ resource group }}, 'providers', 'Microsoft.Compute', 'virtualMachineScaleSets', {{ nodetype }}.  
+If cluster was deployed from Azure portal and template was not saved, use [Resource Manager - Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal. For detailed instructions on viewing and modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md). Navigate to 'subscription', 'ResourceGroups', {{ resource group }}, 'Resources', 'Microsoft.Compute', 'virtualMachineScaleSets', {{ nodetype }}.  
 
 ```text
     subscriptions
     └───%subscription name%
-        └───resourceGroups
+        └───ResourceGroups
             └───%resource group name%
-                └───providers
+                └───Resources
                     └───Microsoft.Compute
                         └───virtualMachineScaleSets
                             └───%virtual machine scale set name%
 ```
 
-Click "Read/Write" permission and "Edit" to edit configuration.
+Using API Playground, execute GET to retrieve the VMSS resource configuration, copy the Response Body, switch to PUT method, and paste into Request Body to make modifications. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
 
-![Read/Write](../media/resourcemgr3.png)  
-![Edit](../media/resourcemgr2.png)
-
-![resources.azure wadcfg](../media/resources-azure-wadcfg.png)
+![resources.azure wadcfg](../media/managing-azure-resources/resource-vmss-wadcfg.png)
 
 ### IaaSDiagnostics default WadCfg
 
@@ -228,8 +225,6 @@ PS C:\>New-AzResourceGroupDeployment -ResourceGroupName servicefabriccluster -Te
 ```
 
 If using [Resource Manager - ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), after all changes have been made to the request body, select 'Execute' with PUT method to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com). For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
-
-![Click PATCH](../media/resourcemgr7.png)
 
 ## Validating configuration
 

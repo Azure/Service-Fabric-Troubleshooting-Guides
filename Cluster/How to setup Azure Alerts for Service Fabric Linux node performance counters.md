@@ -137,23 +137,20 @@ NOTE: 'timestamp' is an integer property that is used to trigger reprocessing of
 
 ![vscode template cse extension](../media/template-cse-extension.png)
 
-If cluster was deployed from Azure portal and template was not saved, use [Resource Manager - Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal. For detailed instructions on viewing and modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md). Navigate to 'subscription', 'resourceGroups', {{ resource group }}, 'providers', 'Microsoft.Compute', 'virtualMachineScaleSets', {{ nodetype }}.  
+If cluster was deployed from Azure portal and template was not saved, use [Resource Manager - Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal. For detailed instructions on viewing and modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md). Navigate to 'subscription', 'ResourceGroups', {{ resource group }}, 'Resources', 'Microsoft.Compute', 'virtualMachineScaleSets', {{ nodetype }}.  
 
 ```text
     subscriptions
     └───%subscription name%
-        └───resourceGroups
+        └───ResourceGroups
             └───%resource group name%
-                └───providers
+                └───Resources
                     └───Microsoft.Compute
                         └───virtualMachineScaleSets
                             └───%virtual machine scale set name%
 ```
 
-Click "Read/Write" permission and "Edit" to edit configuration.
-
-![Read/Write](../media/resourcemgr3.png)  
-![Edit](../media/resourcemgr2.png)
+Using API Playground, execute GET to retrieve the VMSS resource configuration, copy the Response Body, switch to PUT method, and paste into Request Body to make modifications. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
 
 ## Adding System Managed Identity
 

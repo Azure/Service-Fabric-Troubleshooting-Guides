@@ -12,48 +12,44 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 #### 1. Create a new certificate and Upload to Key Vault. There are multiple methods to do this depending on intent and configuration, some are listed below. Choose one of the below that meets configuration and security requirements:
 
-  > a. Create with any reputable CA  
-  > b. Generate self-signed certs using Azure Portal -> Key Vault.  
-  > c. Create and upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
+> a. Create with any reputable CA
+> b. Generate self-signed certs using Azure Portal -> Key Vault.
+> c. Create and upload using PowerShell - [CreateKeyVaultAndCertificateForServiceFabric.ps1](../Scripts/CreateKeyVaultAndCertificateForServiceFabric.ps1)
 
 ### Azure Portal - Virtual Machine Scale Set
 
 #### 2. Using Resource Explorer, navigate to the Virtual Machine Scale Set configured for the cluster to view the current configuration:
 
 1. In the Azure Portal, select the **Resource Explorer** from the left navigation menu or search for "Resource Explorer".
-   
-   ![Resource Explorer menu](../media/resource-explorer-steps/resource-explorer-1.png)
-
 2. Navigate to the Virtual Machine Scale Set resource:
+
    ```
    subscriptions
    └───%subscription name%
-       └───resourceGroups
+       └───ResourceGroups
            └───%resource group name%
-               └───providers
+               └───Resources
                    └───Microsoft.Compute
                        └───virtualMachineScaleSets
                            └───%virtual machine scale set name%
    ```
-   
-   ![Navigate to VMSS](../media/resource-explorer-steps/portal-resource-view.png)
 
+   For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+
+   ![Resource Explorer menu](../media/resource-explorer-steps/resource-explorer-1.png)
 3. Review the current configuration, specifically the `virtualMachineProfile / osProfile / secrets` section.
 
 #### 3. Using API Playground, modify the Virtual Machine Scale Set configuration to add the secondary certificate
 
 1. In the Azure Portal, select **API Playground** from the left navigation menu or search for "API Playground".
-   
+
    ![API Playground menu](../media/resource-explorer-steps/api-playground-get.png)
-
 2. Copy the Resource URI from Resource Explorer and paste it into the API Playground URI field.
-   
+
    ![Copy URI](../media/resource-explorer-steps/resource-explorer-copy-resource-uri.png)
-
 3. Select **GET** from the Method dropdown and click **Execute** to retrieve the current configuration.
-   
-   ![Execute GET](../media/resource-explorer-steps/api-playground-get-response.png)
 
+   ![Execute GET](../media/resource-explorer-steps/api-playground-get-response.png)
 4. Copy the Response body to a text editor.
 
 #### 4. Modify **"virtualMachineProfile / osProfile / secrets"** to add (deploy) the new certificate to each of the nodes in the node type. Choose one of the following options
@@ -150,25 +146,20 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 6. Execute PUT to update the Virtual Machine Scale Set
 
 1. Copy the modified JSON configuration.
+2. In [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), select **PUT** from the Method dropdown.
 
-2. In API Playground, select **PUT** from the Method dropdown.
-   
    ![Select PUT method](../media/resource-explorer-steps/api-playground-patch.png)
-
 3. Paste the modified JSON into the Request body field.
-
 4. Click **Execute** to submit the update.
-   
+
    ![Execute PUT](../media/resource-explorer-steps/api-playground-patch-response.png)
 
 #### 7. **Wait** for the Virtual Machine Scale Set update to complete
 
 1. Monitor the deployment status by executing GET requests in API Playground.
-
 2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-
 3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the scale set.
-   
+
    ![Check provisioning state](../media/resource-explorer-steps/api-playground-get-response.png)
 
 #### 8. **Perform steps 2 - 7 for each node type (Virtual Machine Scale Set)**
@@ -177,26 +168,25 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 #### 9. Using Resource Explorer, navigate to the Service Fabric cluster to view the current configuration
 
-1. In the Azure Portal, navigate to the Service Fabric cluster resource:
+1. In the [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer), navigate to the Service Fabric cluster resource:
+
    ```
    subscriptions
    └───%subscription name%
-       └───resourceGroups
+       └───ResourceGroups
            └───%resource group name%
-               └───providers
+               └───Resources
                    └───Microsoft.ServiceFabric
-                       └───clusters
-                           └───%cluster name%
+                       └───%cluster name%
    ```
 
+   For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 2. Review the current certificate configuration in the `properties / certificate` section.
 
 #### 10. Using API Playground, modify the Service Fabric cluster configuration to add the secondary certificate thumbprint
 
-1. Copy the Resource URI from Resource Explorer and paste it into API Playground.
-
+1. Copy the Resource URI from Resource Explorer and paste it into [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
 2. Execute GET to retrieve the current configuration.
-
 3. Copy the Response body to a text editor.
 
 #### 11. Modify **"properties / certificate / thumbprintSecondary"** to add the new certificate configuration to the cluster
@@ -232,9 +222,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 12. Execute PUT to update the Service Fabric cluster configuration
 
 1. Copy the modified JSON configuration.
-
 2. In API Playground, select **PUT** and paste the modified JSON into the Request body field.
-
 3. Click **Execute** to submit the update.
 
 **Note**: This step typically takes a while, up to an hour. See FAQ: [Why do cluster upgrades take so long](../Cluster/Why%20do%20cluster%20upgrades%20take%20so%20long.md)
@@ -242,9 +230,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 13. **Wait** for the Service Fabric cluster update to complete
 
 1. Monitor the deployment status by executing GET requests in API Playground.
-
 2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-
 3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the cluster.
 
 ### Azure Portal - Virtual Machine Scale Set Certificate Swap
@@ -252,9 +238,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 14. Using Resource Explorer and API Playground, swap the certificate values in the Virtual Machine Scale Set
 
 1. Navigate to the Virtual Machine Scale Set resource in Resource Explorer.
-
 2. Copy the Resource URI and open it in API Playground.
-
 3. Execute GET to retrieve the current configuration.
 
 #### 15. Swap the values of "certificate" and "certificateSecondary" properties in the Virtual Machine Scale Set resource
@@ -290,17 +274,13 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 16. Execute PUT to update the Virtual Machine Scale Set with swapped certificates
 
 1. Copy the modified JSON configuration with swapped certificate thumbprints.
-
 2. In API Playground, select **PUT** and paste the modified JSON into the Request body field.
-
 3. Click **Execute** to submit the update.
 
 #### 17. **Wait** for the Virtual Machine Scale Set certificate swap to complete
 
 1. Monitor the deployment status by executing GET requests in API Playground.
-
 2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-
 3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the scale set.
 
 #### 18. Perform steps 14 - 17 for each node type (Virtual Machine Scale Set)### Azure Portal - Service Fabric Cluster Certificate Swap
@@ -308,9 +288,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 19. Using Resource Explorer and API Playground, swap the certificate values in the Service Fabric cluster
 
 1. Navigate to the Service Fabric cluster resource in Resource Explorer.
-
 2. Copy the Resource URI and open it in API Playground.
-
 3. Execute GET to retrieve the current configuration.
 
 #### 20. Swap the "certificate" values in "thumbprint" and "thumbprintSecondary" for the Service Fabric Cluster resource
@@ -335,9 +313,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 21. Execute PUT to update the Service Fabric cluster with swapped certificates
 
 1. Copy the modified JSON configuration with swapped certificate thumbprints.
-
 2. In API Playground, select **PUT** and paste the modified JSON into the Request body field.
-
 3. Click **Execute** to submit the update.
 
 **Note**: This step typically takes a while, up to an hour.
@@ -345,9 +321,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### 22. **Wait** for the Service Fabric cluster certificate swap to complete
 
 1. Monitor the deployment status by executing GET requests in API Playground.
-
 2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-
 3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the cluster.
 
 ### Azure Portal
@@ -356,7 +330,7 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 ![Manifest](../media/resourcemgr8.png)
 
-* Or in the Azure portal > Cluster -> Security 
+* Or in the Azure portal > Cluster -> Security
 
 ![Portal -> Cluster -> Security](../media/resourcemgr9.png)
 
@@ -369,15 +343,13 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 #### To troubleshoot errors while modifying a resource configuration:
 
 1. Review the error message in the API Playground Response section.
-
 2. Common issues include:
+
    - Invalid JSON syntax in the Request body
    - Missing required fields in the configuration
    - Certificate URL or Key Vault reference errors
    - Incorrect thumbprint values
-
 3. Verify the JSON configuration is valid and complete before executing PUT.
-
 4. Check that all certificate URLs and Key Vault references are correct and accessible.
 
 For additional guidance, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).

@@ -33,13 +33,15 @@
    ```text
        subscriptions
        └───%subscription name%
-           └───resourceGroups
+           └───ResourceGroups
                └───%resource group name%
-                   └───providers
+                   └───Resources
                        └───Microsoft.Compute
                            └───virtualMachineScaleSets
                                └───%virtual machine scale set name%
    ```
+   
+   For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 3. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) as described below. Example:
 
    ![Resource Explorer](../media/resource-explorer-steps/portal-resource-explorer-vmss-resource-highlight.png)
@@ -208,13 +210,16 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
    ```text
    subscriptions
    └───%subscription name%
-       └───resourceGroups
+       └───ResourceGroups
            └───%resource group name%
-               └───providers
+               └───Resources
                    └───Microsoft.Compute
                        └───virtualMachineScaleSets
                            └───%virtual machine scale set name%
    ```
+   
+   For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+
 2. Ensure the correct Key Vault for the new cert is listed. If needed, update the "sourceVault" and "certificateUrl" properties using API Playground as described using the same steps as above.
 
    ```json
