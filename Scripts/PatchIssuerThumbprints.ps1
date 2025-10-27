@@ -38,6 +38,11 @@
     Hard patches guarantee that fabric logical node will close, cluster availability loss is all but guaranteed, if not already being experienced. 
     In general hard patches are much less likely to regress on their own.
 
+.PARAMETER bootstrapAgentServiceName
+    (New) The Windows service name of the Service Fabric Node Bootstrap Agent.
+    Default: ServiceFabricNodeBootstrapAgent
+    Override this if your environment uses a different service name.
+
 #>
 
 Param(
@@ -49,7 +54,9 @@ Param(
     [string[]]$nodeIpArray = @("10.0.0.4", "10.0.0.5", "10.0.0.6" ),
     [switch]$cacheCredentials,
     [switch]$localOnly,
-    [switch]$hard
+    [switch]$hard,
+    [ValidateNotNullOrEmpty()]
+    [string]$bootstrapAgentServiceName = "ServiceFabricNodeBootstrapAgent"
 )
 
 $error.Clear()
@@ -68,27 +75,31 @@ If (!(Test-Path $clusterDataRootPath)) {
 
 $curValue = (get-item wsman:\localhost\Client\TrustedHosts).value
 
-$scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
+$scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard, $bootstrapAgentServiceName)
     Write-Host "$env:computername : Running on $((Get-WmiObject win32_computersystem).DNSHostName)" -ForegroundColor Green
 
     function StopServiceFabricServices {
+        param(
+            [Parameter(Mandatory=$true)][string]$BootstrapServiceName
+        )
+
         if ($(Get-Process | ? ProcessName -like "*FabricInstaller*" | measure).Count -gt 0) {
             Write-Warning "$env:computername : Found FabricInstaller running, may cause issues if not stopped, consult manual guide..."
             Write-Host "$env:computername : Pausing (15s)..." -ForegroundColor Green
             Start-Sleep -Seconds 15
         }
 
-        $bootstrapAgent = "ServiceFabricNodeBootstrapAgent"
+        $bootstrapAgent = $BootstrapServiceName
         $fabricHost = "FabricHostSvc"
 
-        $bootstrapService = Get-Service -Name $bootstrapAgent
-        if ($bootstrapService.Status -eq "Running") {
+        $bootstrapService = Get-Service -Name $bootstrapAgent -ErrorAction SilentlyContinue
+        if ($bootstrapService -and $bootstrapService.Status -eq "Running") {
             Stop-Service $bootstrapAgent -ErrorAction SilentlyContinue 
             Write-Host "$env:computername : Stopping $bootstrapAgent service" -ForegroundColor Green
         }
         Do {
             Start-Sleep -Seconds 1
-            $bootstrapService = Get-Service -Name $bootstrapAgent
+            $bootstrapService = Get-Service -Name $bootstrapAgent -ErrorAction SilentlyContinue
 
             if(!$bootstrapService) {
                 break
@@ -101,16 +112,16 @@ $scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
                 Write-Host "$env:computername : $bootstrapAgent current status: $($bootstrapService.Status)" -ForegroundColor Green
             }
 
-        } While ($bootstrapService.Status -ne "Stopped")
+        } While ($bootstrapService -and $bootstrapService.Status -ne "Stopped")
 
-        $fabricHostService = Get-Service -Name $fabricHost
-        if ($fabricHostService.Status -eq "Running") {
+        $fabricHostService = Get-Service -Name $fabricHost -ErrorAction SilentlyContinue
+        if ($fabricHostService -and $fabricHostService.Status -eq "Running") {
             Stop-Service $fabricHost -ErrorAction SilentlyContinue 
             Write-Host "$env:computername : Stopping $fabricHost service" -ForegroundColor Green
         }
         Do {
             Start-Sleep -Seconds 1
-            $fabricHostService = Get-Service -Name $fabricHost
+            $fabricHostService = Get-Service -Name $fabricHost -ErrorAction SilentlyContinue
 
             if(!$fabricHostService) {
                 break
@@ -123,21 +134,25 @@ $scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
                 Write-Host "$env:computername : $fabricHost current status: $($fabricHostService.Status)" -ForegroundColor Green
             }
 
-        } While ($fabricHostService.Status -ne "Stopped")
+        } While ($fabricHostService -and $fabricHostService.Status -ne "Stopped")
     }
 
     function StartServiceFabricServices {
-        $bootstrapAgent = "ServiceFabricNodeBootstrapAgent"
+        param(
+            [Parameter(Mandatory=$true)][string]$BootstrapServiceName
+        )
+
+        $bootstrapAgent = $BootstrapServiceName
         $fabricHost = "FabricHostSvc"
 
-        $fabricHostService = Get-Service -Name $fabricHost
-        if ($fabricHostService.Status -eq "Stopped") {
+        $fabricHostService = Get-Service -Name $fabricHost -ErrorAction SilentlyContinue
+        if ($fabricHostService -and $fabricHostService.Status -eq "Stopped") {
             Start-Service $fabricHost -ErrorAction SilentlyContinue 
             Write-Host "$env:computername : Starting $fabricHost service" -ForegroundColor Green
         }
         Do {
             Start-Sleep -Seconds 1
-            $fabricHostService = Get-Service -Name $fabricHost
+            $fabricHostService = Get-Service -Name $fabricHost -ErrorAction SilentlyContinue
 
             if(!$fabricHostService) {
                 break
@@ -150,17 +165,17 @@ $scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
                 Write-Host "$env:computername : $fabricHost current status: $($fabricHostService.Status)" -ForegroundColor Green
             }
 
-        } While ($fabricHostService.Status -ne "Running")
+        } While ($fabricHostService -and $fabricHostService.Status -ne "Running")
 
 
-        $bootstrapService = Get-Service -Name $bootstrapAgent
-        if ($bootstrapService.Status -eq "Stopped") {
+        $bootstrapService = Get-Service -Name $bootstrapAgent -ErrorAction SilentlyContinue
+        if ($bootstrapService -and $bootstrapService.Status -eq "Stopped") {
             Start-Service $bootstrapAgent -ErrorAction SilentlyContinue 
             Write-Host "$env:computername : Starting $bootstrapAgent service" -ForegroundColor Green
         }
         Do {
             Start-Sleep -Seconds 1
-            $bootstrapService = Get-Service -Name $bootstrapAgent
+            $bootstrapService = Get-Service -Name $bootstrapAgent -ErrorAction SilentlyContinue
 
             if(!$bootstrapService) {
                 break
@@ -173,7 +188,7 @@ $scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
                 Write-Host "$env:computername : $bootstrapAgent current status: $($bootstrapService.Status)" -ForegroundColor Green
             }
 
-        } While ($bootstrapService.Status -ne "Running")
+        } While ($bootstrapService -and $bootstrapService.Status -ne "Running")
     }
 
     #config files we need
@@ -215,7 +230,7 @@ $scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
         Copy-Item -Path $manifestFile -Destination $backupFolder -Force -Verbose
 
         Write-Host "$env:computername : Stopping services " -ForegroundColor Green
-        StopServiceFabricServices
+        StopServiceFabricServices -BootstrapServiceName $bootstrapAgentServiceName
     }
 
     
@@ -287,7 +302,7 @@ $scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
 
         #restart these services
         Write-Host "$env:computername : Starting services " -ForegroundColor Green
-        StartServiceFabricServices
+        StartServiceFabricServices -BootstrapServiceName $bootstrapAgentServiceName
     }
     else
     {
@@ -300,7 +315,7 @@ $scriptBlock = { param($clusterDataRootPath, $newIssuerThumbprints, $hard)
 
 if ($localOnly) {
     write-host "executing on local node only"
-    invoke-command -ScriptBlock $scriptBlock -ArgumentList $clusterDataRootPath, $targetIssuerThumbprints, $hard
+    invoke-command -ScriptBlock $scriptBlock -ArgumentList $clusterDataRootPath, $targetIssuerThumbprints, $hard, $bootstrapAgentServiceName
     return
 }
 
@@ -347,7 +362,7 @@ ForEach ($nodeIpAddress in $nodeIpArray) {
 
         $error.clear()
         Invoke-Command -Authentication Negotiate -Computername $nodeIpAddress -Scriptblock $scriptBlock `
-            -ArgumentList $clusterDataRootPath, $targetIssuerThumbprints, $hard
+            -ArgumentList $clusterDataRootPath, $targetIssuerThumbprints, $hard, $bootstrapAgentServiceName
         
         if ($error) {
             $global:failNodes += $nodeIpAddress
