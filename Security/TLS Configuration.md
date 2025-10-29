@@ -216,7 +216,11 @@ When enabling TLS 1.3 support in Service Fabric clusters, additional cluster-lev
 
 ### Cluster Manifest Settings
 
-Add the following settings to your cluster's `fabricSettings` section in the ARM template:
+The required settings depend on your authentication method:
+
+#### Certificate-Based Authentication Only
+
+If you only use X.509 certificates for authentication, you only need to enable exclusive authentication mode:
 
 **For Managed Clusters:**
 
@@ -232,10 +236,6 @@ Add the following settings to your cluster's `fabricSettings` section in the ARM
           {
             "name": "enableHttpGatewayExclusiveAuthMode",
             "value": "true"
-          },
-          {
-            "name": "httpGatewayTokenAuthEndpointPort",
-            "value": "19081"
           }
         ]
       }
@@ -258,10 +258,6 @@ Add the following settings to your cluster's `fabricSettings` section in the ARM
           {
             "name": "enableHttpGatewayExclusiveAuthMode",
             "value": "true"
-          },
-          {
-            "name": "httpGatewayTokenAuthEndpointPort",
-            "value": "19081"
           }
         ]
       }
@@ -270,10 +266,66 @@ Add the following settings to your cluster's `fabricSettings` section in the ARM
 }
 ```
 
+#### Token-Based Authentication (Microsoft Entra ID)
+
+If you use token-based authentication (OAuth 2.0 bearer tokens), you must define a new HTTP endpoint exclusively for token authentication. TLS 1.3 doesn't easily support mixed mode authentication (both certificates and tokens on the same endpoint).
+
+**For Managed Clusters with Token Authentication:**
+
+First, define the new token endpoint in the `nodeTypes` section:
+
+```json
+{
+  "nodeTypes": [
+    {
+      "name": "[parameters('vmNodeType0Name')]",
+      "httpGatewayTokenAuthEndpointPort": "19079"
+    }
+  ]
+}
+```
+
+Then enable exclusive authentication mode in `fabricSettings`:
+
+```json
+{
+  "apiVersion": "2023-12-01-preview",
+  "type": "Microsoft.ServiceFabric/managedClusters",
+  "properties": {
+    "fabricSettings": [
+      {
+        "name": "HttpGateway",
+        "parameters": [
+          {
+            "name": "enableHttpGatewayExclusiveAuthMode",
+            "value": "true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**For Classic VMSS Clusters with Token Authentication:**
+
+Similar configuration applies - define `httpGatewayTokenAuthEndpointPort` in each node type, then set `enableHttpGatewayExclusiveAuthMode` to true in fabricSettings.
+
 ### Configuration Parameters
 
-- **enableHttpGatewayExclusiveAuthMode**: Boolean value that enables TLS 1.3 support for HTTP Gateway communications. Set to `true` to enable.
-- **httpGatewayTokenAuthEndpointPort**: Port number for the token authentication endpoint. Default is `19081`.
+- **enableHttpGatewayExclusiveAuthMode**: Boolean value that enables TLS 1.3 support for HTTP Gateway communications. Set to `true` to enable. This is required for all TLS 1.3 configurations.
+
+- **httpGatewayTokenAuthEndpointPort**: Port number for the token authentication endpoint. **Only required if you use token-based authentication (Microsoft Entra ID)**. You can use any port number from the Service Fabric runtime reserved port range (example shows 19079, but any available port can be used). This port must be configured:
+  - In the `nodeTypes` section for each node type
+  - In your load balancer rules
+  - In your Network Security Group (NSG) rules
+  - In any scripts or applications that use token-based authentication
+
+### Port Reference
+
+- **Port 19080**: Default HTTP gateway port (used for certificate-based authentication, continues to be used with TLS 1.3)
+- **Port 19079** (or custom): Token authentication endpoint (only needed for Microsoft Entra ID/OAuth authentication)
+- **Port 19081**: Reverse proxy port (unrelated to TLS 1.3, used for service-to-service communication)
 
 ### Migration Guidance
 
