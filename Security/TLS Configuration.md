@@ -1,7 +1,8 @@
 # How to configure Service Fabric or Applications to use TLS 1.2 and TLS 1.3
 
-> **IMPORTANT DEPRECATION NOTICE**  
-> **TLS 1.0 and TLS 1.1 are officially deprecated** as per [RFC 8996](https://datatracker.ietf.org/doc/rfc8996/) and will be retired across all Azure services on **August 31, 2025**. Microsoft strongly recommends migrating to TLS 1.2 as the minimum supported version, with TLS 1.3 recommended for new deployments.
+> [!IMPORTANT]
+> **DEPRECATION NOTICE**  
+> **TLS 1.0 and TLS 1.1 are officially deprecated** as per [Microsoft TLS Support Ending](https://learn.microsoft.com/lifecycle/announcements/tls-support-ending-10-31-2024) and [Azure TLS Support](https://learn.microsoft.com/azure/azure-resource-manager/management/tls-support) and has been retired across all Azure services on **August 31, 2025**. Microsoft strongly recommends migrating to TLS 1.2 as the minimum supported version, with TLS 1.3 recommended for new deployments.
 
 ## TLS 1.3 Support in Service Fabric
 
@@ -23,7 +24,7 @@ To use TLS 1.3 in Service Fabric clusters:
    - Classic Clusters: API version 2023-11-01-preview or later
 4. **.NET Framework**: .NET Framework 4.8 or later for application support
 
-For complete migration guidance, see [Migrate Azure Service Fabric to TLS 1.3](https://learn.microsoft.com/en-us/azure/service-fabric/how-to-migrate-transport-layer-security).
+For complete migration guidance, see [Migrate Azure Service Fabric to TLS 1.3](https://learn.microsoft.com/azure/service-fabric/how-to-migrate-transport-layer-security).
 
 ## Configuration Options Overview
 
@@ -79,13 +80,15 @@ TLS 1.3 uses only two cipher suites, which are automatically enabled on Windows 
 
 These suites provide forward secrecy and use AEAD (Authenticated Encryption with Associated Data) algorithms, eliminating the need for separate MAC operations.
 
+For more information, see [TLS Cipher Suites in Windows Server 2022](https://learn.microsoft.com/windows/win32/secauthn/tls-cipher-suites-in-windows-server-2022).
+
 ### Automated Configuration via Custom Script Extension
 
 This option uses Custom Script Extension with extension sequencing and PowerShell script. [../Scripts/vmss-cse-tls.ps1](../Scripts/vmss-cse-tls.ps1) should be saved to a storage location accessible from Service Fabric nodes during deployment.
 
 > **Note:** The current vmss-cse-tls.ps1 script configures TLS 1.2 only. For TLS 1.3 support, you need to modify the script to include the TLS 1.3 registry keys shown above and ensure your cluster meets the prerequisites (Windows Server 2022, Service Fabric 10.1CU2+).
 
-The script is based on [Troubleshooting applications that don't support TLS 1.2](https://learn.microsoft.com/en-us/azure/cloud-services/applications-dont-support-tls-1-2) and disables deprecated protocols (TLS 1.0, 1.1, SSL 2.0, SSL 3.0) and weak ciphers (RC4, 3DES).
+The script is based on [Troubleshooting applications that don't support TLS 1.2](https://learn.microsoft.com/azure/cloud-services/applications-dont-support-tls-1-2) and disables deprecated protocols (TLS 1.0, 1.1, SSL 2.0, SSL 3.0) and weak ciphers (RC4, 3DES).
 
 ### Modify ARM Template to Add Custom Script Extension
 
@@ -329,7 +332,7 @@ Similar configuration applies - define `httpGatewayTokenAuthEndpointPort` in eac
 
 ### Migration Guidance
 
-For detailed guidance on migrating your cluster to TLS 1.3, see [How to migrate Transport Layer Security (TLS) in Service Fabric](https://learn.microsoft.com/en-us/azure/service-fabric/how-to-migrate-transport-layer-security).
+For detailed guidance on migrating your cluster to TLS 1.3, see [How to migrate Transport Layer Security (TLS) in Service Fabric](https://learn.microsoft.com/azure/service-fabric/how-to-migrate-transport-layer-security).
 
 
 
@@ -382,7 +385,7 @@ ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
 
 - For TLS 1.3 support, applications must run on .NET Framework 4.8+ with Windows Server 2022 or later
 - Using `SystemDefault` ensures your application automatically benefits from OS-level security updates
-- The `<AppContextSwitchOverrides>` element is documented at [AppContextSwitchOverrides element](https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/file-schema/runtime/appcontextswitchoverrides-element)
+- The `<AppContextSwitchOverrides>` element is documented at [AppContextSwitchOverrides element](https://learn.microsoft.com/dotnet/framework/configure-apps/file-schema/runtime/appcontextswitchoverrides-element)
 
 
 
@@ -417,8 +420,8 @@ Value: Tls12,Tls13
 
 - **Tls13**: TLS 1.3 (requires .NET Framework 4.8+, Windows Server 2022+)
 - **Tls12**: TLS 1.2 (recommended minimum)
-- **Tls11**: TLS 1.1 (⚠️ deprecated, will be retired August 31, 2025)
-- **Tls**: TLS 1.0 (⚠️ deprecated, will be retired August 31, 2025)
+- **Tls11**: TLS 1.1 (⚠️ deprecated, retired August 31, 2025 - do not use)
+- **Tls**: TLS 1.0 (⚠️ deprecated, retired August 31, 2025 - do not use)
 - **Ssl3**: SSL 3.0 (⚠️ deprecated, do not use)
 
 Multiple values can be combined with commas (e.g., `Tls12,Tls13`). Invalid values are silently ignored.
@@ -775,26 +778,28 @@ This guide covers SSL/TLS configuration for Service Fabric clusters and applicat
 
 ### Service Fabric TLS Configuration
 
-- [How to migrate Transport Layer Security (TLS) in Service Fabric](https://learn.microsoft.com/en-us/azure/service-fabric/how-to-migrate-transport-layer-security) - Complete guide for migrating to TLS 1.3
-- [Customize Service Fabric cluster settings - Security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-fabric-settings#security) - Cluster manifest security settings
-- [Connect to a secure cluster](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-connect-to-secure-cluster) - Securing cluster communications
+- [How to migrate Transport Layer Security (TLS) in Service Fabric](https://learn.microsoft.com/azure/service-fabric/how-to-migrate-transport-layer-security) - Complete guide for migrating to TLS 1.3
+- [Customize Service Fabric cluster settings - Security](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-fabric-settings#security) - Cluster manifest security settings
+- [Connect to a secure cluster](https://learn.microsoft.com/azure/service-fabric/service-fabric-connect-to-secure-cluster) - Securing cluster communications
 
 ### Windows Schannel and TLS Configuration
 
-- [Restrict the use of certain cryptographic algorithms and protocols in Schannel.dll](https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/restrict-cryptographic-algorithms-protocols-schannel) - Registry-level TLS configuration
-- [TLS/SSL Settings (Windows)](https://learn.microsoft.com/en-us/windows-server/security/tls/tls-ssl-schannel-ssp-overview) - Windows Server TLS/SSL overview
-- [Manage TLS/SSL Protocols and Cipher Suites for AD FS](https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/operations/manage-ssl-protocols-in-ad-fs) - Cipher suite ordering and management
+- [TLS Cipher Suites in Windows Server 2022](https://learn.microsoft.com/windows/win32/secauthn/tls-cipher-suites-in-windows-server-2022) - Complete list of supported TLS 1.3 and 1.2 cipher suites
+- [Restrict the use of certain cryptographic algorithms and protocols in Schannel.dll](https://learn.microsoft.com/troubleshoot/windows-server/windows-security/restrict-cryptographic-algorithms-protocols-schannel) - Registry-level TLS configuration
+- [TLS/SSL Settings (Windows)](https://learn.microsoft.com/windows-server/security/tls/tls-ssl-schannel-ssp-overview) - Windows Server TLS/SSL overview
+- [Manage TLS/SSL Protocols and Cipher Suites for AD FS](https://learn.microsoft.com/windows-server/identity/ad-fs/operations/manage-ssl-protocols-in-ad-fs) - Cipher suite ordering and management
 
 ### .NET Framework TLS Best Practices
 
-- [Transport Layer Security (TLS) best practices with the .NET Framework](https://learn.microsoft.com/en-us/dotnet/framework/network-programming/tls) - Comprehensive .NET TLS guidance
-- [AppContextSwitchOverrides element](https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/file-schema/runtime/appcontextswitchoverrides-element) - Configuration switch documentation
-- [Mitigation: TLS Protocols](https://learn.microsoft.com/en-us/dotnet/framework/migration-guide/mitigation-tls-protocols) - Framework-specific TLS migration
+- [Transport Layer Security (TLS) best practices with the .NET Framework](https://learn.microsoft.com/dotnet/framework/network-programming/tls) - Comprehensive .NET TLS guidance
+- [AppContextSwitchOverrides element](https://learn.microsoft.com/dotnet/framework/configure-apps/file-schema/runtime/appcontextswitchoverrides-element) - Configuration switch documentation
+- [Mitigation: TLS Protocols](https://learn.microsoft.com/dotnet/framework/migration-guide/mitigation-tls-protocols) - Framework-specific TLS migration
 
 ### Security and Compliance
 
-- [RFC 8996 - Deprecating TLS 1.0 and TLS 1.1](https://www.rfc-editor.org/rfc/rfc8996.html) - Official TLS deprecation specification
-- [Azure TLS 1.0/1.1 Retirement](https://learn.microsoft.com/en-us/azure/security/fundamentals/tls-certificate-changes) - Azure-wide TLS retirement timeline (August 31, 2025)
+- [Microsoft TLS Support Ending](https://learn.microsoft.com/lifecycle/announcements/tls-support-ending-10-31-2024) - Official TLS 1.0/1.1 deprecation announcement
+- [Azure TLS Support](https://learn.microsoft.com/azure/azure-resource-manager/management/tls-support) - Azure Resource Manager TLS requirements
+- [Azure TLS 1.0/1.1 Retirement](https://learn.microsoft.com/azure/security/fundamentals/tls-certificate-changes) - Azure-wide TLS retirement timeline (August 31, 2025)
 
 ### Troubleshooting and Verification
 
