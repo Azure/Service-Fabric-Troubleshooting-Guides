@@ -2,7 +2,12 @@
 
 > [!IMPORTANT]
 > **DEPRECATION NOTICE**  
-> **TLS 1.0 and TLS 1.1 are officially deprecated** as per [Microsoft TLS Support Ending](https://learn.microsoft.com/lifecycle/announcements/tls-support-ending-10-31-2024) and [Azure TLS Support](https://learn.microsoft.com/azure/azure-resource-manager/management/tls-support) and has been retired across all Azure services on **August 31, 2025**. Microsoft strongly recommends migrating to TLS 1.2 as the minimum supported version, with TLS 1.3 recommended for new deployments.
+> **TLS 1.0 and TLS 1.1 are officially deprecated** as per [Microsoft TLS Support Ending](https://learn.microsoft.com/lifecycle/announcements/tls-support-ending-10-31-2024). Azure services are enforcing TLS 1.2 minimum on a service-by-service basis, with Azure-wide retirement targeting **August 31, 2025**. Microsoft strongly recommends migrating to TLS 1.2 as the minimum supported version, with TLS 1.3 recommended for new deployments.
+>
+> **Service-Specific Enforcement**:
+> - **Azure Resource Manager**: TLS 1.2+ required - see [Azure Resource Manager TLS support](https://learn.microsoft.com/azure/azure-resource-manager/management/tls-support)
+> - **Application Gateway**: TLS 1.2+ recommended - see [Application Gateway TLS policy](https://learn.microsoft.com/azure/application-gateway/application-gateway-ssl-policy-overview)
+> - Validate enforcement dates for each Azure service you use
 
 ## TLS 1.3 Support in Service Fabric
 
@@ -19,10 +24,15 @@ To use TLS 1.3 in Service Fabric clusters:
 
 1. **Service Fabric Runtime**: Version 10.1CU2 (10.1.1951.9590) or later
 2. **Operating System**: Windows Server 2022 or later (TLS 1.3 requires OS-level support)
-3. **API Version**: 
-   - Managed Clusters: API version 2023-12-01-preview or later
-   - Classic Clusters: API version 2023-11-01-preview or later
-4. **.NET Framework**: .NET Framework 4.8 or later for application support
+3. **Application Compatibility Manifest**: Applications must declare **Windows 10 compatibility** in their manifest. TLS 1.3 will not enable for Service Fabric transport endpoints if the application runs in Windows 8 compatibility mode.
+4. **API Version**: 
+   - Managed Clusters: API version `2023-12-01-preview` or later (track release notes for GA version)
+   - Classic Clusters: API version `2023-11-01-preview` or later (track release notes for GA version)
+5. **.NET Framework**: .NET Framework 4.8 or later for application support
+
+> **Important**: Mixed compatibility settings in packaged applications can prevent TLS 1.3 from enabling. Ensure all application manifests declare Windows 10 compatibility.
+>
+> **Note**: The API versions listed above are preview versions. Prefer GA (generally available) API versions when released. Check [Service Fabric release notes](https://learn.microsoft.com/azure/service-fabric/service-fabric-versions) for the latest stable API versions.
 
 For complete migration guidance, see [Migrate Azure Service Fabric to TLS 1.3](https://learn.microsoft.com/azure/service-fabric/how-to-migrate-transport-layer-security).
 
@@ -35,6 +45,8 @@ Below are the available options for configuring TLS protocols and cipher suites.
 This configuration is machine-wide, restricting the OS and all applications to use TLS 1.2 or higher with secure cipher suites. For TLS 1.3 support, ensure you're running Windows Server 2022 or later with Service Fabric 10.1CU2+.
 
 ### TLS Protocol Configuration
+
+> **Best Practice**: Windows Server 2022 and later enable TLS 1.3 and TLS 1.2 by default with secure cipher suites. **Prefer OS defaults; only override registry settings if audit or compliance requirements mandate explicit configuration.** Where possible, use Group Policy instead of direct registry editing.
 
 TLS protocols are configured via registry keys under `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols`. Each protocol version requires specific DWORD values:
 
@@ -271,7 +283,15 @@ If you only use X.509 certificates for authentication, you only need to enable e
 
 #### Token-Based Authentication (Microsoft Entra ID)
 
-If you use token-based authentication (OAuth 2.0 bearer tokens), you must define a new HTTP endpoint exclusively for token authentication. TLS 1.3 doesn't easily support mixed mode authentication (both certificates and tokens on the same endpoint).
+If you use token-based authentication (OAuth 2.0 bearer tokens), you must define a new HTTP endpoint exclusively for token authentication. 
+
+**Why separate endpoints are required**: TLS 1.3 removed support for post-handshake authentication (renegotiation). Service Fabric's runtime cannot dynamically switch between certificate validation and token validation on a single TLS 1.3 endpoint. The solution is to:
+
+1. Keep certificate-based authentication on the existing HTTP Gateway port (19080)
+2. Create a dedicated token authentication endpoint on a separate port (example: 19079)
+3. Enable exclusive authentication mode to prevent mixed parsing on one endpoint
+
+This is a Service Fabric runtime constraint specific to TLS 1.3, not a limitation of the TLS protocol itself.
 
 **For Managed Clusters with Token Authentication:**
 
@@ -314,11 +334,57 @@ Then enable exclusive authentication mode in `fabricSettings`:
 
 Similar configuration applies - define `httpGatewayTokenAuthEndpointPort` in each node type, then set `enableHttpGatewayExclusiveAuthMode` to true in fabricSettings.
 
+### Network Configuration for Token Authentication Port
+
+When using token-based authentication with a dedicated endpoint (port 19079), you must configure load balancer rules and Network Security Group (NSG) rules:
+
+**Load Balancer Rule Example:**
+
+```json
+{
+  "name": "LBHttpGatewayTokenAuth",
+  "properties": {
+    "frontendIPConfiguration": {
+      "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', variables('lbName'), 'LoadBalancerIPConfig')]"
+    },
+    "backendAddressPool": {
+      "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), 'LoadBalancerBEAddressPool')]"
+    },
+    "protocol": "Tcp",
+    "frontendPort": 19079,
+    "backendPort": 19079,
+    "enableFloatingIP": false,
+    "idleTimeoutInMinutes": 5,
+    "probe": {
+      "id": "[resourceId('Microsoft.Network/loadBalancers/probes', variables('lbName'), 'FabricHttpGatewayProbe')]"
+    }
+  }
+}
+```
+
+**Network Security Group (NSG) Rule Example:**
+
+```json
+{
+  "name": "allowHttpGatewayTokenAuth",
+  "properties": {
+    "protocol": "Tcp",
+    "sourcePortRange": "*",
+    "destinationPortRange": "19079",
+    "sourceAddressPrefix": "*",
+    "destinationAddressPrefix": "*",
+    "access": "Allow",
+    "priority": 2002,
+    "direction": "Inbound"
+  }
+}
+```
+
 ### Configuration Parameters
 
 - **enableHttpGatewayExclusiveAuthMode**: Boolean value that enables TLS 1.3 support for HTTP Gateway communications. Set to `true` to enable. This is required for all TLS 1.3 configurations.
 
-- **httpGatewayTokenAuthEndpointPort**: Port number for the token authentication endpoint. **Only required if you use token-based authentication (Microsoft Entra ID)**. You can use any port number from the Service Fabric runtime reserved port range (example shows 19079, but any available port can be used). This port must be configured:
+- **httpGatewayTokenAuthEndpointPort**: Port number for the token authentication endpoint. **Only required if you use token-based authentication (Microsoft Entra ID, formerly Azure Active Directory)**. You can use any port number from the Service Fabric runtime reserved port range (example shows 19079, but any available port can be used). This port must be configured:
   - In the `nodeTypes` section for each node type
   - In your load balancer rules
   - In your Network Security Group (NSG) rules
@@ -374,12 +440,20 @@ For applications using .NET Framework 4.6 or later, configure the application's 
 For programmatic control, use `SecurityProtocolType.SystemDefault` instead of explicit protocol versions:
 
 ```csharp
-// Recommended: Let OS choose the protocol
+// Recommended: Let OS choose the protocol (TLS 1.2/1.3 as available)
 ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
 
 // Not recommended: Hard-coding protocols
-// ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+// Note: .NET Framework 4.x does NOT define a Tls13 enum value.
+// Using SystemDefault allows the framework to defer to OS-level TLS configuration.
 ```
+
+> **Important**: .NET Framework 4.x does not provide a `SecurityProtocolType.Tls13` enum value. To enable TLS 1.3 support in .NET Framework applications, you must:
+> 1. Use `SecurityProtocolType.SystemDefault` in code
+> 2. Configure `AppContextSwitchOverrides` in `.exe.config` (see above)
+> 3. Ensure the OS supports TLS 1.3 (Windows Server 2022+)
+>
+> For more information, see [TLS version supported by Azure Resource Manager](https://learn.microsoft.com/azure/azure-resource-manager/management/tls-support).
 
 ### Important Notes
 
@@ -392,9 +466,11 @@ ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
 
 ## Option 3 - Application level configuration by .exe path in registry
 
-> **⚠️ Deprecated Method**: This approach is considered legacy. For new deployments, use Option 2 (.exe.config) with `SystemDefaultTlsVersions` switch instead.
-
-This method configures TLS protocols for specific .NET applications via registry keys. It is useful for applications where modifying the `.exe.config` file is not possible.
+> **⚠️ Unsupported/Undocumented Method**: This registry-based per-executable configuration is **not documented in official Microsoft .NET Framework guidance** and should be avoided. Use Option 2 (`.exe.config` with `AppContextSwitchOverrides`) or machine-wide registry keys (`SchUseStrongCrypto`, `SystemDefaultTlsVersions`) instead.
+>
+> This section is retained for reference only. Microsoft does not officially support per-exe registry path mapping under `System.Net.ServicePointManager.SecurityProtocol`.
+>
+> For official TLS configuration guidance, see [TLS version supported by Azure Resource Manager](https://learn.microsoft.com/azure/azure-resource-manager/management/tls-support).
 
 ### Registry Configuration
 
@@ -472,20 +548,38 @@ To verify TLS configuration with Nmap:
 
 **Example command:**
 ```powershell
-nmap --script ssl-enum-ciphers -p 1026 -Pn 10.0.0.4
+# Verify TLS configuration on Service Fabric HTTP Gateway (SFX)
+nmap --script ssl-enum-ciphers -p 19080 -Pn <gateway-ip-or-dns>
+
+# Verify token authentication endpoint (if configured for Microsoft Entra ID)
+nmap --script ssl-enum-ciphers -p 19079 -Pn <gateway-ip-or-dns>
+
+# Verify cluster management endpoint
+nmap --script ssl-enum-ciphers -p 19000 -Pn <gateway-ip-or-dns>
 ```
+
+### Service Fabric Port Reference
+
+| Port | Purpose | TLS Required | Notes |
+|------|---------|--------------|-------|
+| 19080 | HTTP Gateway (SFX) | Yes | Certificate-based authentication |
+| 19079 | Token Authentication Endpoint | Yes | Only needed for Microsoft Entra ID auth |
+| 19000 | Cluster Management | Yes | Internal cluster communications |
+| 19081 | Reverse Proxy | Yes | Service-to-service communication |
+
+For more information, see [Visualizing your cluster using Service Fabric Explorer](https://learn.microsoft.com/azure/service-fabric/service-fabric-visualizing-your-cluster).
 
 #### TLS 1.3 Example Output (Windows Server 2022)
 
 ```text
-PS C:\Program Files (x86)\Nmap> nmap --script ssl-enum-ciphers -p 1026 -Pn 10.0.0.4
+PS C:\Program Files (x86)\Nmap> nmap --script ssl-enum-ciphers -p 19080 -Pn 10.0.0.4
 Starting Nmap 7.93 ( https://nmap.org ) at 2024-01-15 19:09 Coordinated Universal Time
 
 Nmap scan report for nt0000000.internal.cloudapp.net (10.0.0.4)
 Host is up (0.0010s latency).
 
-PORT     STATE SERVICE
-1026/tcp open  LSA-or-nterm
+PORT      STATE SERVICE
+19080/tcp open  service-fabric-gateway
 | ssl-enum-ciphers:
 |   TLSv1.3:
 |     ciphers:
@@ -514,14 +608,14 @@ PS C:\Program Files (x86)\Nmap>
 > **⚠️ Note**: The following output shows deprecated DHE cipher suites that are no longer recommended and have been removed from Windows Server 2022. These ciphers should be disabled in production environments.
 
 ```text
-PS C:\Program Files (x86)\Nmap> nmap --script ssl-enum-ciphers -p 1026 -Pn 10.0.0.4
+PS C:\Program Files (x86)\Nmap> nmap --script ssl-enum-ciphers -p 19080 -Pn 10.0.0.4
 Starting Nmap 7.93 ( https://nmap.org ) at 2022-10-15 19:09 Coordinated Universal Time
 
 Nmap scan report for nt0000000.internal.cloudapp.net (10.0.0.4)
 Host is up (0.0010s latency).
 
-PORT     STATE SERVICE
-1026/tcp open  LSA-or-nterm
+PORT      STATE SERVICE
+19080/tcp open  service-fabric-gateway
 | ssl-enum-ciphers:
 |   TLSv1.2:
 |     ciphers:
@@ -555,15 +649,99 @@ The following cipher suites are deprecated and removed from Windows Server 2022:
 
 **Recommended modern cipher suites for TLS 1.2:**
 
-- `TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384`
-- `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256`
-- `TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384`
-- `TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256`
+- `TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384` (preferred)
+- `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256` (preferred)
+- `TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384` (fallback only)
+- `TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256` (fallback only)
+
+> **Best Practice**: Prefer GCM (Galois/Counter Mode) cipher suites over CBC (Cipher Block Chaining) where possible. GCM provides better performance and is less vulnerable to timing attacks.
 
 **For TLS 1.3** (Windows Server 2022+), only two cipher suites are supported and they are automatically enabled:
 
 - `TLS_AES_256_GCM_SHA384`
 - `TLS_AES_128_GCM_SHA256`
+
+## Rollback Plan
+
+If TLS configuration changes cause connectivity or stability issues, follow these steps to restore previous settings:
+
+### 1. Restore Previous Cluster Configuration
+
+**For Managed Clusters:**
+```bash
+# Revert to previous API version and remove TLS 1.3 settings
+az resource update --ids <cluster-resource-id> \
+  --api-version <previous-api-version> \
+  --set properties.fabricSettings=<previous-fabric-settings-json>
+```
+
+**For Classic VMSS Clusters:**
+```bash
+# Use Azure Portal or ARM template deployment to restore previous cluster configuration
+# Remove enableHttpGatewayExclusiveAuthMode and httpGatewayTokenAuthEndpointPort settings
+```
+
+### 2. Restore Registry Keys (OS-Level Configuration)
+
+```powershell
+# Restore TLS protocol settings from backup
+Import-Clixml -Path "C:\temp\TLS_registry_backup.xml" | ForEach-Object {
+    Set-ItemProperty -Path $_.Path -Name $_.Name -Value $_.Value
+}
+
+# Restore cipher suite ordering
+Import-Clixml -Path "C:\temp\TlsCipherSuites_backup.xml" | ForEach-Object {
+    # Note: Use Group Policy to restore cipher suite order
+}
+```
+
+### 3. Revert Application Configuration
+
+**Remove .exe.config changes:**
+```xml
+<!-- Remove or comment out AppContextSwitchOverrides -->
+<!--
+<runtime>
+  <AppContextSwitchOverrides value="Switch.System.Net.DontEnableSchUseStrongCrypto=false;Switch.System.Net.DontEnableSystemDefaultTlsVersions=false"/>
+</runtime>
+-->
+```
+
+**Restore machine-wide .NET Framework settings:**
+```powershell
+# Restore previous SchUseStrongCrypto and SystemDefaultTlsVersions values
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Value 0
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SystemDefaultTlsVersions" -Value 0
+```
+
+### 4. Restart Nodes
+
+```powershell
+# Restart nodes one at a time, monitoring cluster health between restarts
+Restart-Computer -Force
+
+# Wait for node to rejoin cluster
+Get-ServiceFabricNode | Where-Object {$_.NodeStatus -eq 'Up'}
+```
+
+### 5. Verify Cluster Health
+
+```powershell
+# Check cluster health after rollback
+Get-ServiceFabricClusterHealth
+
+# Verify all nodes are up
+Get-ServiceFabricNode
+
+# Test connectivity to Service Fabric Explorer
+Invoke-WebRequest -Uri "https://<cluster-fqdn>:19080/Explorer" -UseBasicParsing
+```
+
+### 6. Remove Network Configuration (If Token Auth Port Added)
+
+If you added load balancer rules and NSG rules for port 19079, remove them through Azure Portal or ARM template redeployment.
+
+---
 
 ## Troubleshooting
 
@@ -573,7 +751,9 @@ The following cipher suites are deprecated and removed from Windows Server 2022:
 
 **Problem**: Windows Update fails with error 0x80072EFE due to TLS/cipher suite mismatch.
 
-**Cause**: The system's configured cipher suites don't match what Windows Update servers support.
+**Cause**: The system's configured cipher suites don't match what Windows Update servers support. This is an example symptom of overly restrictive Schannel configuration.
+
+> **Reference**: For general Schannel troubleshooting, see [TLS registry settings](https://learn.microsoft.com/windows-server/security/tls/tls-registry-settings).
 
 **Solution**:
 
@@ -589,12 +769,16 @@ The following cipher suites are deprecated and removed from Windows Server 2022:
 
 3. Reset cipher suite ordering to default:
    ```powershell
-   # Backup current configuration
+   # Backup current configuration (read-only cmdlet)
    Get-TlsCipherSuite | Export-Clixml -Path "C:\temp\TlsCipherSuites_backup.xml"
    
-   # Reset to OS default
+   # Reset to OS default by removing Group Policy override
    Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002" -Force -ErrorAction SilentlyContinue
    ```
+   
+   > **Note**: Windows PowerShell does not provide `Enable-TlsCipherSuite` or `Reset-TlsCipherSuite` cmdlets. Use Group Policy "SSL Configuration Settings" or manually configure the registry key `HKLM\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002` to set TLS 1.2 cipher suite ordering. TLS 1.3 cipher suites are fixed and cannot be reordered.
+   >
+   > For more information, see [TLS registry settings](https://learn.microsoft.com/windows-server/security/tls/tls-registry-settings).
 
 4. Restart the node and retry Windows Update.
 
@@ -657,15 +841,22 @@ The following cipher suites are deprecated and removed from Windows Server 2022:
 
 2. If no cipher suites are found, reset to Windows defaults:
    ```powershell
-   # This cmdlet restores default cipher suite ordering
-   Reset-TlsCipherSuite
+   # Remove Group Policy cipher suite override to restore OS defaults
+   Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002" -Force -ErrorAction SilentlyContinue
+   
+   # Restart required for Schannel to reload defaults
+   Restart-Computer -Force
    ```
 
-3. Manually enable required cipher suites using Group Policy or PowerShell:
-   ```powershell
-   Enable-TlsCipherSuite -Name "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
-   Enable-TlsCipherSuite -Name "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
-   ```
+3. Configure cipher suite ordering using Group Policy:
+   - Open Group Policy Editor: `gpedit.msc`
+   - Navigate to: Computer Configuration > Administrative Templates > Network > SSL Configuration Settings
+   - Configure "SSL Cipher Suite Order" with desired TLS 1.2 cipher suites (semicolon-separated)
+   - Example: `TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384;TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256`
+   
+   > **Note**: TLS 1.3 cipher suites (`TLS_AES_256_GCM_SHA384`, `TLS_AES_128_GCM_SHA256`) are automatically enabled on Windows Server 2022 and cannot be reordered or disabled.
+   >
+   > For more information, see [TLS registry settings](https://learn.microsoft.com/windows-server/security/tls/tls-registry-settings).
 
 #### TLS 1.3 Not Working
 
@@ -748,19 +939,18 @@ Update the cluster settings in the Security section:
 
 ### TLS 1.3 Support on Linux
 
-TLS 1.3 is supported on Linux distributions with OpenSSL 1.1.1 or later:
+> **Important**: Service Fabric TLS 1.3 support is currently **Windows-only**. Linux-based Service Fabric clusters are not supported for TLS 1.3 at this time, even with OpenSSL 1.1.1+.
+>
+> For the latest updates on Linux TLS 1.3 support, see [How to migrate Transport Layer Security (TLS) in Service Fabric](https://learn.microsoft.com/azure/service-fabric/how-to-migrate-transport-layer-security).
 
-- **Ubuntu 20.04 LTS** and later: OpenSSL 1.1.1 (TLS 1.3 supported)
-- **Red Hat Enterprise Linux 8** and later: OpenSSL 1.1.1 (TLS 1.3 supported)
-- **SUSE Linux Enterprise 15** and later: OpenSSL 1.1.1 (TLS 1.3 supported)
-
-To enable TLS 1.3 on Linux, ensure your distribution uses OpenSSL 1.1.1+ and configure the minimum TLS version:
+Linux distributions with OpenSSL 1.1.1 or later provide OS-level TLS 1.3 support, but Service Fabric on Linux does not yet utilize TLS 1.3 for cluster communications. Configure TLS 1.2 as the minimum supported version:
 
 ```bash
 # Check OpenSSL version
 openssl version
 
-# OpenSSL 1.1.1 or later supports TLS 1.3
+# OpenSSL 1.1.1 or later provides TLS 1.3 capability at the OS level
+# However, Service Fabric on Linux currently uses TLS 1.2
 ```
 
 ### Machine-Wide TLS Configuration
