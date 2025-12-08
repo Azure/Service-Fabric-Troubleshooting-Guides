@@ -33,7 +33,12 @@
     suite order. Change the cipherorder variable below to the order you want to set on the
     server. Setting this requires a reboot to take effect.
     
-    v1.0
+    Use the -NoRestart option to suppress automatic reboot after applying registry changes.
+    This is useful for testing, scheduled maintenance windows, or when using orchestration
+    tools to manage reboots. Note: A reboot is required for TLS configuration changes to
+    take effect.
+    
+    v1.1
 
     Windows Registry Editor Version 5.00
 
@@ -139,7 +144,9 @@ param (
     [switch]$SetCipherOrder,
     [bool]$registerEvent = $true,
     [string]$registerEventSource = 'CustomScriptExtension',
-    [switch]$whatif
+    [switch]$whatif,
+    [parameter(Mandatory = $false)]
+    [switch]$NoRestart
 )
 
 $eventLogName = 'Application'
@@ -377,7 +384,7 @@ if ($SetCipherOrder) {
 $reboot = Set-Windows10PlusCurveOrder $reboot
 $currentReg = [string]::Join("`r`n", (reg query 'HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL' -s))
 
-if ($reboot) {
+if ($reboot -and !$NoRestart) {
     # Randomize the reboot timing since it could be run in a large cluster.
     $tick = [System.Int32]([System.DateTime]::Now.Ticks % [System.Int32]::MaxValue)
     $rand = [System.Random]::new($tick)
@@ -393,6 +400,14 @@ if ($reboot) {
     if (!$whatif) {
         shutdown.exe /r /t $sec /c "Crypto settings changed" /f /d p:2:4
     }
+}
+elseif ($reboot -and $NoRestart) {
+    Write-Event -data "current registry:
+        $currentReg
+    
+        Successfully updated crypto settings
+        Warning: Restart required for changes to take effect. Use -NoRestart to suppress automatic reboot.
+        "
 }
 else {
     Write-Event -data "current registry:

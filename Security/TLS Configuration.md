@@ -147,6 +147,11 @@ This option uses Custom Script Extension with extension sequencing and PowerShel
 
 The script configures TLS 1.2 and TLS 1.3 (on Windows Server 2022+), and is based on [Troubleshooting applications that don't support TLS 1.2](https://learn.microsoft.com/azure/cloud-services/applications-dont-support-tls-1-2) and disables deprecated protocols (TLS 1.0, 1.1, SSL 2.0, SSL 3.0) and weak ciphers (RC4, 3DES).
 
+**Script Parameters:**
+- `-SetCipherOrder` (or `-sco`): Configure TLS cipher suite order (requires reboot)
+- `-NoRestart`: Suppress automatic reboot after applying registry changes. Use this for testing, scheduled maintenance windows, or when using orchestration tools to manage reboots. **Note**: A reboot is still required for TLS configuration changes to take effect.
+- `-WhatIf`: Preview changes without applying them
+
 ### Modify ARM Template to Add Custom Script Extension
 
 - Add new 'CustomScriptExtension' extension to 'Microsoft.Compute/virtualMachineScaleSets' 'extensions' array. In the following example, dotnet framework 4.8 is installed and node is restarted before installation of the Service Fabric extension. See [custom-script-windows](https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-windows) for additional information.
