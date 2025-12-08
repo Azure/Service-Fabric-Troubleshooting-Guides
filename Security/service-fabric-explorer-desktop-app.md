@@ -327,31 +327,22 @@ The desktop application supports multiple authentication methods:
 
 ### Command-Line Usage
 
-You can specify a cluster to auto-connect on launch:
+You can specify a previously saved cluster connection by name to auto-select it on launch:
 
-**Basic usage (prompts for authentication):**
-
-```powershell
-ServiceFabricExplorer.exe "clustername.region.cloudapp.azure.com:19000"
-```
-
-**Full command-line syntax:**
+**Syntax:**
 
 ```powershell
-ServiceFabricExplorer.exe "<endpoint>" [--cert-thumbprint <thumbprint>] [--server-common-name <CN>]
+ServiceFabricExplorer.exe "<cluster-name>"
 ```
 
-**Examples:**
+**Example:**
 
 ```powershell
-# Connect with certificate thumbprint
-ServiceFabricExplorer.exe "mycluster.eastus.cloudapp.azure.com:19000" --cert-thumbprint "0123456789ABCDEF" --server-common-name "mycluster.eastus.cloudapp.azure.com"
-
-# Connect to local development cluster
-ServiceFabricExplorer.exe "localhost:19000"
+# Select a previously saved cluster connection named "Production"
+ServiceFabricExplorer.exe "Production"
 ```
 
-> **Note:** Command-line authentication parameters are limited. For full authentication options (AAD, Windows), launch without parameters and use the connection dialog.
+> **Important:** The command-line argument only accepts a **saved cluster name**, not an endpoint or URL. The cluster must have been previously connected and saved in Service Fabric Explorer. To connect to a new cluster, launch the application without parameters and use the Connect dialog.
 
 ### Multi-Tab Support
 
