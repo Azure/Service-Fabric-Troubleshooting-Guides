@@ -38,7 +38,13 @@
     tools to manage reboots. Note: A reboot is required for TLS configuration changes to
     take effect.
     
-    v1.1
+    Use the -RandomizeRestart option to apply a randomized delay (30-600 seconds) before
+    rebooting. This is useful for large cluster deployments to prevent simultaneous reboots.
+    By default, the script reboots after 10 seconds without randomization. This default is
+    appropriate because Custom Script Extension runs during instance provisioning (before
+    nodes join the cluster), where coordinated reboot timing is not required.
+    
+    v1.2
 
     Windows Registry Editor Version 5.00
 
@@ -146,7 +152,9 @@ param (
     [string]$registerEventSource = 'CustomScriptExtension',
     [switch]$whatif,
     [parameter(Mandatory = $false)]
-    [switch]$NoRestart
+    [switch]$NoRestart,
+    [parameter(Mandatory = $false)]
+    [switch]$RandomizeRestart
 )
 
 $eventLogName = 'Application'
@@ -385,18 +393,34 @@ $reboot = Set-Windows10PlusCurveOrder $reboot
 $currentReg = [string]::Join("`r`n", (reg query 'HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL' -s))
 
 if ($reboot -and !$NoRestart) {
-    # Randomize the reboot timing since it could be run in a large cluster.
-    $tick = [System.Int32]([System.DateTime]::Now.Ticks % [System.Int32]::MaxValue)
-    $rand = [System.Random]::new($tick)
-    $sec = $rand.Next(30, 600)
-
-    Write-Event -data "current registry:
-        $currentReg
+    # Apply randomization only if -RandomizeRestart is specified
+    if ($RandomizeRestart) {
+        # Randomize the reboot timing since it could be run in a large cluster.
+        $tick = [System.Int32]([System.DateTime]::Now.Ticks % [System.Int32]::MaxValue)
+        $rand = [System.Random]::new($tick)
+        $sec = $rand.Next(30, 600)
         
-        Successfully updated crypto settings
-        Warning:Rebooting after $sec second(s)...
-        shutdown.exe /r /t $sec /c ""Crypto settings changed"" /f /d p:2:4
-        "
+        Write-Event -data "current registry:
+            $currentReg
+            
+            Successfully updated crypto settings
+            Warning: Rebooting after $sec second(s) (randomized delay)...
+            shutdown.exe /r /t $sec /c ""Crypto settings changed"" /f /d p:2:4
+            "
+    }
+    else {
+        # Immediate reboot (no randomization)
+        $sec = 10
+        
+        Write-Event -data "current registry:
+            $currentReg
+            
+            Successfully updated crypto settings
+            Warning: Rebooting after $sec second(s)...
+            shutdown.exe /r /t $sec /c ""Crypto settings changed"" /f /d p:2:4
+            "
+    }
+    
     if (!$whatif) {
         shutdown.exe /r /t $sec /c "Crypto settings changed" /f /d p:2:4
     }

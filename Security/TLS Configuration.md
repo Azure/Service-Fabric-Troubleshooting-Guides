@@ -150,6 +150,7 @@ The script configures TLS 1.2 and TLS 1.3 (on Windows Server 2022+), and is base
 **Script Parameters:**
 - `-SetCipherOrder` (or `-sco`): Configure TLS cipher suite order (requires reboot)
 - `-NoRestart`: Suppress automatic reboot after applying registry changes. Use this for testing, scheduled maintenance windows, or when using orchestration tools to manage reboots. **Note**: A reboot is still required for TLS configuration changes to take effect.
+- `-RandomizeRestart`: Apply randomized delay (30-600 seconds) before reboot. Use this for large cluster deployments to prevent simultaneous reboots. **Default**: Disabled (10 second delay). The default is appropriate because Custom Script Extension runs during instance provisioning before nodes join the cluster.
 - `-WhatIf`: Preview changes without applying them
 
 ### Modify ARM Template to Add Custom Script Extension
