@@ -1,5 +1,28 @@
 # How to configure Service Fabric or Applications to use TLS 1.2 and TLS 1.3
 
+## Executive Summary
+
+**Quick Start Guide:**
+
+- **TLS 1.2**: Supported on all Windows Server versions with Service Fabric. Configure via registry (Option 1) or .exe.config (Option 2).
+- **TLS 1.3**: Requires Windows Server 2022+, Service Fabric 10.1CU2+, and cluster configuration changes.
+
+**Critical Requirements for TLS 1.3:**
+1. OS: Windows Server 2022 or later (TLS 1.3 not supported on Linux)
+2. Service Fabric: Version 10.1CU2 (10.1.1951.9590) or later
+3. Cluster Setting: `enableHttpGatewayExclusiveAuthMode = true` in fabricSettings
+4. .NET Framework: 4.8+ for application support
+5. Token Auth: Separate endpoint (port 19079) required if using Microsoft Entra ID
+
+**Configuration Options:**
+- **Option 1**: Machine-wide registry configuration (affects OS and all applications)
+- **Option 2**: Application-level .exe.config (per-application control)
+- **Script**: Automated via Custom Script Extension ([vmss-cse-tls.ps1](../Scripts/vmss-cse-tls.ps1))
+
+**Verification**: Use Nmap to test ports 19080 (HTTP Gateway), 19079 (token auth), 19000 (cluster mgmt)
+
+---
+
 > [!IMPORTANT]
 > **DEPRECATION NOTICE**  
 > **TLS 1.0 and TLS 1.1 are officially deprecated** as per [Microsoft TLS Support Ending](https://learn.microsoft.com/lifecycle/announcements/tls-support-ending-10-31-2024). Azure services are enforcing TLS 1.2 minimum on a service-by-service basis, with Azure-wide retirement targeting **August 31, 2025**. Microsoft strongly recommends migrating to TLS 1.2 as the minimum supported version, with TLS 1.3 recommended for new deployments.
@@ -44,6 +67,22 @@ Below are the available options for configuring TLS protocols and cipher suites.
 
 This configuration is machine-wide, restricting the OS and all applications to use TLS 1.2 or higher with secure cipher suites. For TLS 1.3 support, ensure you're running Windows Server 2022 or later with Service Fabric 10.1CU2+.
 
+> **Important for Azure VMSS Clusters**: Manual registry changes on VMSS instances are **not persistent**. They are lost during:
+> - Scale-out operations (new instances won't have the changes)
+> - Reimage operations
+> - OS upgrades
+> - VMSS model updates
+>
+> **For Azure VMSS-based Service Fabric clusters, use one of these approaches instead**:
+> - **Recommended**: Custom Script Extension (see [Automated Configuration via Custom Script Extension](#automated-configuration-via-custom-script-extension) section)
+> - Azure Policy (for AD-joined clusters)
+> - Desired State Configuration (DSC)
+>
+> **Manual registry edits are appropriate only for**:
+> - Standalone (non-Azure) Service Fabric clusters
+> - Development/testing environments with documented manual configuration
+> - Troubleshooting/validation scenarios (not production)
+
 ### TLS Protocol Configuration
 
 > **Best Practice**: Windows Server 2022 and later enable TLS 1.3 and TLS 1.2 by default with secure cipher suites. **Prefer OS defaults; only override registry settings if audit or compliance requirements mandate explicit configuration.** Where possible, use Group Policy instead of direct registry editing.
@@ -51,36 +90,44 @@ This configuration is machine-wide, restricting the OS and all applications to u
 TLS protocols are configured via registry keys under `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols`. Each protocol version requires specific DWORD values:
 
 **For TLS 1.3** (Windows Server 2022+ only):
-```registry
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server]
-"Enabled"=dword:00000001
-"DisabledByDefault"=dword:00000000
+```powershell
+# Enable TLS 1.3 Server
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server" /v Enabled /t REG_DWORD /d 1 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server" /v DisabledByDefault /t REG_DWORD /d 0 /f
 
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client]
-"Enabled"=dword:00000001
-"DisabledByDefault"=dword:00000000
+# Enable TLS 1.3 Client
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client" /v Enabled /t REG_DWORD /d 1 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client" /v DisabledByDefault /t REG_DWORD /d 0 /f
 ```
 
 **For TLS 1.2** (required minimum):
-```registry
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server]
-"Enabled"=dword:00000001
-"DisabledByDefault"=dword:00000000
+```powershell
+# Enable TLS 1.2 Server
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server" /v Enabled /t REG_DWORD /d 1 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server" /v DisabledByDefault /t REG_DWORD /d 0 /f
 
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client]
-"Enabled"=dword:00000001
-"DisabledByDefault"=dword:00000000
+# Enable TLS 1.2 Client
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client" /v Enabled /t REG_DWORD /d 1 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client" /v DisabledByDefault /t REG_DWORD /d 0 /f
 ```
 
 **Disable deprecated protocols** (TLS 1.0, TLS 1.1, SSL 3.0, SSL 2.0):
-```registry
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server]
-"Enabled"=dword:00000000
-"DisabledByDefault"=dword:00000001
+```powershell
+# Disable TLS 1.1 Server
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server" /v Enabled /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server" /v DisabledByDefault /t REG_DWORD /d 1 /f
 
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Server]
-"Enabled"=dword:00000000
-"DisabledByDefault"=dword:00000001
+# Disable TLS 1.0 Server
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Server" /v Enabled /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Server" /v DisabledByDefault /t REG_DWORD /d 1 /f
+
+# Disable SSL 3.0 Server
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Server" /v Enabled /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Server" /v DisabledByDefault /t REG_DWORD /d 1 /f
+
+# Disable SSL 2.0 Server
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 2.0\Server" /v Enabled /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 2.0\Server" /v DisabledByDefault /t REG_DWORD /d 1 /f
 ```
 
 ### TLS 1.3 Cipher Suites
@@ -98,9 +145,7 @@ For more information, see [TLS Cipher Suites in Windows Server 2022](https://lea
 
 This option uses Custom Script Extension with extension sequencing and PowerShell script. [../Scripts/vmss-cse-tls.ps1](../Scripts/vmss-cse-tls.ps1) should be saved to a storage location accessible from Service Fabric nodes during deployment.
 
-> **Note:** The current vmss-cse-tls.ps1 script configures TLS 1.2 only. For TLS 1.3 support, you need to modify the script to include the TLS 1.3 registry keys shown above and ensure your cluster meets the prerequisites (Windows Server 2022, Service Fabric 10.1CU2+).
-
-The script is based on [Troubleshooting applications that don't support TLS 1.2](https://learn.microsoft.com/azure/cloud-services/applications-dont-support-tls-1-2) and disables deprecated protocols (TLS 1.0, 1.1, SSL 2.0, SSL 3.0) and weak ciphers (RC4, 3DES).
+The script configures TLS 1.2 and TLS 1.3 (on Windows Server 2022+), and is based on [Troubleshooting applications that don't support TLS 1.2](https://learn.microsoft.com/azure/cloud-services/applications-dont-support-tls-1-2) and disables deprecated protocols (TLS 1.0, 1.1, SSL 2.0, SSL 3.0) and weak ciphers (RC4, 3DES).
 
 ### Modify ARM Template to Add Custom Script Extension
 
@@ -217,17 +262,113 @@ index 289e771..e598691 100644
        },
 ```
 
+### Azure VMSS Deployment Best Practices
+
+When deploying TLS configuration to Azure VMSS-based Service Fabric clusters, use Custom Script Extension (CSE) to configure registry settings during instance provisioning:
+
+**1. Deploy Configuration via Custom Script Extension**
+
+The recommended approach is to add TLS configuration to the VMSS model using Custom Script Extension:
+
+```json
+{
+  "name": "CustomScriptExtension",
+  "properties": {
+    "publisher": "Microsoft.Compute",
+    "type": "CustomScriptExtension",
+    "typeHandlerVersion": "1.8",
+    "autoUpgradeMinorVersion": true,
+    "settings": {
+      "fileUris": [
+        "https://<storage-account>.blob.core.windows.net/scripts/vmss-cse-tls.ps1"
+      ],
+      "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File .\\vmss-cse-tls.ps1"
+    }
+  }
+}
+```
+
+This ensures:
+- TLS configuration is applied to all new instances during scale-out
+- Configuration is consistent across the cluster
+- Changes are version-controlled in ARM templates
+- Settings persist through reimages and OS upgrades
+
+**2. Use Extension Sequencing**
+
+Configure CSE to run **before** the Service Fabric extension to ensure TLS settings are in place before Service Fabric starts:
+
+```json
+{
+  "name": "ServiceFabricNode",
+  "properties": {
+    "provisionAfterExtensions": [
+      "CustomScriptExtension"
+    ],
+    "type": "ServiceFabricNode",
+    ...
+  }
+}
+```
+
+**3. Apply Changes to Existing Instances**
+
+After updating the VMSS model with CSE configuration, apply to running instances:
+
+```powershell
+# Reimage instances to apply new CSE configuration
+# This runs the CSE script and applies TLS registry settings
+Update-AzVmssInstance -ResourceGroupName <resource-group-name> `
+  -VMScaleSetName <vmss-name> `
+  -InstanceId "*"
+```
+
+> **Note**: Service Fabric typically manages its own upgrade orchestration and doesn't set the VMSS upgrade policy. The upgrade policy is usually left at default (Manual mode). Service Fabric handles rolling upgrades through its own upgrade domain logic.
+
+**4. Monitor Service Fabric Health**
+
+Monitor cluster health during instance reimages:
+```powershell
+# Check cluster health
+Get-ServiceFabricClusterHealth
+
+# Check node status
+Get-ServiceFabricNode | Format-Table NodeName, NodeStatus, HealthState
+
+# Check for seed node quorum (critical for cluster availability)
+Get-ServiceFabricNode | Where-Object {$_.IsSeedNode -eq $true}
+```
+
+**5. Configuration as Code**
+
+Maintain TLS configuration in source control:
+- ARM templates with CSE configuration
+- PowerShell scripts (e.g., vmss-cse-tls.ps1)
+- Parameter files for environment-specific settings
+- Version control for audit trail and rollback capability
+
+**6. Avoid Manual Instance-Level Changes**
+
+❌ **Do not**:
+- RDP to individual VMSS instances and manually edit registry
+- Make configuration changes outside of VMSS model updates
+- Expect manual changes to persist (they're lost on reimage/scale-out)
+
+✅ **Do**:
+- Update VMSS model with CSE configuration (ARM template)
+- Use extension sequencing to run CSE before Service Fabric extension
+- Use `Update-AzVmssInstance` to reimage instances with new CSE configuration
+
+For more information, see:
+- [Custom Script Extension for Windows](https://learn.microsoft.com/azure/virtual-machines/extensions/custom-script-windows)
+- [Extension sequencing in VMSS](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-extension-sequencing)
+- [Service Fabric cluster upgrade](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-upgrade)
+
 ## Service Fabric TLS 1.3 Cluster Configuration
 
 When enabling TLS 1.3 support in Service Fabric clusters, additional cluster-level configuration is required beyond the OS-level TLS protocol settings.
 
-### Prerequisites
-
-- **Service Fabric Runtime**: Version 10.1CU2 (10.1.1951.9590) or later
-- **Operating System**: Windows Server 2022 or later
-- **API Version**: 
-  - Managed clusters: `2023-12-01-preview` or later
-  - Classic VMSS clusters: `2023-11-01-preview` or later
+> **Prerequisites**: See [Prerequisites for TLS 1.3](#prerequisites-for-tls-13) section above for complete requirements (Service Fabric 10.1CU2+, Windows Server 2022+, API versions, etc.).
 
 ### Cluster Manifest Settings
 
@@ -334,6 +475,10 @@ Then enable exclusive authentication mode in `fabricSettings`:
 
 Similar configuration applies - define `httpGatewayTokenAuthEndpointPort` in each node type, then set `enableHttpGatewayExclusiveAuthMode` to true in fabricSettings.
 
+> **API Reference**:
+> - [enableHttpGatewayExclusiveAuthMode](https://learn.microsoft.com/dotnet/api/microsoft.azure.management.servicefabric.models.clusterproperties.enablehttpgatewayexclusiveauthmode) - Enables TLS 1.3 support by enforcing exclusive authentication mode
+> - [httpGatewayTokenAuthEndpointPort](https://learn.microsoft.com/dotnet/api/microsoft.azure.management.servicefabric.models.nodetypedescription.httpgatewaytokenauthendpointport) - Port for token-based authentication endpoint
+
 ### Network Configuration for Token Authentication Port
 
 When using token-based authentication with a dedicated endpoint (port 19079), you must configure load balancer rules and Network Security Group (NSG) rules:
@@ -390,11 +535,7 @@ When using token-based authentication with a dedicated endpoint (port 19079), yo
   - In your Network Security Group (NSG) rules
   - In any scripts or applications that use token-based authentication
 
-### Port Reference
-
-- **Port 19080**: Default HTTP gateway port (used for certificate-based authentication, continues to be used with TLS 1.3)
-- **Port 19079** (or custom): Token authentication endpoint (only needed for Microsoft Entra ID/OAuth authentication)
-- **Port 19081**: Reverse proxy port (unrelated to TLS 1.3, used for service-to-service communication)
+> **Note**: For Service Fabric port reference, see the Verification section below.
 
 ### Migration Guidance
 
@@ -460,79 +601,6 @@ ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
 - For TLS 1.3 support, applications must run on .NET Framework 4.8+ with Windows Server 2022 or later
 - Using `SystemDefault` ensures your application automatically benefits from OS-level security updates
 - The `<AppContextSwitchOverrides>` element is documented at [AppContextSwitchOverrides element](https://learn.microsoft.com/dotnet/framework/configure-apps/file-schema/runtime/appcontextswitchoverrides-element)
-
-
-
-
-## Option 3 - Application level configuration by .exe path in registry
-
-> **⚠️ Unsupported/Undocumented Method**: This registry-based per-executable configuration is **not documented in official Microsoft .NET Framework guidance** and should be avoided. Use Option 2 (`.exe.config` with `AppContextSwitchOverrides`) or machine-wide registry keys (`SchUseStrongCrypto`, `SystemDefaultTlsVersions`) instead.
->
-> This section is retained for reference only. Microsoft does not officially support per-exe registry path mapping under `System.Net.ServicePointManager.SecurityProtocol`.
->
-> For official TLS configuration guidance, see [TLS version supported by Azure Resource Manager](https://learn.microsoft.com/azure/azure-resource-manager/management/tls-support).
-
-### Registry Configuration
-
-Create a REG_SZ (string) value under the following registry path:
-
-```registry
-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319\System.Net.ServicePointManager.SecurityProtocol
-
-Name: <full path to .exe>
-Value: Tls12,Tls13
-```
-
-### Example
-
-```registry
-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319\System.Net.ServicePointManager.SecurityProtocol
-
-Name: D:\SvcFab\_App\__FabricSystem_App4294967295\US.Code.Current\FabricUS.exe
-Value: Tls12,Tls13
-```
-
-### Valid Protocol Values
-
-- **Tls13**: TLS 1.3 (requires .NET Framework 4.8+, Windows Server 2022+)
-- **Tls12**: TLS 1.2 (recommended minimum)
-- **Tls11**: TLS 1.1 (⚠️ deprecated, retired August 31, 2025 - do not use)
-- **Tls**: TLS 1.0 (⚠️ deprecated, retired August 31, 2025 - do not use)
-- **Ssl3**: SSL 3.0 (⚠️ deprecated, do not use)
-
-Multiple values can be combined with commas (e.g., `Tls12,Tls13`). Invalid values are silently ignored.
-
-### Modern Alternative (.NET 4.6.2+)
-
-Instead of using application-specific registry keys, configure machine-wide registry settings:
-
-```registry
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319]
-"SchUseStrongCrypto"=dword:00000001
-"SystemDefaultTlsVersions"=dword:00000001
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319]
-"SchUseStrongCrypto"=dword:00000001
-"SystemDefaultTlsVersions"=dword:00000001
-```
-
-For .NET Framework 3.5 applications:
-
-```registry
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v2.0.50727]
-"SchUseStrongCrypto"=dword:00000001
-"SystemDefaultTlsVersions"=dword:00000001
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v2.0.50727]
-"SchUseStrongCrypto"=dword:00000001
-"SystemDefaultTlsVersions"=dword:00000001
-```
-
-### Registry Keys Explained
-
-- **SchUseStrongCrypto**: Enables strong cryptography and disables weak protocols (SSL 3.0, TLS 1.0, TLS 1.1)
-- **SystemDefaultTlsVersions**: Allows .NET applications to use the operating system's default TLS version, enabling TLS 1.3 support on compatible systems
-
 
 ## Verification
 
@@ -661,126 +729,9 @@ The following cipher suites are deprecated and removed from Windows Server 2022:
 - `TLS_AES_256_GCM_SHA384`
 - `TLS_AES_128_GCM_SHA256`
 
-## Rollback Plan
-
-If TLS configuration changes cause connectivity or stability issues, follow these steps to restore previous settings:
-
-### 1. Restore Previous Cluster Configuration
-
-**For Managed Clusters:**
-```bash
-# Revert to previous API version and remove TLS 1.3 settings
-az resource update --ids <cluster-resource-id> \
-  --api-version <previous-api-version> \
-  --set properties.fabricSettings=<previous-fabric-settings-json>
-```
-
-**For Classic VMSS Clusters:**
-```bash
-# Use Azure Portal or ARM template deployment to restore previous cluster configuration
-# Remove enableHttpGatewayExclusiveAuthMode and httpGatewayTokenAuthEndpointPort settings
-```
-
-### 2. Restore Registry Keys (OS-Level Configuration)
-
-```powershell
-# Restore TLS protocol settings from backup
-Import-Clixml -Path "C:\temp\TLS_registry_backup.xml" | ForEach-Object {
-    Set-ItemProperty -Path $_.Path -Name $_.Name -Value $_.Value
-}
-
-# Restore cipher suite ordering
-Import-Clixml -Path "C:\temp\TlsCipherSuites_backup.xml" | ForEach-Object {
-    # Note: Use Group Policy to restore cipher suite order
-}
-```
-
-### 3. Revert Application Configuration
-
-**Remove .exe.config changes:**
-```xml
-<!-- Remove or comment out AppContextSwitchOverrides -->
-<!--
-<runtime>
-  <AppContextSwitchOverrides value="Switch.System.Net.DontEnableSchUseStrongCrypto=false;Switch.System.Net.DontEnableSystemDefaultTlsVersions=false"/>
-</runtime>
--->
-```
-
-**Restore machine-wide .NET Framework settings:**
-```powershell
-# Restore previous SchUseStrongCrypto and SystemDefaultTlsVersions values
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Value 0
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SystemDefaultTlsVersions" -Value 0
-```
-
-### 4. Restart Nodes
-
-```powershell
-# Restart nodes one at a time, monitoring cluster health between restarts
-Restart-Computer -Force
-
-# Wait for node to rejoin cluster
-Get-ServiceFabricNode | Where-Object {$_.NodeStatus -eq 'Up'}
-```
-
-### 5. Verify Cluster Health
-
-```powershell
-# Check cluster health after rollback
-Get-ServiceFabricClusterHealth
-
-# Verify all nodes are up
-Get-ServiceFabricNode
-
-# Test connectivity to Service Fabric Explorer
-Invoke-WebRequest -Uri "https://<cluster-fqdn>:19080/Explorer" -UseBasicParsing
-```
-
-### 6. Remove Network Configuration (If Token Auth Port Added)
-
-If you added load balancer rules and NSG rules for port 19079, remove them through Azure Portal or ARM template redeployment.
-
----
-
 ## Troubleshooting
 
 ### Common TLS Configuration Issues
-
-#### Windows Update Error 0x80072EFE
-
-**Problem**: Windows Update fails with error 0x80072EFE due to TLS/cipher suite mismatch.
-
-**Cause**: The system's configured cipher suites don't match what Windows Update servers support. This is an example symptom of overly restrictive Schannel configuration.
-
-> **Reference**: For general Schannel troubleshooting, see [TLS registry settings](https://learn.microsoft.com/windows-server/security/tls/tls-registry-settings).
-
-**Solution**:
-
-1. Verify TLS 1.2 is enabled:
-   ```powershell
-   Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client" -Name "Enabled"
-   ```
-
-2. Ensure modern cipher suites are available:
-   ```powershell
-   Get-TlsCipherSuite | Where-Object {$_.Name -like "*ECDHE*"}
-   ```
-
-3. Reset cipher suite ordering to default:
-   ```powershell
-   # Backup current configuration (read-only cmdlet)
-   Get-TlsCipherSuite | Export-Clixml -Path "C:\temp\TlsCipherSuites_backup.xml"
-   
-   # Reset to OS default by removing Group Policy override
-   Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002" -Force -ErrorAction SilentlyContinue
-   ```
-   
-   > **Note**: Windows PowerShell does not provide `Enable-TlsCipherSuite` or `Reset-TlsCipherSuite` cmdlets. Use Group Policy "SSL Configuration Settings" or manually configure the registry key `HKLM\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002` to set TLS 1.2 cipher suite ordering. TLS 1.3 cipher suites are fixed and cannot be reordered.
-   >
-   > For more information, see [TLS registry settings](https://learn.microsoft.com/windows-server/security/tls/tls-registry-settings).
-
-4. Restart the node and retry Windows Update.
 
 #### Connection Failures After TLS Configuration
 
@@ -796,21 +747,21 @@ If you added load balancer rules and NSG rules for port 19079, remove them throu
 1. Verify TLS protocols are properly configured on **both** client and server:
    ```powershell
    # Check TLS 1.2 Server
-   Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server"
+   reg query "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server"
    
    # Check TLS 1.2 Client
-   Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client"
+   reg query "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client"
    ```
 
 2. Check .NET Framework registry keys:
    ```powershell
    # Check SchUseStrongCrypto
-   Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto"
-   Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto"
+   reg query "HKLM\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" /v SchUseStrongCrypto
+   reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" /v SchUseStrongCrypto
    
    # Check SystemDefaultTlsVersions
-   Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SystemDefaultTlsVersions"
-   Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" -Name "SystemDefaultTlsVersions"
+   reg query "HKLM\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" /v SystemDefaultTlsVersions
+   reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" /v SystemDefaultTlsVersions
    ```
 
 3. Verify at least one common cipher suite exists between nodes:
@@ -825,9 +776,9 @@ If you added load balancer rules and NSG rules for port 19079, remove them throu
 
 #### Missing Cipher Suites
 
-**Problem**: After disabling weak ciphers, applications fail to establish TLS connections.
+**Problem**: After disabling weak ciphers, applications fail to establish TLS connections. May also manifest as Windows Update error 0x80072EFE or similar connectivity failures.
 
-**Cause**: No common cipher suites between client and server, or all cipher suites were disabled.
+**Cause**: No common cipher suites between client and server, all cipher suites were disabled, or configured cipher suites don't match what remote servers support (overly restrictive Schannel configuration).
 
 **Solution**:
 
@@ -842,7 +793,7 @@ If you added load balancer rules and NSG rules for port 19079, remove them throu
 2. If no cipher suites are found, reset to Windows defaults:
    ```powershell
    # Remove Group Policy cipher suite override to restore OS defaults
-   Remove-Item "HKLM:\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002" -Force -ErrorAction SilentlyContinue
+   reg delete "HKLM\SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002" /f
    
    # Restart required for Schannel to reload defaults
    Restart-Computer -Force
@@ -878,7 +829,7 @@ If you added load balancer rules and NSG rules for port 19079, remove them throu
 
 3. Verify .NET Framework version:
    ```powershell
-   Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\' | Get-ItemPropertyValue -Name Version
+   reg query "HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" /v Version
    ```
    - Required: 4.8 or later
 

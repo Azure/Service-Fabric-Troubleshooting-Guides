@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    powershell script for for enabling TLS 1.2 only
+    powershell script for enabling TLS 1.2 and TLS 1.3 (on Windows Server 2022+)
     based on https://learn.microsoft.com/en-us/azure/cloud-services/applications-dont-support-tls-1-2
-    modified to only enable tls 1.2
+    modified to enable TLS 1.2 and TLS 1.3
 
     Microsoft Privacy Statement: https://privacy.microsoft.com/en-US/privacystatement
 
@@ -112,6 +112,16 @@
     "Enabled"=dword:00000001
 
     [HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server]
+    "DisabledByDefault"=dword:00000000
+    "Enabled"=dword:00000001
+
+    [HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3]
+
+    [HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client]
+    "DisabledByDefault"=dword:00000000
+    "Enabled"=dword:00000001
+
+    [HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server]
     "DisabledByDefault"=dword:00000000
     "Enabled"=dword:00000001
 
@@ -326,6 +336,13 @@ $reboot = Set-RegistrySetting "$protocolsKey\TLS 1.2\Client" DisabledByDefault 0
 $reboot = Set-RegistrySetting "$protocolsKey\TLS 1.2\Client" Enabled 1 DWord $reboot
 $reboot = Set-RegistrySetting "$protocolsKey\TLS 1.2\Server" DisabledByDefault 0 DWord $reboot
 $reboot = Set-RegistrySetting "$protocolsKey\TLS 1.2\Server" Enabled 1 DWord $reboot
+
+# Ensure TLS 1.3 enabled for client/server (Windows Server 2022+)
+# Note: TLS 1.3 is enabled by default on Windows Server 2022, but these settings ensure explicit configuration
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Client" DisabledByDefault 0 DWord $reboot
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Client" Enabled 1 DWord $reboot
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Server" DisabledByDefault 0 DWord $reboot
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Server" Enabled 1 DWord $reboot
 
 $ciphersKey = 'HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers'
 
