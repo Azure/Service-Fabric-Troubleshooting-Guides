@@ -835,7 +835,7 @@ The following cipher suites are deprecated and removed from Windows Server 2022:
 
 4. Check cluster manifest for TLS 1.3 settings:
    ```powershell
-   Get-ServiceFabricClusterConfiguration | Select-String "enableHttpGatewayExclusiveAuthMode"
+   Get-ServiceFabricClusterManifest | Select-String "enableHttpGatewayExclusiveAuthMode"
    ```
 
 ### Verification Tools
