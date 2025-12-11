@@ -209,7 +209,7 @@ Use the following steps to validate current active storage account key in the Se
 ### Setting inactive storage account key
 
 1. Rotate inactive Storage Account Key. In this guide, 'StorageAccountKey2' of storage account is inactive. Rotate 'StorageAccountKey2' of storage account by clicking 'Rotate key' in the storage account 'Access Keys'. See [Manually Rotate Access Keys](https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#manually-rotate-access-keys) for detailed steps.
-2. For each node type, navigate to the Virtual Machine Scale Set configured for the cluster using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) and [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground)
+2. For each node type, navigate to the Virtual Machine Scale Set configured for the cluster using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer):
 
    ```text
        Subscriptions
@@ -223,8 +223,10 @@ Use the following steps to validate current active storage account key in the Se
    ```
 
    For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
-3. Using API Playground, execute GET to retrieve the current configuration, then modify the configuration.
-4. Copy `Response Body` json, Select `PUT` and paste json into `Request Body`. Navigate to '/properties/virtualMachineProfile/extensionProfile/extensions'. In the Service Fabric extension, add 'protectedSettings' section. Add the storage account key name and value for the new inactive key. Replace '\<StorageAccountKey2>' with the key of the storage account.
+   
+   The current configuration will be automatically displayed.
+3. Click **EDIT** to modify the configuration.
+4. Navigate to '/properties/virtualMachineProfile/extensionProfile/extensions'. In the Service Fabric extension, add 'protectedSettings' section with the storage account key name and value for the new inactive key. Replace '<StorageAccountKey2>' with the key of the storage account.
 
    ```diff
    "virtualMachineProfile": {
@@ -241,9 +243,13 @@ Use the following steps to validate current active storage account key in the Se
                        "publisher": "Microsoft.Azure.ServiceFabric",
    ...
    ```
-5. Using API Playground, execute PUT to update the configuration.
-6. **Wait** for the Virtual Machine Scale Set 'Updating' 'provisioningState' for the storage keys to complete. Execute GET requests to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically execute GET to re-query the scale set.
-7. **Optional:** To verify configuration, set the value of 'protectedAccountKeyName' to 'StorageAccountKey2' in 'diagnosticsStorageAccountConfig' section of the Service Fabric resource using API Playground.
+5. Click the **PATCH** button to submit the update.
+   
+   ![Successful PATCH notification](../media/managing-azure-resources/resource-explorer-vmss-successful-patch-notification.png)
+6. **Wait** for the Virtual Machine Scale Set 'Updating' 'provisioningState' to complete. Periodically click **GET** to check status and verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue clicking **GET** to re-query the scale set.
+   
+   ![VMSS updating](../media/managing-azure-resources/resource-explorer-vmss-get-provisioningState-updating.png)
+7. **Optional:** To verify configuration, navigate to the Service Fabric cluster resource in Resource Explorer, click **EDIT**, and set the value of 'protectedAccountKeyName' to 'StorageAccountKey2' in 'diagnosticsStorageAccountConfig' section.
 
    ```diff
    "diagnosticsStorageAccountConfig": {
@@ -251,11 +257,11 @@ Use the following steps to validate current active storage account key in the Se
    -       "protectedAccountKeyName": "StorageAccountKey1",
    +       "protectedAccountKeyName": "StorageAccountKey2"
    ```
-8. At top of page, click PUT.
+8. Click the **PUT** button to update the configuration.
 
 ### Setting active storage account key
 
-1. Using API Playground, retrieve the Service Fabric cluster resource configuration with GET, then modify 'protectedAccountKeyName' to the inactive key in 'diagnosticsStorageAccountConfig' section. In this guide, 'StorageAccountKey2' is the inactive key. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
+1. Navigate to the Service Fabric cluster resource in Resource Explorer. The current configuration will be automatically displayed. Click **EDIT** and modify 'protectedAccountKeyName' to the inactive key in 'diagnosticsStorageAccountConfig' section. In this guide, 'StorageAccountKey2' is the inactive key. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
 
    ```diff
    "diagnosticsStorageAccountConfig": {
@@ -267,8 +273,8 @@ Use the following steps to validate current active storage account key in the Se
        "tableEndpoint": "https://sflogsstorageaccount.table.core.windows.net/"
    },
    ```
-2. Using API Playground, execute PUT to update the configuration.
-3. **Wait** for the service fabric 'Updating' 'provisioningState' for the protectedAccountKeyName to complete. At the top of page, click GET to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically click GET at top of page to re-query scale set.
+2. Click the **PUT** button to update the cluster configuration.
+3. **Wait** for the Service Fabric cluster 'provisioningState' to complete updating the protectedAccountKeyName. Periodically click **GET** to check status and verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue clicking **GET** to re-query the cluster.
 4. Rotate active Storage Account Key. In this guide, 'StorageAccountKey1' of storage account is active. Rotate 'StorageAccountKey1' of storage account by clicking 'Rotate key' in the storage account 'Access Keys'. See [Manually Rotate Access Keys](https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage?tabs=azure-portal#manually-rotate-access-keys) for detailed steps.
 5. For each node type, navigate to the virtual machine scale set configured for the cluster:
 
@@ -284,7 +290,7 @@ Use the following steps to validate current active storage account key in the Se
    ```
 
    For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
-6. Using API Playground, execute GET to retrieve the VMSS configuration, copy the Response Body, switch to PUT method, and paste into Request Body.
+6. Navigate to the VMSS in Resource Explorer. The current configuration will be automatically displayed. Click **EDIT** to modify it.
 7. Navigate to '/properties/virtualMachineProfile/extensionProfile/extensions'. In the Service Fabric extension, add 'protectedSettings' section with the new active storage account key. Replace '\<StorageAccountKey1>' with the actual key value.
 
    ```diff
@@ -302,9 +308,9 @@ Use the following steps to validate current active storage account key in the Se
                        "publisher": "Microsoft.Azure.ServiceFabric",
    ...
    ```
-8. Using API Playground, execute PUT to update the configuration.
-9. **Wait** for the virtual machine scale set 'provisioningState' to complete. Execute GET requests to check status. Verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue to periodically execute GET to re-query the scale set.
-10. **Optional:** To verify configuration and set the active key back to 'StorageAccountKey1', use API Playground to retrieve the Service Fabric cluster resource with GET, modify 'protectedAccountKeyName' to 'StorageAccountKey1' in 'diagnosticsStorageAccountConfig' section, and execute PUT. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
+8. Click the **PATCH** button to submit the update.
+9. **Wait** for the Virtual Machine Scale Set 'provisioningState' to complete. Periodically click **GET** to check status and verify "provisioningState" shows "Succeeded". If "provisioningState" equals "Updating", continue clicking **GET** to re-query the scale set.
+10. **Optional:** To verify configuration and set the active key back to 'StorageAccountKey1', navigate to the Service Fabric cluster resource in Resource Explorer, click **GET**, click **EDIT**, modify 'protectedAccountKeyName' to 'StorageAccountKey1' in 'diagnosticsStorageAccountConfig' section, and click **PUT**. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
 
     ```diff
     "diagnosticsStorageAccountConfig": {

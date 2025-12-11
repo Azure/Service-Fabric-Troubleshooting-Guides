@@ -150,7 +150,7 @@ If cluster was deployed from Azure portal and template was not saved, use [Resou
                             └───%virtual machine scale set name%
 ```
 
-Using API Playground, execute GET to retrieve the VMSS resource configuration, copy the Response Body, switch to PUT method, and paste into Request Body to make modifications. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
+The current VMSS configuration will be automatically displayed. Click **EDIT** to modify it, then click **PATCH** to submit changes. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
 
 ## Adding System Managed Identity
 
@@ -196,7 +196,7 @@ VERBOSE: 17:58:51 - Template is valid.
 PS C:\>New-AzResourceGroupDeployment -ResourceGroupName servicefabriccluster -TemplateFile .\template.json -DeploymentDebugLogLevel All -Verbose
 ```
 
-If using [Resource Manager - ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), after all changes have been made to the request body, select 'Execute' with PUT method to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com). For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+If using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer), after all changes have been made using EDIT mode, click the **PATCH** button to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com). For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
 ## Validating configuration
 
@@ -257,6 +257,6 @@ This can have many causes. Ssh to a node and check the following:
 
 - look for errors in cse.log: cat /tmp/cse.log
 
-### ARM API Playground troubleshooting
+### Resource Explorer troubleshooting
 
-To troubleshoot errors while modifying a resource configuration using [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), review the response section for error messages. The response will include details about validation failures or other issues with the request.
+To troubleshoot errors while modifying a resource configuration using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer), review the response notifications for error messages. After clicking **PATCH** or **PUT**, any validation failures or issues will be displayed in an error notification. For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).

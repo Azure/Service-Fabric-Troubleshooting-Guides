@@ -54,11 +54,11 @@ If custom settings have been defined, the settings can be viewed by selecting th
 
 ## Modify default Fabric Upgrade Policy Settings
 
-To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster resource in <https://portal.azure.com>. Options not available in the resource portal blade can be modified using an updated ARM template or by using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground). The 'upgradeDescription' section is configured in the 'properties' parent section.
+To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster resource in <https://portal.azure.com>. Options not available in the resource portal blade can be modified using an updated ARM template or by using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer). The 'upgradeDescription' section is configured in the 'properties' parent section.
 
 1. Open [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in [Azure Portal](https://portal.azure.com/) to browse and view resources.
 
-1. Select the specific subscription, resource group, and then resource under 'Resources':
+1. Navigate to the specific subscription, resource group, and cluster resource under 'Resources':
 
     ```text
     Subscriptions
@@ -70,28 +70,20 @@ To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster reso
     ```
 
     ![Resource Explorer cluster resource highlight](../media/resource-explorer-steps/portal-resource-explorer-cluster-resource-highlight.png)
+    
+    The current cluster configuration will be automatically displayed.
 
-1. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) as described below.
+1. Click the **EDIT** button to modify the configuration.
 
-1. Navigate to [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource URI with API version from Resource Explorer into the input box to the right of the HTTP Request Method.
-
-1. Select `Execute` to view the configuration of the specified resource.
-
-1. The `Response Body` will display the configuration of the resource similar to the Resource Explorer view. This response body can be copied and pasted into `Request Body` field above to modify the configuration. Example:
-
-    ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-get.png)
-
-1. Set the request method to `PUT`, select `Request Body`, and paste the copied response body.
-
-1. Modify the configuration as needed. Example:
+1. Modify the 'upgradeDescription' section in the properties as needed. Example:
 
     ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-put.png)
 
-1. Select `Execute` to modify the configuration. In the `Response Body`, verify that `Status Code` is '200' and `provisioningState` is 'Updating' or 'Succeeded'. Example:
+1. Click the **PUT** button to submit the modified configuration.
 
-    ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-put-response.png)
+1. The cluster will move to an 'Updating' provisioningState. Periodically click **GET** to check the status and verify "provisioningState" shows "Succeeded".
 
-1. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
+For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
 ## Use Fabric Upgrade Policy Settings to Force Node Restart During Upgrade
 

@@ -1,12 +1,12 @@
 # Managing Azure Resources
 
-Multiple methods are available to manage Azure resources. The [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in Azure Portal provides a unified interface with both [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) for browsing resources and [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) for making modifications. The alternatives listed below provide comprehensive ways to view and modify Azure resources programmatically or through a graphical interface:
+Multiple methods are available to manage Azure resources. The [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in Azure Portal provides a unified interface with [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) as the primary tool for browsing and modifying resources. The alternatives listed below provide comprehensive ways to view and modify Azure resources programmatically or through a graphical interface:
 
 1. **Azure Portal**: Azure Portal is the primary interface for managing Azure resources. The [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade provides integrated access to:
-   - **Resource Explorer**: Browse and view resources in a hierarchical tree structure (read-only)
-   - **ARM API Playground**: Execute GET, PUT, PATCH, and DELETE operations on Azure Resource Manager APIs
+   - **Resource Explorer**: Browse resources in a hierarchical tree structure and execute GET, PUT, and PATCH operations directly using interactive buttons
+   - **ARM API Playground**: Alternative tool for executing ARM API operations with support for multiple tabs and flexible API version management
 
-   - **Advantages**: User-friendly, comprehensive, integrated interface for both browsing and modifying resources.
+   - **Advantages**: User-friendly, comprehensive, integrated interface for both browsing and modifying resources with immediate feedback.
    - **Disadvantages**: Requires a browser. May be cumbersome for large-scale operations or automation tasks.
 2. **Azure PowerShell**: Azure PowerShell is a set of cmdlets for managing Azure resources from the command line. It is particularly useful for Windows environments and integrates seamlessly with other PowerShell scripts and modules.
 
@@ -21,12 +21,16 @@ Multiple methods are available to manage Azure resources. The [Resource Manager]
 
 The Azure Portal provides a unified [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade for managing and viewing Azure resources. This blade contains two main tools:
 
-- **[Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer)**: Allows graphical navigation and browsing of resources (read-only)
-- **[ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground)**: Enables executing ARM API operations (GET, PUT, PATCH, DELETE) to view and modify resources
+- **[Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer)**: Primary tool for navigating resources and performing GET, PUT, and PATCH operations using interactive buttons
+- **[ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground)**: Alternative tool with support for multiple tabs and flexible API version management
 
-The following steps demonstrate how to view and modify resources using this unified interface:
+The following steps demonstrate how to view and modify resources using Resource Explorer as the primary method:
 
-### Using Azure Portal to view resources
+### Using Resource Explorer to view and modify resources
+
+Resource Explorer now provides interactive GET, EDIT, PUT, and PATCH buttons, making it the primary tool for managing Azure resources. This replaces the need to use resources.azure.com for most scenarios.
+
+#### Viewing Resources
 
 1. Open [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in [Azure Portal](https://portal.azure.com/). The Resource Manager blade provides an overview with quick access to both Resource Explorer and ARM API Playground.
 
@@ -45,25 +49,100 @@ The following steps demonstrate how to view and modify resources using this unif
                        └───<resource name>
    ```
 
-   ![Resource Explorer](../media/managing-azure-resources/resource-explorer-obfuscated.png)
+4. Click the **GET** button to retrieve the current resource configuration. The response will be displayed in JSON format below the buttons.
 
-4. Expand the resource to view its properties and configuration. For example, expanding a Virtual Machine Scale Set resource shows details about the VMSS configuration:
+   ![Resource Explorer - VMSS Default View](../media/managing-azure-resources/resource-explorer-vmss-default-view.png)
 
-   ![VMSS Resource Details](../media/managing-azure-resources/resource-vmss-nodetype0.png)
+5. Expand the resource tree to view its properties and configuration. For example, expanding a Virtual Machine Scale Set resource shows details about the VMSS configuration.
 
-5. To modify this resource, note the resource path and API version displayed in Resource Explorer, which will be needed for the ARM API Playground in the next section.
+#### Modifying Resources with PATCH
 
-### Using Azure Portal to update resources
+PATCH operations allow you to update specific properties without sending the entire resource configuration. This is the recommended method for most modifications.
 
-To use [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) to modify resource configuration, the resource URI with API version must be provided. You can obtain this from [Resource Explorer](#using-azure-portal-to-view-resources) or from the `Resource JSON` view available on most resource blades in Azure Portal. The `Resource JSON` view can be accessed by selecting the `JSON View` link on the top right side of the resource blade.
+1. After performing a GET request in Resource Explorer, click the **EDIT** button to enable editing mode.
+
+2. Modify the JSON configuration in the editor. For example, to add a certificate to a VMSS:
+
+   ![Resource Explorer - VMSS PATCH Edit](../media/managing-azure-resources/resource-explorer-vmss-patch-cert-highlighted.png)
+
+3. Click the **PATCH** button to submit your changes.
+
+4. **On success**: A notification will appear indicating the operation succeeded, and the response body will be displayed.
+
+   ![Resource Explorer - Successful PATCH](../media/managing-azure-resources/resource-explorer-vmss-successful-patch-notification.png)
+
+   ![Resource Explorer - PATCH Result](../media/managing-azure-resources/resource-explorer-vmss-patch-cert-new-added.png)
+
+5. **If the template is malformed**: An error message will be displayed with details about what went wrong.
+
+#### Modifying Resources with PUT
+
+PUT operations replace the entire resource configuration. Use this method when making comprehensive changes to a resource.
+
+1. After performing a GET request in Resource Explorer, copy the response body.
+
+2. Click the **EDIT** button to enable editing mode.
+
+3. Make your desired modifications to the complete JSON configuration. For example, updating Service Fabric cluster certificate:
+
+   ![Resource Explorer - Cluster PUT Edit](../media/managing-azure-resources/resource-explorer-cluster-put-new-client-cert-highlighted.png)
+
+4. Click the **PUT** button to submit the updated configuration.
+
+5. **Important Note**: Currently, on a successful PUT request, **no response is shown** in the output area. This is a known quirk of Resource Explorer.
+
+6. **To confirm status**: Perform another GET request and scroll through the response to check the `provisioningState` property:
+   - `Updating`: The operation is in progress
+   - `Succeeded`: The operation completed successfully
+   - `Failed`: The operation encountered an error
+
+   ![Resource Explorer - Check Provisioning State](../media/managing-azure-resources/resource-explorer-cluster-put-provisioningState-succeeded.png)
+
+7. **If the template is malformed**: An error message will be displayed with details about the validation failure.
+
+#### Monitoring Provisioning Status
+
+After making changes, you can monitor the provisioning status:
+
+1. Click the **GET** button to retrieve the latest resource state.
+
+2. Locate the `provisioningState` property in the response:
+
+   ```json
+   {
+     "properties": {
+       "provisioningState": "Updating"
+     }
+   }
+   ```
+
+3. If the state is `Updating`, wait a few moments and perform another GET request to check progress.
+
+   ![Resource Explorer - Provisioning State Updating](../media/managing-azure-resources/resource-explorer-vmss-get-provisioningState-updating.png)
+
+4. Continue checking until the `provisioningState` shows `Succeeded` or `Failed`.
+
+   ![Resource Explorer - Provisioning State Failed Example](../media/managing-azure-resources/resource-explorer-vmss-get-provisioningState-failed.png)
+
+### Using ARM API Playground (Alternative Method)
+
+ARM API Playground provides additional features that may be useful in specific scenarios:
+
+- **Multiple tabs**: Work with multiple resources simultaneously
+- **Flexible API version management**: Easily change API versions in the URL
+- **Full request control**: Customize headers and request parameters
+
+While Resource Explorer is now the primary tool for most scenarios, API Playground remains valuable for these advanced use cases.
+
+#### Workflow for modifying resources in API Playground
+
+To use [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) to modify resource configuration, the resource URI with API version must be provided. You can obtain this from [Resource Explorer](#using-resource-explorer-to-view-and-modify-resources) or from the `Resource JSON` view available on most resource blades in Azure Portal. The `Resource JSON` view can be accessed by selecting the `JSON View` link on the top right side of the resource blade.
 
 The resource URI format is as follows:
 
 ```text
 /<subscription id>/resourceGroups/<resource group name>/providers/<resource provider>/<resource type>/<resource name>?api-version=<api version>
 ```
-
-#### Workflow for modifying resources
 
 1. From the [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade, click on **ARM API Playground** in the left navigation or use the direct link to [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
 
@@ -115,6 +194,7 @@ The following steps demonstrate how to view resources with PowerShell:
    $resources = Get-AzResource -ResourceGroupName <resource group name>
    $resources
    ```
+
 2. To view a specific resource, use the [`Get-AzResource`](https://learn.microsoft.com/powershell/module/az.resources/get-azresource) cmdlet with the `-ResourceId` parameter:
 
    ```powershell
@@ -131,6 +211,7 @@ The following steps demonstrate how to update resources with PowerShell:
    ```powershell
     Set-AzResource -ResourceId <resource id> -Properties @{<property name> = <new value>}
    ```
+
 2. To verify the update, use the [`Get-AzResource`](https://learn.microsoft.com/powershell/module/az.resources/get-azresource) cmdlet again:
 
    ```powershell

@@ -110,7 +110,7 @@ If using an ARM template for deployment, add a new 'vmSecrets' element to array 
 
 ### Using Azure Portal to add common name certificate to node type configuration
 
-- In [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview), use [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) to navigate to  Subscriptions/{{subscription id}}/ResourceGroups/{{resource group}}/Resources/Microsoft.ServiceFabric/managedClusters/{{cluster name}}/nodeTypes/{{nodetype name}} in the Azure Portal. For detailed instructions on viewing and modifying resources using [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+- In [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview), use [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) to navigate to  Subscriptions/{{subscription id}}/ResourceGroups/{{resource group}}/Resources/Microsoft.ServiceFabric/managedClusters/{{cluster name}}/nodeTypes/{{nodetype name}} in the Azure Portal. For detailed instructions on viewing and modifying resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 - Populate provided 'vmSecrets' new element template
 
   - id - Azure key vault id. Example: '/subscriptions/{{subscription id}}/resourceGroups/xxxxxxx/providers/Microsoft.KeyVault/vaults/{{vault name}}'

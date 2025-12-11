@@ -44,16 +44,13 @@ To prevent this issue in the future, consider using the CA signed certificate wi
    
    For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
-3. To modify this resource, triple-click to copy the complete resource URI with API version from the read-only box to the right of the `Open Blade` button for modification using [`API Playground`](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) as described below. Example:
+3. Click the **GET** button to retrieve the current VMSS configuration.
 
-   ![Resource Explorer](../media/resource-explorer-steps/portal-resource-explorer-vmss-resource-highlight.png)
-4. Navigate to [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource URI with API version from Resource Explorer into the input box to the right of the HTTP Request Method.
-5. Select `Execute` to view the configuration of the specified resource.
-6. The `Response Body` will display the configuration of the resource similar to the Resource Explorer view. This response body can be copied and pasted into `Request Body` field above to modify the configuration. Example:
+   ![Resource Explorer VMSS View](../media/managing-azure-resources/resource-explorer-vmss-default-view.png)
 
-   ![Resource Explorer](../media/resource-explorer-steps/api-playground-vmss-get.png)
-7. Set the request method to `PUT`, select `Request Body`, and paste the copied response body.
-8. Modify **"virtualMachineProfile / osProfile / secrets"** to add (deploy) the new certificate to each of the nodes in the node type. Choose one of the options below:
+4. Click the **EDIT** button to enable editing mode.
+
+5. Modify **"virtualMachineProfile / osProfile / secrets"** to add (deploy) the new certificate to each of the nodes in the node type. Choose one of the options below:
 
    a. If the new certificate is in the **same Key Vault** as the Primary, add **"certificateUrl"** and **"certificateStore"** to existing array of **"vaultCertificates"** as shown below:
 
@@ -112,10 +109,15 @@ To prevent this issue in the future, consider using the CA signed certificate wi
        ]
    ```
 
-9. Select `Execute` to modify the configuration. In the `Response Body`, verify that `Status Code` is '200' and `provisioningState` is 'Updating' or 'Succeeded'. Example:
+6. After making the modifications in EDIT mode, click the **PATCH** button to submit the changes.
 
-   ![Resource Explorer](../media/resource-explorer-steps/api-playground-vmss-put-updating.png)
-10. **Wait** for the virtual machine scale set `ProvisioningStatus` value "Succeeded" for the certificate update as shown above. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground). If "provisioningState" equals "Updating", continue to periodically click GET at top of page to requery scale set.
+7. On success, a notification will appear and the response body will show the updated configuration.
+
+8. **Wait** for the virtual machine scale set update to complete. Click the **GET** button to retrieve the latest VMSS state and check the `provisioningState` property.
+
+   ![Check provisioning state - Updating](../media/managing-azure-resources/resource-explorer-vmss-get-provisioningState-updating.png)
+
+9. If `provisioningState` equals `Updating`, wait a few minutes and click GET again. Continue checking until the `provisioningState` shows `Succeeded`.
 
 > [!NOTE]
 > If the cluster is configured with Silver or higher Durability, the repair task will be blocked. Contact Microsoft Support for assistance with unblocking tenantupdate job.
@@ -168,7 +170,7 @@ To prevent this issue in the future, consider using the CA signed certificate wi
 
 ## [Verify VMSS resource models]
 
-Verify the VMSS resource model to ensure the new certificate is correctly configured. This can be done using the Azure Resource Explorer or API Playground as described below.
+Verify the VMSS resource model to ensure the new certificate is correctly configured. This can be done using Resource Explorer as described below.
 
 1. Go to [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in [Azure Portal](https://portal.azure.com/) and navigate to the virtual machine scale set configured for the cluster:
 
@@ -185,7 +187,9 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
    
    For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
-2. Ensure the correct Key Vault for the new cert is listed. If needed, update the "sourceVault" and "certificateUrl" properties using API Playground as described using the same steps as above.
+2. Click the **GET** button to retrieve the current configuration.
+
+3. Ensure the correct Key Vault for the new cert is listed. If needed, update the "sourceVault" and "certificateUrl" properties using Resource Explorer EDIT and PATCH buttons as described using the same steps as above.
 
    ```json
    "virtualMachineProfile": {
@@ -205,7 +209,7 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
        ],
    ```
 
-3. Ensure the "thumbprint" (and "thumbprintSecondary" if it exists) properties are correct. Update with the new certificate thumbprint if needed using API Playground as described using the same steps as above.
+4. Ensure the "thumbprint" (and "thumbprintSecondary" if it exists) properties are correct. Update with the new certificate thumbprint if needed using Resource Explorer EDIT and PATCH buttons as described using the same steps as above.
 
    ```json
    "virtualMachineProfile": {
@@ -237,7 +241,7 @@ Verify the VMSS resource model to ensure the new certificate is correctly config
 
 ## [Verify Cluster resource model]
 
-Verify the cluster resource model to ensure the new certificate is correctly configured. This can be done using Resource Explorer or API Playground as described below.
+Verify the cluster resource model to ensure the new certificate is correctly configured. This can be done using Resource Explorer as described below.
 
 1. Navigate to [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in [Azure Portal](https://portal.azure.com/) and navigate to the cluster resource:
 
@@ -253,7 +257,9 @@ Verify the cluster resource model to ensure the new certificate is correctly con
    
    For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
-2. Ensure the correct Key Vault for the new cert is listed. If needed, update the "certificate" property using API Playground as described using the same steps as above.
+2. Click the **GET** button to retrieve the current configuration.
+
+3. Ensure the correct Key Vault for the new cert is listed. If needed, update the "certificate" property using Resource Explorer EDIT and PUT buttons as described using the same steps as above.
 
    ```json
    "certificate": {
@@ -263,7 +269,7 @@ Verify the cluster resource model to ensure the new certificate is correctly con
    }
    ```
 
-3. Search for any other references to the old certificate thumbprint in the cluster resource model. For example, reverse proxy and client certificates. If found, update them with the new certificate thumbprint using API Playground as described using the same steps as above.
+4. Search for any other references to the old certificate thumbprint in the cluster resource model. For example, reverse proxy and client certificates. If found, update them with the new certificate thumbprint using Resource Explorer EDIT and PUT buttons as described using the same steps as above.
 
 ## Verify Cluster Applications
 
