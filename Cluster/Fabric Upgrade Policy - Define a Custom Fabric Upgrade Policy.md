@@ -77,7 +77,7 @@ To modify the Fabric Upgrade Policy, navigate to the Service Fabric Cluster reso
 
 1. Modify the 'upgradeDescription' section in the properties as needed. Example:
 
-    ![Resource Explorer](../media/resource-explorer-steps/api-playground-cluster-put.png)
+    ![Resource Explorer cluster configuration](../media/managing-azure-resources/resource-explorer-cluster-put-new-client-cert-highlighted.png)
 
 1. Click the **PUT** button to submit the modified configuration.
 
