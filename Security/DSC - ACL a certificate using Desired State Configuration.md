@@ -20,7 +20,7 @@
 > ![Upload zip to container](../media/dsc_image002.jpg)
 
 
-7. [https://resources.azure.com ](https://resources.azure.com)
+7. Using the Azure Portal, navigate to your Virtual Machine Scale Set resource and add a new VM Extension. Update the URL to your container and DSC script. For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
     a.  Edit your VMSS and add a new VM Extension, update URL to your container and DSC script
 

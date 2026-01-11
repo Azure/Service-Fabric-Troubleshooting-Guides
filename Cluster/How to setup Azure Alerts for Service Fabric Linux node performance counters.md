@@ -137,23 +137,20 @@ NOTE: 'timestamp' is an integer property that is used to trigger reprocessing of
 
 ![vscode template cse extension](../media/template-cse-extension.png)
 
-If cluster was deployed from Azure portal and template was not saved, use https://resources.azure.com. Navigate to 'subscription', 'resourceGroups', {{ resource group }}, 'providers', 'Microsoft.Compute', 'virtualMachineScaleSets', {{ nodetype }}.  
+If cluster was deployed from Azure portal and template was not saved, use [Resource Manager - Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal. For detailed instructions on viewing and modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md). Navigate to 'subscription', 'ResourceGroups', {{ resource group }}, 'Resources', 'Microsoft.Compute', 'virtualMachineScaleSets', {{ nodetype }}.  
 
 ```text
     subscriptions
     └───%subscription name%
-        └───resourceGroups
+        └───ResourceGroups
             └───%resource group name%
-                └───providers
+                └───Resources
                     └───Microsoft.Compute
                         └───virtualMachineScaleSets
                             └───%virtual machine scale set name%
 ```
 
-Click "Read/Write" permission and "Edit" to edit configuration.
-
-![Read/Write](../media/resourcemgr3.png)  
-![Edit](../media/resourcemgr2.png)
+Using API Playground, execute GET to retrieve the VMSS resource configuration, copy the Response Body, switch to PUT method, and paste into Request Body to make modifications. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
 
 ## Adding System Managed Identity
 
@@ -199,9 +196,7 @@ VERBOSE: 17:58:51 - Template is valid.
 PS C:\>New-AzResourceGroupDeployment -ResourceGroupName servicefabriccluster -TemplateFile .\template.json -DeploymentDebugLogLevel All -Verbose
 ```
 
-If using https://resources.azure.com, in 'Edit' configuration, after all changes have been made, select 'PATCH' to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com).
-
-![Click PATCH](../media/resourcemgr7.png)
+If using [Resource Manager - ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), after all changes have been made to the request body, select 'Execute' with PUT method to update the configuration. Status of update will be viewable in [Azure portal](https://portal.azure.com). For detailed instructions, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
 ## Validating configuration
 
@@ -262,10 +257,6 @@ This can have many causes. Ssh to a node and check the following:
 
 - look for errors in cse.log: cat /tmp/cse.log
 
-### resources.azure.com
+### ARM API Playground troubleshooting
 
-To troubleshoot errors while modifying a resource configuration, for example, an exclamation or warning icon is temporarily displayed, scroll to the bottom of the page and review the error:
-
-![resources.azure.com error icon](../media/resourcemgr12.png)
-
-![resources.azure.com error icon](../media/resourcemgr13.png)
+To troubleshoot errors while modifying a resource configuration using [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), review the response section for error messages. The response will include details about validation failures or other issues with the request.

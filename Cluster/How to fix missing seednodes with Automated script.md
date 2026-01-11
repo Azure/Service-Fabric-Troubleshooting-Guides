@@ -69,9 +69,9 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
 1. Since we are missing two nodes, increase the VMSS instance count by +2, for this example from 5 to 7.  If there were only 3 nodes in the VMMS and this is a Silver Reliability cluster, you would need to add +4 nodes (scale up from 3 to 7), two nodes to act as replacements and two nodes to be used by the script to fake the missing seed nodes.
 
     - This can be done 
-        - From <https://resources.azure.com>
-        - From Azure Portal -> Resource Group -> Scaling
-        - From PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
+        - Using Azure Portal - Resource Group -> Scaling
+        - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
+        - For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md)
 
     - In our example we will assume these new nodes are called _sys_7 and _sys_8 
 
@@ -140,10 +140,10 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
 8. Once _sys_3 and _sys_4 are disabled, you can reduce the VMSS instance count by 2 from the Azure Portal to remove the two VM's we temporarily added (_sys_7 & _sys_8)
 
     - This can be done 
-        - From <https://resources.azure.com>
-        - From Azure Portal -> Resource Group -> Scaling
-        - From PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
-        - Azure Portal -> vmms -> instances (manually delete the nodes _sys_7 and _sys_8)
+        - Using Azure Portal - Resource Group -> Scaling
+        - Using PowerShell - https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-manage-powershell#change-the-capacity-of-a-scale-set
+        - Using Azure Portal - vmss -> instances (manually delete the nodes _sys_7 and _sys_8)
+        - For detailed instructions on modifying VMSS resources, see [Managing Azure Resources](../Deployment/managing-azure-resources.md)
 
         ![Delete the two fake seed nodes](../media/twoseednode006.PNG)
 
@@ -170,7 +170,7 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
 
 **Note 2**: In some cases a seed node (say _sys_1) was removed from the VMMS but is still showing as in SFX in a **Down** state, you can follow these step.
 
-1.  Increase the VM instance count by 1 from <https://resources.azure.com>
+1.  Increase the VM instance count by 1 using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) or [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in the Azure Portal
 
 2.  Disable the node - **Disable-ServiceFabricNode -NodeName _sys_1 -Intent RemoveNode**  (This will trigger a complete UD walk)
 
