@@ -92,10 +92,13 @@ Testing has confirmed the following configuration successfully deploys a Service
 
 ### Overview
 
-Service Fabric managed clusters require a client certificate for authentication. This certificate is **separate from the cluster's server certificate** (which auto-rotates). For APIM integration, the client certificate serves two purposes:
+Service Fabric managed clusters require a client certificate for authentication. This certificate is **separate from the cluster certificate** (which auto-rotates). For APIM integration, the client certificate serves two purposes:
 
 1. **Admin access** for PowerShell management connections
 2. **APIM authentication** to the Service Fabric cluster
+
+> [!NOTE]
+> **Client certificates are NOT installed on the cluster**. They are only needed on client machines (such as workstations, build servers, or APIM instances) that connect to the cluster. The cluster only stores the client certificate thumbprint or common name for validation.
 
 ### CRITICAL: Extended Key Usage (EKU) Requirement
 
@@ -153,6 +156,25 @@ $pw = ConvertTo-SecureString -String "YourPassword" -Force -AsPlainText
 Export-PfxCertificate -Cert $cert -FilePath "apim-client.pfx" -Password $pw
 ```
 
+**Alternative: Generate via Azure Key Vault**
+
+Azure Key Vault can generate self-signed certificates with the required Client Authentication EKU:
+
+1. Navigate to Azure Key Vault → Certificates → Generate/Import
+2. Select "Generate" method
+3. Configure:
+   - Certificate Name: `apim-sf-client`
+   - Type: Self-signed certificate
+   - Subject: `CN=apim-sf-client`
+   - Validity Period: 12 months
+   - **Advanced Policy Configuration**:
+     - Extended Key Usages (EKUs): Add `1.3.6.1.5.5.7.3.2` (Client Authentication)
+     - Key Usage Flags: Digital Signature, Key Encipherment
+4. Download certificate as PFX for distribution to client machines
+
+> [!NOTE]
+> Key Vault serves as **centralized storage and distribution** for client certificates. Certificates must still be downloaded and installed on client machines (workstations, APIM instances, etc.) that need to connect to the cluster.
+
 **Trade-off**: Requires manual APIM backend update when certificate expires.
 
 #### Option 2: Common Name-Based (ONLY for Enterprises with Private CA)
@@ -166,7 +188,7 @@ Export-PfxCertificate -Cert $cert -FilePath "apim-client.pfx" -Password $pw
 
 - ✅ Fully automated rotation (new certificate from same CA issuer automatically trusted)
 - ✅ Zero manual updates when certificate rotates
-- ✅ Aligned with server certificate rotation approach
+- ✅ Aligned with cluster certificate rotation approach
 
 **Prerequisites**:
 
@@ -473,12 +495,12 @@ Add-AzServiceFabricManagedClusterClientCertificate `
 
     **Key Configuration Points**:
     - **clientCertificateThumbprint**: The client certificate thumbprint from step 12 (authenticates APIM to cluster)
-    - **serverX509Names**: The cluster FQDN (validates cluster's server certificate by common name)
+    - **serverX509Names**: The cluster FQDN (validates cluster certificate by common name)
     - **validateCertificateChain/Name**: Set to `false` (cluster uses auto-generated certificate)
     
-    The server certificate (cluster certificate) is **separate** from the client certificate:
-    - **Server cert**: Cluster → APIM authentication (auto-rotates every 90 days, validated by common name)
-    - **Client cert**: APIM → Cluster authentication (your control, validated by thumbprint or common name)
+    The cluster certificate is **separate** from the client certificate:
+    - **Cluster cert**: Authenticates cluster to APIM (auto-rotates every 90 days, validated by common name)
+    - **Client cert**: Authenticates APIM to cluster (your control, validated by thumbprint or common name)
 
     > [!NOTE]
     > The APIM ARM deployment template is provided in the [APIM ARM deployment template](#apim-arm-deployment-template) section.
@@ -722,8 +744,8 @@ sf-managed-connect `
 
 **Key Features**:
 
-- Automatically queries Azure for cluster server certificate thumbprints via `Get-AzServiceFabricManagedCluster`
-- Uses `-ServerCertThumbprint` parameter (no need for server cert in local certificate store)
+- Automatically queries Azure for cluster certificate thumbprints via `Get-AzServiceFabricManagedCluster`
+- Uses `-ServerCertThumbprint` parameter (no need for cluster cert in local certificate store)
 - Supports both client certificate thumbprint and common name authentication
 - Works from any machine with Azure PowerShell access
 
@@ -788,13 +810,14 @@ Invoke-RestMethod "https://$($apimEndpoint)/api/WeatherForecast"
 
 Service Fabric managed clusters use **two independent certificates** for APIM integration:
 
-#### Server Certificate (Cluster Certificate)
+#### Cluster Certificate
 
 - **Purpose**: Authenticates cluster to APIM
-- **Managed by**: Service Fabric (automatic)
+- **Managed by**: Service Fabric Resource Provider (automatic)
 - **Rotation frequency**: Every 90 days (automatic)
 - **APIM validation**: By common name (`serverX509Names`) - NOT thumbprint
 - **Impact on APIM**: **Zero manual intervention** when using `autoGeneratedDomainNameLabelScope`
+- **Installation**: Auto-installed on cluster nodes only (NOT on client machines)
 
 With `autoGeneratedDomainNameLabelScope: "ResourceGroupReuse"`, the cluster FQDN remains stable (e.g., `clustername.hash.region.sfmc.io`), and the server certificate continues to match this common name through rotation cycles.
 
@@ -827,7 +850,7 @@ With `autoGeneratedDomainNameLabelScope: "ResourceGroupReuse"`, the cluster FQDN
 
 **For most organizations**: Use thumbprint-based client certificate with 1 year validity. The annual manual rotation is an acceptable trade-off for simpler infrastructure requirements compared to maintaining private CA infrastructure.
 
-**For enterprises with private CA**: Use common name-based client certificate for fully automated rotation aligned with server certificate rotation.
+**For enterprises with private CA**: Use common name-based client certificate for fully automated rotation aligned with cluster certificate rotation.
 
 ## Reference
 
