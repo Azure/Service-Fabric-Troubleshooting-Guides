@@ -7,7 +7,8 @@ Public certificate authorities (Microsoft, DigiCert) are removing the Client Aut
 **Primary Impact:**
 
 - **Browser-based SFX access**: Users cannot select client certificates in browsers
-- **MITS clusters**: Managed Identity authentication failures (HTTP 403)
+- **Clusters with REST clients connecting to http gateway port 19080**: Client certificate authentication to Service Fabric backends may fail
+- **Clusters with Managed Identity Token Service**: Managed Identity authentication failures (HTTP 403)
 
 **What Still Works:**
 
@@ -37,13 +38,16 @@ Public CAs are standardizing TLS certificates to include only Server Authenticat
 
 ### MITS Failures (MITS-enabled clusters only)
 
-**What is MITS?** Managed Identity Token Service enables applications on Service Fabric to authenticate to Azure services using managed identities. MITS uses **mutual TLS (mTLS)** with the cluster certificate to communicate with Service Fabric management endpoints.
+**What is Managed Identity Token Service** MITS enables applications on Service Fabric to authenticate to Azure services using managed identities. MITS uses **mutual TLS (mTLS)** where the cluster certificate is presented as a **client certificate** to communicate with Service Fabric management endpoints.
 
 **Why Client Authentication EKU is Required:**
 
-- MITS client presents the cluster certificate as a **client certificate** during TLS handshake
+- MITS presents the cluster certificate AS a **client certificate** when querying http gateway (REST)
 - Service Fabric management endpoint validates the certificate must have Client Authentication EKU (1.3.6.1.5.5.7.3.2) for mTLS
 - Without this EKU, the server rejects the client certificate, resulting in HTTP 403
+
+> [!NOTE]
+> This is a unique scenario where the **cluster certificate** (normally used for server authentication) is also used as a **client certificate** for mTLS. This dual purpose requires both Server Authentication and Client Authentication EKUs.
 
 **Error:**
 
@@ -105,8 +109,8 @@ The recommended approach is to continue using cluster certificates that include 
 2. **Upload to Azure Key Vault**
 3. **Deploy certificate:**
 
-   - **Common Name**: Deploy via Key Vault VM extension; Service Fabric auto-detects
-   - **Thumbprint**: Follow [certificate rollover process](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure)
+   - **Common Name**: Must be CA-issued certificate. Deploy via Key Vault VM extension; Service Fabric auto-detects. Self-signed certificates are not supported with common name configuration.
+   - **Thumbprint**: Follow [certificate rollover process](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure). Self-signed certificates are acceptable for thumbprint-based configuration.
 
 ### Alternative: Use Separate Client Certificates for SFX
 
@@ -114,7 +118,8 @@ If cluster certificates cannot include Client Authentication EKU, configure sepa
 
 1. **Issue client certificates** with both Server Authentication and Client Authentication EKUs
 
-   - Request from your certificate authority (CA)
+   - Request from your certificate authority (CA) for common name configuration
+   - Self-signed certificates are acceptable when using thumbprint configuration
    - Ensure both EKUs are present:
      - Server Authentication (1.3.6.1.5.5.7.3.1)
      - Client Authentication (1.3.6.1.5.5.7.3.2)
@@ -143,17 +148,6 @@ If cluster certificates cannot include Client Authentication EKU, configure sepa
        -ResourceGroupName "<resourceGroupName>" `
        -Name "<clusterName>" `
        -Thumbprint "<client-cert-thumbprint>"
-   ```
-
-   **PowerShell - Add multiple client certificates:**
-
-   ```powershell
-   # Add multiple admin and read-only certificates
-   Add-AzServiceFabricClientCertificate `
-       -ResourceGroupName "<resourceGroupName>" `
-       -Name "<clusterName>" `
-       -AdminClientThumbprint "<admin-cert-thumbprint-1>", "<admin-cert-thumbprint-2>" `
-       -ReadonlyClientThumbprint "<readonly-cert-thumbprint-1>"
    ```
 
    **PowerShell - Using common name (recommended):**
@@ -200,31 +194,24 @@ If cluster certificates cannot include Client Authentication EKU, configure sepa
    ```powershell
    # Get cluster configuration
    $cluster = Get-AzServiceFabricCluster -ResourceGroupName "<resourceGroupName>" -Name "<clusterName>"
-   
+
    # View client certificate thumbprints
    $cluster.ClientCertificateThumbprints
-   
+
    # View client certificate common names
    $cluster.ClientCertificateCommonNames
    ```
+4. **Install client certificates on client machines (not installed on cluster nodes):**
 
-4. **Install client certificates on user machines:**
-
-   - Deploy PFX to users who need SFX access
-   - Install to `Cert:\CurrentUser\My` (Personal store)
+   - Deploy PFX to users who need SFX access (workstations, APIM instances, build servers)
+   - Install to `Cert:\CurrentUser\My` (Personal store) on client machines
    - Browsers will now display these certificates for SFX authentication
+
 5. **Test SFX access:**
 
    - Navigate to `https://<yourcluster>.<region>.cloudapp.azure.com:19080`
    - Browser should display the new client certificate in selection dialog
    - Select certificate to authenticate and access SFX
-
-**Result:** Browser-based SFX works with separate client certificates while cluster certificates only have Server Authentication EKU.
-
-**Documentation:**
-
-- [Manage client access using certificates](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security#client-to-node-certificate-based-security)
-- [Add or remove certificates for a Service Fabric cluster](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure)
 
 ### MITS Clusters: No Workaround Available
 
@@ -244,6 +231,14 @@ If browser-based SFX cannot be used due to Client Authentication EKU limitations
 ### Use Private PKI (Recommended)
 
 Public CAs will stop issuing certificates with Client Authentication EKU after May 2026. Use a private PKI that can issue certificates with both EKUs for internal clusters.
+
+> [!IMPORTANT]
+> **Certificate Configuration Requirements:**
+>
+> - **Common Name Configuration:** Requires CA-issued certificates (public CA or private PKI). Self-signed certificates are **not supported** for production. For testing only, self-signed certificates can be used if the issuer is pinned to its own thumbprint.
+> - **Thumbprint Configuration:** Self-signed certificates are acceptable for test clusters. Production clusters should use CA-issued certificates.
+>
+> This is a security design decision: common name-based validation relies on trust in the certificate issuer, while thumbprint-based validation relies on the uniqueness of the certificate signature.
 
 **Private PKI Certificate Template Configuration:**
 
@@ -280,21 +275,43 @@ When configuring your private Certificate Authority (Active Directory Certificat
 - [Server Certificate Deployment Overview](https://learn.microsoft.com/en-us/windows-server/networking/core-network-guide/cncg/server-certs/server-certificate-deployment-overview)
 - [Service Fabric certificate best practices](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security#best-practices)
 
+### Alternative: Azure Key Vault Self-Signed Client Certificates (Thumbprint Configuration Only)
+
+For **client certificates** configured by **thumbprint** (not common name), Azure Key Vault can generate self-signed certificates with the required Client Authentication EKU:
+
+> [!NOTE]
+> Self-signed certificates from Key Vault can only be used with **thumbprint-based** client certificate configuration. If using common name configuration, client certificates must be CA-issued.
+
+**Generate Self-Signed Client Certificate via Azure Key Vault:**
+
+1. Navigate to Azure Key Vault → Certificates → Generate/Import
+2. Select "Generate" method
+3. Configure:
+   - Certificate Name: `sf-client-cert`
+   - Type: Self-signed certificate
+   - Subject: `CN=sf-client`
+   - Validity Period: 12 months
+   - **Advanced Policy Configuration**:
+     - Extended Key Usages (EKUs): Add both:
+       - `1.3.6.1.5.5.7.3.1` (Server Authentication)
+       - `1.3.6.1.5.5.7.3.2` (Client Authentication)
+     - Key Usage Flags: Digital Signature, Key Encipherment
+     - Key Size: 2048-bit RSA minimum
+4. Download certificate as PFX for distribution to client machines
+
+> [!NOTE]
+> Client certificates are installed on machines that **connect to** the cluster (workstations, APIM instances, build servers), not on cluster nodes. The cluster only stores the thumbprint/common name for validation. Key Vault provides centralized storage and distribution.
+
 ### Certificate Best Practices
 
 - **Use Common Name configuration** (not thumbprint) for automatic certificate rollover
-- **Configure issuer pinning** to control trusted CAs
+  - **Requires CA-issued certificates** (public CA or private PKI)
+  - Self-signed certificates are **not supported** with common name (except for testing with issuer pinning)
+- **Configure issuer pinning** to control trusted CAs and strengthen validation
 - **Coordinate with PKI team** to ensure certificate profiles include both EKUs
-
-## Certificate Requirements
-
-Service Fabric certificates must include:
-
-- **Enhanced Key Usage:** Server Authentication (1.3.6.1.5.5.7.3.1) AND Client Authentication (1.3.6.1.5.5.7.3.2)
-- **Key size:** Minimum 2048-bit RSA
-- **Private key** exportable to PFX format
-
-See [Service Fabric X.509 certificate security](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-windows-cluster-x509-security) for complete requirements.
+- **Thumbprint configuration** alternative:
+  - Allows self-signed certificates for test clusters
+  - Requires manual cluster upgrades for certificate rollover
 
 ## Certificate Validation Checklist
 
@@ -303,15 +320,18 @@ Before deploying or troubleshooting certificates, verify:
 **EKU Validation:**
 
 - [ ] Certificate contains **both** EKUs:
+
   - Server Authentication (1.3.6.1.5.5.7.3.1)
   - Client Authentication (1.3.6.1.5.5.7.3.2)
 - [ ] Verify via PowerShell: `(Get-Item Cert:\LocalMachine\My\<thumbprint>).EnhancedKeyUsageList`
 - [ ] Verify in Azure Key Vault:
+
   ```powershell
   $cert = Get-AzKeyVaultCertificate -VaultName <vaultName> -Name <certName>
   $cert.Policy.Ekus
   ```
 - [ ] Verify via OpenSSL (Linux clusters):
+
   ```bash
   openssl x509 -in certificate.crt -text -noout | grep -A 3 "Extended Key Usage"
   ```
@@ -349,9 +369,8 @@ Before deploying or troubleshooting certificates, verify:
 
 Check certificate in `certmgr.msc` → Details → Enhanced Key Usage. If Client Authentication (1.3.6.1.5.5.7.3.2) is missing:
 
-- Use [Service Fabric Explorer desktop application](service-fabric-explorer-desktop-app.md) - native Windows app that works without Client Authentication EKU
-- Use PowerShell/SDK instead of browser
-- Request new certificate from private PKI
+- Use [Service Fabric Explorer desktop application](service-fabric-explorer-desktop-app.md)
+- Request new certificate with both EKUs from your certificate authority
 
 ### Service Fabric Authentication Failures
 
@@ -368,4 +387,5 @@ Missing Client Authentication EKU should NOT cause Service Fabric authentication
 - [Manage certificates in Service Fabric clusters](https://learn.microsoft.com/en-us/azure/service-fabric/cluster-security-certificate-management) - certificate management and troubleshooting
 - [Manually roll over a Service Fabric cluster certificate](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-rollover-cert-cn) - certificate rollover procedures
 - [Add or remove certificates for a Service Fabric cluster in Azure](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure) - certificate updates
-- [Convert cluster certificates from thumbprint to common name](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-change-cert-thumbprint-to-cn) - migration guidance
+- [Convert cluster certificates from thumbprint to common name](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-change-cert-thumbprint-to-cn) - migration guidance and CA requirements for common name
+- [Deploy a Service Fabric cluster using certificate common name](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-create-cluster-using-cert-cn) - common name deployment requirements (CA-issued certificates)
