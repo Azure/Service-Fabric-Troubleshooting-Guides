@@ -39,9 +39,11 @@ Public CAs are standardizing TLS certificates to include only Server Authenticat
 
 ### MITS Failures (MITS-enabled clusters only)
 
-**What is Managed Identity Token Service** MITS enables applications on Service Fabric to authenticate to Azure services using managed identities. MITS uses **mutual TLS (mTLS)** where the cluster certificate is presented as a **client certificate** to communicate with Service Fabric management endpoints.
+#### What is Managed Identity Token Service (MITS)?
 
-**What is Mutual TLS (mTLS)?**
+MITS enables applications on Service Fabric to authenticate to Azure services using managed identities. MITS uses **mutual TLS (mTLS)** where the cluster certificate is presented as a **client certificate** to communicate with Service Fabric management endpoints.
+
+#### What is Mutual TLS (mTLS)?
 
 Mutual TLS is a two-way authentication process where both the client and server authenticate each other using certificates:
 
@@ -76,7 +78,14 @@ Content: {"StatusCode":403,"ReasonPhrase":"Client certificate required"}
 
 **Why This Happens:**
 
-When a web browser connects to a Service Fabric cluster endpoint (`https://<yourcluster>.<region>.cloudapp.azure.com:19080`), the server requests client certificate authentication. The browser filters available certificates based on the **Client Authentication EKU** (1.3.6.1.5.5.7.3.2). Certificates with only Server Authentication EKU (1.3.6.1.5.5.7.3.1) are not considered valid client certificates by the browser and are **excluded from the certificate selection dialog**.
+When a web browser connects to a Service Fabric cluster endpoint (`https://<yourcluster>.<region>.cloudapp.azure.com:19080`), the server requests client certificate authentication. The browser examines each certificate in your certificate store and applies a filter:
+
+- The browser looks for the **Client Authentication EKU** (1.3.6.1.5.5.7.3.2) in each certificate
+- This EKU explicitly marks a certificate as suitable for client authentication
+- Certificates with only Server Authentication EKU (1.3.6.1.5.5.7.3.1) are designed for server-side SSL/TLS only
+- Without the Client Authentication EKU, the browser considers the certificate **not valid for client authentication** and **excludes it from the selection dialog**
+
+This is a security measure: the browser ensures only certificates explicitly authorized for client authentication are presented to users.
 
 **Platform-Specific Behavior:**
 
@@ -214,6 +223,7 @@ If cluster certificates cannot include Client Authentication EKU, configure sepa
    # View client certificate common names
    $cluster.ClientCertificateCommonNames
    ```
+
 4. **Install client certificates on client machines (not installed on cluster nodes):**
 
    - Deploy PFX to users who need SFX access (workstations, APIM instances, build servers)
@@ -255,6 +265,8 @@ Public CAs will stop issuing certificates with Client Authentication EKU after M
 
 **Private PKI Certificate Template Configuration:**
 
+A certificate template defines the properties and settings for certificates issued by your Private CA. Think of it as a blueprint that ensures all certificates for Service Fabric clusters have the correct EKUs, key sizes, and validity periods.
+
 When configuring your private Certificate Authority (Active Directory Certificate Services or third-party PKI):
 
 1. **Create certificate template** for Service Fabric cluster certificates:
@@ -277,6 +289,7 @@ When configuring your private Certificate Authority (Active Directory Certificat
    # Verify template EKU configuration
    certutil -v -template "ServiceFabricCluster"
    ```
+
 4. **Issue certificates:**
 
    - Request via certreq, MMC, or automated enrollment
@@ -345,6 +358,7 @@ Before deploying or troubleshooting certificates, verify:
   $cert = Get-AzKeyVaultCertificate -VaultName <vaultName> -Name <certName>
   $cert.Policy.Ekus
   ```
+
 - [ ] Verify via OpenSSL (Linux clusters):
 
   ```bash
