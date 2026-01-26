@@ -132,7 +132,7 @@ The recommended approach is to continue using cluster certificates that include 
 3. **Deploy certificate:**
 
    - **Common Name**: Must be CA-issued certificate. Deploy via Key Vault VM extension; Service Fabric auto-detects. Self-signed certificates are not supported with common name configuration.
-   - **Thumbprint**: Follow [certificate rollover process](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure). Self-signed certificates are acceptable for thumbprint-based configuration.
+   - **Thumbprint**: Follow [certificate rollover process](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-security-update-certs-azure). Self-signed certificates are acceptable for thumbprint-based configuration.
 
 ### Alternative: Use Separate Client Certificates for SFX
 
@@ -194,7 +194,7 @@ If cluster certificates cannot include Client Authentication EKU, configure sepa
       - **Read-only client** - Query and read-only access
    5. Enter certificate details:
       - **Authorization by:** Select "Thumbprint" or "Subject common name"
-      - **Thumbprint or common name:** Enter the certificate thumbprint (64 hex characters) or CN
+      - **Thumbprint or common name:** Enter the certificate thumbprint (40 hex characters) or CN
       - **Issuer thumbprint:** (For common name only) Enter issuer thumbprint for validation
    6. Click **Add** to save
    7. Wait for cluster update to complete (may take several minutes)
@@ -208,8 +208,8 @@ If cluster certificates cannot include Client Authentication EKU, configure sepa
 
    **Documentation:**
 
-   - [Add-AzServiceFabricClientCertificate cmdlet reference](https://learn.microsoft.com/en-us/powershell/module/az.servicefabric/add-azservicefabricclientcertificate)
-   - [Manage client access using certificates](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security#client-to-node-certificate-based-security)
+   - [Add-AzServiceFabricClientCertificate cmdlet reference](https://learn.microsoft.com/powershell/module/az.servicefabric/add-azservicefabricclientcertificate)
+   - [Manage client access using certificates](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-certificate-based-security)
 
    **Verify client certificates:**
 
@@ -298,8 +298,8 @@ When configuring your private Certificate Authority (Active Directory Certificat
 
 **Resources:**
 
-- [Server Certificate Deployment Overview](https://learn.microsoft.com/en-us/windows-server/networking/core-network-guide/cncg/server-certs/server-certificate-deployment-overview)
-- [Service Fabric certificate best practices](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security#best-practices)
+- [Server Certificate Deployment Overview](https://learn.microsoft.com/windows-server/networking/core-network-guide/cncg/server-certs/server-certificate-deployment-overview)
+- [Service Fabric certificate best practices](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-security#best-practices)
 
 ### Alternative: Azure Key Vault Self-Signed Client Certificates (Thumbprint Configuration Only)
 
@@ -412,9 +412,9 @@ Missing Client Authentication EKU should NOT cause Service Fabric authentication
 
 ## Additional Resources
 
-- [Secure a Service Fabric cluster on Windows by using X.509 certificates](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-windows-cluster-x509-security) - comprehensive certificate configuration and security guide
-- [Manage certificates in Service Fabric clusters](https://learn.microsoft.com/en-us/azure/service-fabric/cluster-security-certificate-management) - certificate management and troubleshooting
-- [Manually roll over a Service Fabric cluster certificate](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-rollover-cert-cn) - certificate rollover procedures
-- [Add or remove certificates for a Service Fabric cluster in Azure](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure) - certificate updates
-- [Convert cluster certificates from thumbprint to common name](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-change-cert-thumbprint-to-cn) - migration guidance and CA requirements for common name
-- [Deploy a Service Fabric cluster using certificate common name](https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-create-cluster-using-cert-cn) - common name deployment requirements (CA-issued certificates)
+- [Secure a Service Fabric cluster on Windows by using X.509 certificates](https://learn.microsoft.com/azure/service-fabric/service-fabric-windows-cluster-x509-security) - comprehensive certificate configuration and security guide
+- [Manage certificates in Service Fabric clusters](https://learn.microsoft.com/azure/service-fabric/cluster-security-certificate-management) - certificate management and troubleshooting
+- [Manually roll over a Service Fabric cluster certificate](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-rollover-cert-cn) - certificate rollover procedures
+- [Add or remove certificates for a Service Fabric cluster in Azure](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-security-update-certs-azure) - certificate updates
+- [Convert cluster certificates from thumbprint to common name](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-change-cert-thumbprint-to-cn) - migration guidance and CA requirements for common name
+- [Deploy a Service Fabric cluster using certificate common name](https://learn.microsoft.com/azure/service-fabric/service-fabric-create-cluster-using-cert-cn) - common name deployment requirements (CA-issued certificates)
