@@ -28,9 +28,11 @@ Using an ARM Template with CSE and extension sequencing, a dependency can be ins
 
 ### View Configuration / Resource ID in Resource Explorer
 
-1. Open [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in [Azure Portal](https://portal.azure.com/) to view the resource and to copy the resource uri of the vmss / nodetype for modification.
+1. Open [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in [Azure Portal](https://portal.azure.com/) to view the VMSS / nodetype resource configuration.
 
-2. Select the specific vmss / nodetype under 'Resources' 'virtualMachineScaleSets'.:
+   For detailed instructions on modifying VMSS resources using Resource Explorer, see [Managing Azure Resources](managing-azure-resources.md).
+
+2. Navigate to the specific vmss / nodetype under 'Resources' 'virtualMachineScaleSets':
 
     ```text
     Subscriptions
@@ -43,29 +45,19 @@ Using an ARM Template with CSE and extension sequencing, a dependency can be ins
 
     ![Resource Explorer](../media/Installing-dependencies-on-virtual-machine-scaleset/resource-explorer-1.png)
 
-3. To modify this resource, triple-click to copy the complete resource uri with api version from the read-only box to the right of `Open Blade` button. Example:
+### Modify Configuration using Resource Explorer
 
-    ![Resource Explorer copy uri](../media/Installing-dependencies-on-virtual-machine-scaleset/resource-explorer-copy-resource-uri.png)
+1. The current VMSS configuration will be automatically displayed when you select the resource in the tree.
 
-### View / Modify Configuration in API Playground with Resource ID and API Version
+2. Click the **EDIT** button to modify the configuration.
 
-1. Navigate to [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in [Azure Portal](https://portal.azure.com/) and paste the copied resource uri with api version from Resource Explorer into the input box to the right of the HTTP Request Method.
+3. Modify the configuration as needed to add the Custom Script Extension and extension sequencing. See sections below for specific configuration examples.
 
-2. Select `Execute` to view the configuration of the vmss / nodetype. Example:
+4. Click the **PATCH** button to submit the modified configuration.
+   
+   ![Successful PATCH notification](../media/managing-azure-resources/resource-explorer-vmss-successful-patch-notification.png)
 
-    ![Resource Explorer](../media/Installing-dependencies-on-virtual-machine-scaleset/api-playground-get.png)
-
-3. The `Response Body` will display the configuration of the vmss / nodetype similar to the Resource Explorer view. This response body can be copied and pasted into the `Request Body` above to modify the configuration. Example:
-
-    ![Resource Explorer](../media/Installing-dependencies-on-virtual-machine-scaleset/api-playground-get-response.png)
-
-4. Set the request method to `PATCH`, select `Request Body`, and paste the copied response body. Modify the configuration as needed. Example:
-
-    ![Resource Explorer](../media/Installing-dependencies-on-virtual-machine-scaleset/api-playground-patch.png)
-
-5. Select `Execute` to modify the configuration. In the `Response Body`, Verify the `Status Code` is '200' and the `provisioningState` is 'Updating' or 'Succeeded'. The provisioning status can be monitored in the [Azure Portal](https://portal.azure.com/) or by performing additional `Get` requests from [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) or [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground). Example:
-
-    ![Resource Explorer](../media/Installing-dependencies-on-virtual-machine-scaleset/api-playground-patch-response.png)
+5. The VMSS will move to an 'Updating' provisioningState. Periodically click **GET** to check the status. Verify "provisioningState" shows "Succeeded".
 
 ### Modify ARM Template to Add Custom Script Extension
 
