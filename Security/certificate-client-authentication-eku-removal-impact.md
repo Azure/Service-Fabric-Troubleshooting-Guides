@@ -29,16 +29,29 @@ Public CAs are standardizing TLS certificates to include only Server Authenticat
 
 **Industry Context:**
 
-- **CA/Browser Forum** and **Chrome Root Program** policies drive this standardization
-- Public CAs align with [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) guidance: EKU restricts certificate use to specific purposes
-- **RFC 5280 Note:** Absence of EKU extension means "no restrictions" - certificate is valid for all purposes. However, modern browsers and frameworks enforce EKU validation for security, so missing Client Authentication EKU blocks client certificate selection
-- Private PKI remains free to issue certificates with both EKUs for internal mutual TLS scenarios
+- **[Chrome Root Program policy (Section 3.2.2)](https://www.chromium.org/Home/chromium-security/root-ca-policy/#322-pki-hierarchies-included-in-the-chrome-root-store)** requires Certificate Authorities to use dedicated TLS root hierarchies
+- Chrome restricts TLS certificates to Server Authentication EKU only starting June 15, 2026
+- DigiCert and other public CAs are implementing this change: [DigiCert announcement](https://knowledge.digicert.com/alerts/sunsetting-client-authentication-eku-from-digicert-public-tls-certificates)
+- **CA/Browser Forum** baseline requirements align with Chrome's policy for public trust
+- Private PKI and self-signed certificates remain free to issue certificates with both EKUs for internal mutual TLS scenarios
 
 ## Symptoms
 
 ### MITS Failures (MITS-enabled clusters only)
 
 **What is Managed Identity Token Service** MITS enables applications on Service Fabric to authenticate to Azure services using managed identities. MITS uses **mutual TLS (mTLS)** where the cluster certificate is presented as a **client certificate** to communicate with Service Fabric management endpoints.
+
+**What is Mutual TLS (mTLS)?**
+
+Mutual TLS is a two-way authentication process where both the client and server authenticate each other using certificates:
+
+- **Standard TLS (HTTPS):** Only the server presents a certificate to prove its identity. The client verifies the server's certificate but doesn't present one.
+- **Mutual TLS (mTLS):** Both parties present certificates:
+  - The **server** presents its certificate (requires Server Authentication EKU)
+  - The **client** also presents a certificate to prove its identity (requires Client Authentication EKU)
+  - Both sides verify the other's certificate before establishing the connection
+
+This bidirectional authentication provides stronger security for sensitive operations, ensuring both parties are who they claim to be.
 
 **Why Client Authentication EKU is Required:**
 
@@ -281,6 +294,8 @@ For **client certificates** configured by **thumbprint** (not common name), Azur
 
 > [!NOTE]
 > Self-signed certificates from Key Vault can only be used with **thumbprint-based** client certificate configuration. If using common name configuration, client certificates must be CA-issued.
+>
+> **Important**: Azure Key Vault self-signed certificate creation is **NOT affected** by the public CA EKU deprecation. Key Vault allows you to create self-signed certificates with both Server Authentication and Client Authentication EKUs. The restriction only applies to public CA-issued certificates (DigiCert, GlobalSign integrations).
 
 **Generate Self-Signed Client Certificate via Azure Key Vault:**
 
