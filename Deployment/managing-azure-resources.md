@@ -30,6 +30,9 @@ The following steps demonstrate how to view and modify resources using Resource 
 
 Resource Explorer now provides interactive GET, EDIT, PUT, and PATCH buttons, making it the primary tool for managing Azure resources. This replaces the need to use resources.azure.com for most scenarios.
 
+> [!NOTE]
+> **PUT vs PATCH Operations**: PUT replaces the entire resource configuration, while PATCH applies a partial update to modify only specific properties. PATCH generally has less impact and is recommended when supported. However, not all Azure resources support PATCH operations. If a PATCH operation fails or is not supported, use PUT instead.
+
 #### Viewing Resources
 
 1. Open [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in [Azure Portal](https://portal.azure.com/). The Resource Manager blade provides an overview with quick access to both Resource Explorer and ARM API Playground.
@@ -53,7 +56,10 @@ Resource Explorer now provides interactive GET, EDIT, PUT, and PATCH buttons, ma
 
 #### Modifying Resources with PATCH
 
-PATCH operations allow you to update specific properties without sending the entire resource configuration. This is the recommended method for most modifications.
+PATCH operations apply a partial update to a resource, allowing you to modify specific properties without sending the entire resource configuration. Using PATCH, you specify only the subset of fields that should be changed or added, rather than replacing the entire resource. PATCH generally has less impact than PUT as it modifies only the specified properties, but it's important to verify the operation completes successfully.
+
+> [!NOTE]
+> Not all Azure resources support PATCH operations. If a PATCH operation fails or is not supported for a specific resource, use PUT instead.
 
 1. After performing a GET request in Resource Explorer, click the **EDIT** button to enable editing mode.
 2. Modify the JSON configuration in the editor. For example, to add a certificate to a VMSS:
@@ -69,7 +75,7 @@ PATCH operations allow you to update specific properties without sending the ent
 
 #### Modifying Resources with PUT
 
-PUT operations replace the entire resource configuration. Use this method when making comprehensive changes to a resource.
+PUT operations replace the entire resource configuration. Unlike PATCH, which applies partial updates, PUT updates the complete resource with the provided configuration. Use this method when making comprehensive changes to a resource or when PATCH operations are not supported by the resource type.
 
 1. After performing a GET request in Resource Explorer, copy the response body.
 2. Click the **EDIT** button to enable editing mode.
@@ -264,7 +270,16 @@ The following steps demonstrate how to view resources with Azure CLI:
 
 The following steps demonstrate how to update resources with Azure CLI:
 
-1. Use the [`az resource update`](https://learn.microsoft.com/cli/azure/resource#az_resource_update) command to update the resource. For example, to update a property of a resource:
+> [!NOTE]
+> Azure CLI provides two commands for updating resources: [`az resource update`](https://learn.microsoft.com/cli/azure/resource#az_resource_update) (uses PUT) and [`az resource patch`](https://learn.microsoft.com/cli/azure/resource#az_resource_patch) (uses PATCH). Use `az resource patch` for partial updates when supported. If the PATCH operation fails, try `az resource update` instead.
+
+1. To apply a partial update using PATCH, use the [`az resource patch`](https://learn.microsoft.com/cli/azure/resource#az_resource_patch) command:
+
+   ```bash
+   az resource patch --ids <resource id> --properties '{"<property name>": "<new value>"}'
+   ```
+
+2. To replace the entire resource using PUT, use the [`az resource update`](https://learn.microsoft.com/cli/azure/resource#az_resource_update) command:
 
    ```bash
    az resource update --ids <resource id> --set <property name>=<new value>
