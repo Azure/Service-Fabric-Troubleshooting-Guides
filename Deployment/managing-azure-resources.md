@@ -3,9 +3,9 @@
 Multiple methods are available to manage Azure resources. The [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in Azure Portal provides a unified interface with [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) as the primary tool for browsing and modifying resources. The alternatives listed below provide comprehensive ways to view and modify Azure resources programmatically or through a graphical interface:
 
 1. **Azure Portal**: Azure Portal is the primary interface for managing Azure resources. The [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade provides integrated access to:
+
    - **Resource Explorer**: Browse resources in a hierarchical tree structure and execute GET, PUT, and PATCH operations directly using interactive buttons
    - **ARM API Playground**: Alternative tool for executing ARM API operations with support for multiple tabs and flexible API version management
-
    - **Advantages**: User-friendly, comprehensive, integrated interface for both browsing and modifying resources with immediate feedback.
    - **Disadvantages**: Requires a browser. May be cumbersome for large-scale operations or automation tasks.
 2. **Azure PowerShell**: Azure PowerShell is a set of cmdlets for managing Azure resources from the command line. It is particularly useful for Windows environments and integrates seamlessly with other PowerShell scripts and modules.
@@ -35,9 +35,7 @@ Resource Explorer now provides interactive GET, EDIT, PUT, and PATCH buttons, ma
 1. Open [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) in [Azure Portal](https://portal.azure.com/). The Resource Manager blade provides an overview with quick access to both Resource Explorer and ARM API Playground.
 
    ![Resource Manager Overview](../media/managing-azure-resources/azure-portal-fixed.png)
-
 2. Click on **Resource Explorer** in the left navigation or use the direct link to [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) to browse resources.
-
 3. Select the specific subscription, resource group, and then resource under 'Resources':
 
    ```text
@@ -48,11 +46,9 @@ Resource Explorer now provides interactive GET, EDIT, PUT, and PATCH buttons, ma
                    └───Resources
                        └───<resource name>
    ```
-
 4. Click the **GET** button to retrieve the current resource configuration. The response will be displayed in JSON format below the buttons.
 
    ![Resource Explorer - VMSS Default View](../media/managing-azure-resources/resource-explorer-vmss-default-view.png)
-
 5. Expand the resource tree to view its properties and configuration. For example, expanding a Virtual Machine Scale Set resource shows details about the VMSS configuration.
 
 #### Modifying Resources with PATCH
@@ -60,19 +56,15 @@ Resource Explorer now provides interactive GET, EDIT, PUT, and PATCH buttons, ma
 PATCH operations allow you to update specific properties without sending the entire resource configuration. This is the recommended method for most modifications.
 
 1. After performing a GET request in Resource Explorer, click the **EDIT** button to enable editing mode.
-
 2. Modify the JSON configuration in the editor. For example, to add a certificate to a VMSS:
 
    ![Resource Explorer - VMSS PATCH Edit](../media/managing-azure-resources/resource-explorer-vmss-patch-cert-highlighted.png)
-
 3. Click the **PATCH** button to submit your changes.
-
 4. **On success**: A notification will appear indicating the operation succeeded, and the response body will be displayed.
 
    ![Resource Explorer - Successful PATCH](../media/managing-azure-resources/resource-explorer-vmss-successful-patch-notification.png)
 
    ![Resource Explorer - PATCH Result](../media/managing-azure-resources/resource-explorer-vmss-patch-cert-new-added.png)
-
 5. **If the template is malformed**: An error message will be displayed with details about what went wrong.
 
 #### Modifying Resources with PUT
@@ -80,24 +72,19 @@ PATCH operations allow you to update specific properties without sending the ent
 PUT operations replace the entire resource configuration. Use this method when making comprehensive changes to a resource.
 
 1. After performing a GET request in Resource Explorer, copy the response body.
-
 2. Click the **EDIT** button to enable editing mode.
-
 3. Make your desired modifications to the complete JSON configuration. For example, updating Service Fabric cluster certificate:
 
    ![Resource Explorer - Cluster PUT Edit](../media/managing-azure-resources/resource-explorer-cluster-put-new-client-cert-highlighted.png)
-
 4. Click the **PUT** button to submit the updated configuration.
-
-5. **Important Note**: Currently, on a successful PUT request, **no response is shown** in the output area. This is a known quirk of Resource Explorer.
-
+5. **On success**: A notification will appear indicating the operation succeeded, same as in the PATCH operation above.
 6. **To confirm status**: Perform another GET request and scroll through the response to check the `provisioningState` property:
+
    - `Updating`: The operation is in progress
    - `Succeeded`: The operation completed successfully
    - `Failed`: The operation encountered an error
 
    ![Resource Explorer - Check Provisioning State](../media/managing-azure-resources/resource-explorer-cluster-put-provisioningState-succeeded.png)
-
 7. **If the template is malformed**: An error message will be displayed with details about the validation failure.
 
 #### Monitoring Provisioning Status
@@ -105,7 +92,6 @@ PUT operations replace the entire resource configuration. Use this method when m
 After making changes, you can monitor the provisioning status:
 
 1. Click the **GET** button to retrieve the latest resource state.
-
 2. Locate the `provisioningState` property in the response:
 
    ```json
@@ -115,11 +101,9 @@ After making changes, you can monitor the provisioning status:
      }
    }
    ```
-
 3. If the state is `Updating`, wait a few moments and perform another GET request to check progress.
 
    ![Resource Explorer - Provisioning State Updating](../media/managing-azure-resources/resource-explorer-vmss-get-provisioningState-updating.png)
-
 4. Continue checking until the `provisioningState` shows `Succeeded` or `Failed`.
 
    ![Resource Explorer - Provisioning State Failed Example](../media/managing-azure-resources/resource-explorer-vmss-get-provisioningState-failed.png)
@@ -129,10 +113,8 @@ After making changes, you can monitor the provisioning status:
 ARM API Playground provides additional features that may be useful in specific scenarios:
 
 - **Multiple tabs**: Work with multiple resources simultaneously
+- **Full request control**: Customize headers, request parameters, api-versions
 - **Flexible API version management**: Easily change API versions in the URL
-- **Full request control**: Customize headers and request parameters
-
-While Resource Explorer is now the primary tool for most scenarios, API Playground remains valuable for these advanced use cases.
 
 #### Workflow for modifying resources in API Playground
 
@@ -147,19 +129,14 @@ The resource URI format is as follows:
 1. From the [Resource Manager](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/overview) blade, click on **ARM API Playground** in the left navigation or use the direct link to [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
 
    ![ARM API Playground Workflow](../media/managing-azure-resources/arm-api-put-workflow.png)
-
 2. Enter the resource URI with API version in the request URL field. Select **GET** as the HTTP method and click **Execute** to retrieve the current configuration. Example showing a Service Fabric cluster resource:
 
    ![ARM API Get Request](../media/managing-azure-resources/arm-api-servicefabric-cluster.png)
-
 3. The **Response** section will display the current configuration of the resource in JSON format. Copy this response body to use as the basis for your modifications.
-
 4. Switch to the **Request body** tab, paste the copied JSON, and make your desired modifications to the configuration.
-
 5. Change the HTTP method to **PUT** and click **Execute** to submit the updated configuration. Example showing a VMSS update:
 
    ![ARM API Put Request](../media/managing-azure-resources/arm-api-put-vmss-nodetype0.png)
-
 6. The **Response** section will show the result of the operation. Verify the status code is `200 OK` and the `provisioningState` is `Updating` or `Succeeded`. You can monitor the provisioning status in the [Azure Portal](https://portal.azure.com/) or by performing additional GET requests from [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
 
 ## Azure PowerShell
@@ -194,7 +171,6 @@ The following steps demonstrate how to view resources with PowerShell:
    $resources = Get-AzResource -ResourceGroupName <resource group name>
    $resources
    ```
-
 2. To view a specific resource, use the [`Get-AzResource`](https://learn.microsoft.com/powershell/module/az.resources/get-azresource) cmdlet with the `-ResourceId` parameter:
 
    ```powershell
@@ -211,7 +187,6 @@ The following steps demonstrate how to update resources with PowerShell:
    ```powershell
     Set-AzResource -ResourceId <resource id> -Properties @{<property name> = <new value>}
    ```
-
 2. To verify the update, use the [`Get-AzResource`](https://learn.microsoft.com/powershell/module/az.resources/get-azresource) cmdlet again:
 
    ```powershell
@@ -312,7 +287,6 @@ The resource ID is a unique identifier for an Azure resource. It can be obtained
 The resource ID can be obtained from multiple locations in Azure Portal:
 
 1. **Using [Resource Manager - Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer)**: Navigate to your resource in the hierarchical tree view. The resource path is displayed in Resource Explorer and can be combined with the subscription ID to form the complete resource ID.
-
 2. **Using the resource blade**: Open Azure Portal and navigate to the resource. Select the `JSON View` link on the top right side of the resource blade. This will open a panel with the JSON representation of the resource, including the resource ID and available API versions.
 
    ![Resource View](../media/resource-explorer-steps/portal-resource-view.png)
@@ -355,7 +329,6 @@ All Azure resources have a specific API version that is used to interact with th
 The API version can be found in multiple locations:
 
 1. **Resource Manager - Resource Explorer**: When viewing a resource in [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer), the API version is displayed alongside the resource information.
-
 2. **JSON View**: As noted above, the API version can be found in the `JSON View` of the resource in Azure Portal. The API version is displayed in the `API Versions` field of the JSON representation of the resource.
 
 ![Json View](../media/resource-explorer-steps/portal-json-view.png)
