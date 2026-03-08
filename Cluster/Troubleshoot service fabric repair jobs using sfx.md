@@ -70,7 +70,7 @@ To view jobs that have been submitted to Service Fabric for approval, navigate t
 This view represents perspective of the job. Jobs will only appear here when they are present in the received document. In addition to the **Job ID** and **Acknowledgement Status**, the **Impact Types** section displays the nature of the job’s impact. The **Current Repair Task** section shows which repair task is actively running for the job approval on the Service Fabric side. By selecting **All Repair Tasks**, you can view the status of every repair task associated with the current job.
 
 <center>
-![Infrastructure Job view][Image1]
+![Infrastructure Job view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-job-view.png)
 </center>
 
 ### Repair Jobs and health check view 
@@ -79,14 +79,14 @@ To view individual and all repair tasks associated with a cluster, go to the Rep
 
 
 <center>
-![Repair task view][Image2]
+![Repair task view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/repair-task-view.png)
 </center>
 
 If a repair task is stuck in the Preparing state, there are two possible reasons: It could be stuck in either a Health Check or a Safety Check. Unhealthy entity in the cluster, including customer applications as well as system applications can cause the health check to not be green. To determine if it's stuck in a Health Check, first verify whether Preparing or Restoring Health Check is enabled—based on the state where the task is stuck. In the Repair Task view, expanding the task will show the Health Check status, indicating whether it is enabled. 
 
 
 <center>
-![Health check view][Image3]
+![Health check view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-health-check.png)
 </center>
 
 If enabled, the Repair Task History will show that the Health Check started but did not complete, confirming that the task is stuck in the Health Check phase—as illustrated in the screenshot above. 
@@ -97,20 +97,20 @@ A repair task can get stuck in the Safety Check phase only if it has an impact o
 
 
 <center>
-![Safety check view][Image4]
+![Safety check view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/safety-check-view.png)
 </center>
 
 If there are no errors in Infrastructure Service (IS) related to a repair task and the task has entered the Executing state, it means the job’s acknowledgment status is 'Acknowledged' for Impact Start. Similarly, if the repair task transitions to the Completed state, it indicates that the job’s acknowledgment status is 'Acknowledged' for Impact End.
 
 <center>
-![Repair task executing view][Image5]
+![Repair task executing view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-repair-task-executing.png)
 </center>
 
 All completed or cancelled repair tasks for the cluster can be viewed by clicking on the Completed Repair Tasks section. This provides a comprehensive list of repair tasks that have either successfully finished or were terminated. 
 
 
 <center>
-![Completed repair task view][Image6]
+![Completed repair task view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/completed-repair-task-view.png)
 </center>
 
 ### Infrastructure service and repair Manager Service Health check 
@@ -118,11 +118,11 @@ All completed or cancelled repair tasks for the cluster can be viewed by clickin
 To check the health of the Infrastructure Service or Repair Manager Service, select the service from the list and open the Health Evaluation tab. This tab shows whether the service is healthy, in a warning state, or in an error state, along with details of any warnings or errors. 
 
 <center>
-![Infrastructure service health view][Image7]
+![Infrastructure service health view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-service-health.png)
 </center>
 
 <center>
-![RepairManager service health view][Image8]
+![RepairManager service health view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-repairmanager-service-health.png)
 </center>
 
 ### Job throttling status for Infrastructure Service 
@@ -130,7 +130,7 @@ To check the health of the Infrastructure Service or Repair Manager Service, sel
 To check if any job is being throttled for a specific Infrastructure Service, select the service and open the Health Evaluation tab and select All. Look for health events related to job throttling. If a job is throttled, the tab will display the job ID along with the reason for throttling. 
 
 <center>
-![Job throttling Is view][Image9]
+![Job throttling Is view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-job-throttling-status.png)
 </center>
 
 
