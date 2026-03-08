@@ -70,7 +70,7 @@ To view jobs that have been submitted to Service Fabric for approval, navigate t
 This view represents perspective of the job. Jobs will only appear here when they are present in the received document. In addition to the **Job ID** and **Acknowledgement Status**, the **Impact Types** section displays the nature of the job’s impact. The **Current Repair Task** section shows which repair task is actively running for the job approval on the Service Fabric side. By selecting **All Repair Tasks**, you can view the status of every repair task associated with the current job.
 
 
-![Infrastructure Job view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-job-view.png)
+    ![Infrastructure Job view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-job-view.png)
 
 
 ### Repair Jobs and health check view 
@@ -79,7 +79,7 @@ To view individual and all repair tasks associated with a cluster, go to the Rep
 
 
 
-![Repair task view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/repair-task-view.png)
+ ![Repair task view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/repair-task-view.png)
 
 
 If a repair task is stuck in the Preparing state, there are two possible reasons: It could be stuck in either a Health Check or a Safety Check. Unhealthy entity in the cluster, including customer applications as well as system applications can cause the health check to not be green. To determine if it's stuck in a Health Check, first verify whether Preparing or Restoring Health Check is enabled—based on the state where the task is stuck. In the Repair Task view, expanding the task will show the Health Check status, indicating whether it is enabled. 
