@@ -69,25 +69,17 @@ To view jobs that have been submitted to Service Fabric for approval, navigate t
 
 This view represents perspective of the job. Jobs will only appear here when they are present in the received document. In addition to the **Job ID** and **Acknowledgement Status**, the **Impact Types** section displays the nature of the job’s impact. The **Current Repair Task** section shows which repair task is actively running for the job approval on the Service Fabric side. By selecting **All Repair Tasks**, you can view the status of every repair task associated with the current job.
 
-<center>
-![Infrastructure Job view][Image1]
-</center>
+![Infrastructure Job view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-job-view.png)
 
 ### Repair Jobs and health check view 
 
 To view individual and all repair tasks associated with a cluster, go to the Repair Jobs tab. This section displays both pending repair tasks and those that have been completed or cancelled. For pending tasks, you can see their current state. A repair task is not yet approved by Service Fabric if its state is Created, Claimed, or Preparing. Once a repair task transitions to the Approved state, it is considered approved by Service Fabric, and the approval is then forwarded to the Repair Executor for the corresponding job. 
 
-
-<center>
-![Repair task view][Image2]
-</center>
+![Repair task view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/repair-task-view.png)
 
 If a repair task is stuck in the Preparing state, there are two possible reasons: It could be stuck in either a Health Check or a Safety Check. Unhealthy entity in the cluster, including customer applications as well as system applications can cause the health check to not be green. To determine if it's stuck in a Health Check, first verify whether Preparing or Restoring Health Check is enabled—based on the state where the task is stuck. In the Repair Task view, expanding the task will show the Health Check status, indicating whether it is enabled. 
 
-
-<center>
-![Health check view][Image3]
-</center>
+![Health check view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-health-check.png)
 
 If enabled, the Repair Task History will show that the Health Check started but did not complete, confirming that the task is stuck in the Health Check phase—as illustrated in the screenshot above. 
 
@@ -96,50 +88,41 @@ If enabled, the Repair Task History will show that the Health Check started but 
 A repair task can get stuck in the Safety Check phase only if it has an impact on any node. This can be confirmed by checking the Impact section in the Repair Task view, as shown in the previous screenshot. If node impact is present, you can identify which Safety Check is causing the delay by inspecting each impacted node individually. Click on the node from the Node List, and in the Safety Check section, you’ll see the specific check where the task is stuck. The Repair Task ID is also displayed here, indicating which repair task is responsible for the node deactivation and safety check—this is illustrated in the screenshot below. In the screenshot below, the repair task is stuck in the EnsureSeedNodeQuorum safety check. 
 
 
-<center>
-![Safety check view][Image4]
-</center>
+
+![Safety check view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/safety-check-view.png)
+
 
 If there are no errors in Infrastructure Service (IS) related to a repair task and the task has entered the Executing state, it means the job’s acknowledgment status is 'Acknowledged' for Impact Start. Similarly, if the repair task transitions to the Completed state, it indicates that the job’s acknowledgment status is 'Acknowledged' for Impact End.
 
-<center>
-![Repair task executing view][Image5]
-</center>
+
+![Repair task executing view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-repair-task-executing.png)
+
 
 All completed or cancelled repair tasks for the cluster can be viewed by clicking on the Completed Repair Tasks section. This provides a comprehensive list of repair tasks that have either successfully finished or were terminated. 
 
 
-<center>
-![Completed repair task view][Image6]
-</center>
+
+![Completed repair task view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/completed-repair-task-view.png)
+
 
 ### Infrastructure service and repair Manager Service Health check 
 
 To check the health of the Infrastructure Service or Repair Manager Service, select the service from the list and open the Health Evaluation tab. This tab shows whether the service is healthy, in a warning state, or in an error state, along with details of any warnings or errors. 
 
-<center>
-![Infrastructure service health view][Image7]
-</center>
 
-<center>
-![RepairManager service health view][Image8]
-</center>
+![Infrastructure service health view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-service-health.png)
+
+
+
+![RepairManager service health view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-repairmanager-service-health.png)
+
 
 ### Job throttling status for Infrastructure Service 
 
 To check if any job is being throttled for a specific Infrastructure Service, select the service and open the Health Evaluation tab and select All. Look for health events related to job throttling. If a job is throttled, the tab will display the job ID along with the reason for throttling. 
 
-<center>
-![Job throttling Is view][Image9]
-</center>
+
+![Job throttling Is view](../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-job-throttling-status.png)
 
 
-[Image1]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-job-view.png
-[Image2]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/repair-task-view.png
-[Image3]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-health-check.png
-[Image4]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/safety-check-view.png
-[Image5]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-repair-task-executing.png
-[Image6]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/completed-repair-task-view.png
-[Image7]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-infrastructure-service-health.png
-[Image8]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-repairmanager-service-health.png
-[Image9]:../media/Troubleshoot-service-fabric-repair-jobs-using-sfx/cluster-job-throttling-status.png
+
