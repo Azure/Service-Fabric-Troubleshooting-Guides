@@ -170,7 +170,7 @@ As you can see in this example, there are 5 nodes configured as seed nodes, with
 
 **Note 2**: In some cases a seed node (say _sys_1) was removed from the VMMS but is still showing as in SFX in a **Down** state, you can follow these step.
 
-1.  Increase the VM instance count by 1 using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) or [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) in the Azure Portal
+1.  Increase the VM instance count by 1 using [Resource Explorer](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/resourceexplorer) in the Azure Portal. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
 
 2.  Disable the node - **Disable-ServiceFabricNode -NodeName _sys_1 -Intent RemoveNode**  (This will trigger a complete UD walk)
 
