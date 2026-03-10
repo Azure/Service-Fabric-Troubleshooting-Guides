@@ -4,7 +4,7 @@
 
 Steps to add a secondary certificate to an existing Service Fabric cluster are located in [Add or remove certificates for a Service Fabric cluster in Azure](https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-cluster-security-update-certs-azure#add-a-secondary-certificate-and-swap-it-to-be-the-primary-using-resource-manager-powershell). Adding a secondary cluster certificate cannot currently be performed in the Azure portal. You have to use Azure PowerShell for that.
 
-Another option is to use the Azure Portal's Resource Explorer and API Playground tools. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed information about these tools.
+Another option is to use the Azure Portal's Resource Explorer with interactive GET, EDIT, PUT, and PATCH buttons. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed information about using Resource Explorer.
 
 ## Steps
 
@@ -36,21 +36,17 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
    For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
 
-   ![Resource Explorer menu](../media/resource-explorer-steps/resource-explorer-1.png)
-3. Review the current configuration, specifically the `virtualMachineProfile / osProfile / secrets` section.
+3. Click the **GET** button to retrieve the current VMSS configuration.
 
-#### 3. Using API Playground, modify the Virtual Machine Scale Set configuration to add the secondary certificate
+   ![Resource Explorer VMSS View](../media/managing-azure-resources/resource-explorer-vmss-default-view.png)
 
-1. In the Azure Portal, select **API Playground** from the left navigation menu or search for "API Playground".
+4. Review the current configuration, specifically the `virtualMachineProfile / osProfile / secrets` section.
 
-   ![API Playground menu](../media/resource-explorer-steps/api-playground-get.png)
-2. Copy the Resource URI from Resource Explorer and paste it into the API Playground URI field.
+#### 3. Using Resource Explorer, modify the Virtual Machine Scale Set configuration to add the secondary certificate
 
-   ![Copy URI](../media/resource-explorer-steps/resource-explorer-copy-resource-uri.png)
-3. Select **GET** from the Method dropdown and click **Execute** to retrieve the current configuration.
+1. After reviewing the configuration from the GET request in step 2, click the **EDIT** button to enable editing mode.
 
-   ![Execute GET](../media/resource-explorer-steps/api-playground-get-response.png)
-4. Copy the Response body to a text editor.
+2. Make the necessary modifications to add the secondary certificate (see step 4 below for the specific changes needed).
 
 #### 4. Modify **"virtualMachineProfile / osProfile / secrets"** to add (deploy) the new certificate to each of the nodes in the node type. Choose one of the following options
 
@@ -143,24 +139,27 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
         },
 ```
 
-#### 6. Execute PUT to update the Virtual Machine Scale Set
+#### 6. Execute PATCH to update the Virtual Machine Scale Set
 
-1. Copy the modified JSON configuration.
-2. In [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground), select **PUT** from the Method dropdown.
+1. After making the modifications in EDIT mode, click the **PATCH** button to submit the changes.
 
-   ![Select PUT method](../media/resource-explorer-steps/api-playground-patch.png)
-3. Paste the modified JSON into the Request body field.
-4. Click **Execute** to submit the update.
+   ![VMSS PATCH Certificate](../media/managing-azure-resources/resource-explorer-vmss-patch-cert-highlighted.png)
 
-   ![Execute PUT](../media/resource-explorer-steps/api-playground-patch-response.png)
+2. On success, a notification will appear and the response body will show the updated configuration.
+
+   ![Successful PATCH notification](../media/managing-azure-resources/resource-explorer-vmss-successful-patch-notification.png)
+
+   ![PATCH Result](../media/managing-azure-resources/resource-explorer-vmss-patch-cert-new-added.png)
 
 #### 7. **Wait** for the Virtual Machine Scale Set update to complete
 
-1. Monitor the deployment status by executing GET requests in API Playground.
-2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the scale set.
+1. Click the **GET** button to retrieve the latest VMSS state.
+2. Scroll through the response to find the `provisioningState` property.
+3. If `provisioningState` equals `Updating`, wait a few minutes and click GET again.
 
-   ![Check provisioning state](../media/resource-explorer-steps/api-playground-get-response.png)
+   ![Check provisioning state - Updating](../media/managing-azure-resources/resource-explorer-vmss-get-provisioningState-updating.png)
+
+4. Continue checking until the `provisioningState` shows `Succeeded`.
 
 #### 8. **Perform steps 2 - 7 for each node type (Virtual Machine Scale Set)**
 
@@ -181,13 +180,17 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
    ```
 
    For detailed instructions on using Resource Explorer, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
-2. Review the current certificate configuration in the `properties / certificate` section.
 
-#### 10. Using API Playground, modify the Service Fabric cluster configuration to add the secondary certificate thumbprint
+2. Click the **GET** button to retrieve the current cluster configuration.
 
-1. Copy the Resource URI from Resource Explorer and paste it into [API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground).
-2. Execute GET to retrieve the current configuration.
-3. Copy the Response body to a text editor.
+   ![Resource Explorer Cluster View](../media/managing-azure-resources/resource-explorer-cluster-default-view.png)
+
+3. Review the current certificate configuration in the `properties / certificate` section.
+
+#### 10. Using Resource Explorer, modify the Service Fabric cluster configuration to add the secondary certificate thumbprint
+
+1. After reviewing the configuration from the GET request in step 9, click the **EDIT** button to enable editing mode.
+2. Make the necessary modifications to add the secondary certificate thumbprint (see step 11 below for the specific changes needed).
 
 #### 11. Modify **"properties / certificate / thumbprintSecondary"** to add the new certificate configuration to the cluster
 
@@ -221,25 +224,30 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 #### 12. Execute PUT to update the Service Fabric cluster configuration
 
-1. Copy the modified JSON configuration.
-2. In API Playground, select **PUT** and paste the modified JSON into the Request body field.
-3. Click **Execute** to submit the update.
+1. After making the modifications in EDIT mode, click the **PUT** button to submit the complete updated configuration.
+
+   ![Cluster PUT Certificate](../media/managing-azure-resources/resource-explorer-cluster-put-new-client-cert-highlighted.png)
+
+2. **Important**: Currently, on a successful PUT request, **no response is shown** in the output area. This is a known quirk of Resource Explorer.
 
 **Note**: This step typically takes a while, up to an hour. See FAQ: [Why do cluster upgrades take so long](../Cluster/Why%20do%20cluster%20upgrades%20take%20so%20long.md)
 
 #### 13. **Wait** for the Service Fabric cluster update to complete
 
-1. Monitor the deployment status by executing GET requests in API Playground.
-2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the cluster.
+1. Click the **GET** button to retrieve the latest cluster state.
+2. Scroll through the response to find the `provisioningState` property - it should show `Succeeded` when complete.
+
+   ![Check provisioning state](../media/managing-azure-resources/resource-explorer-cluster-put-provisioningState-succeeded.png)
+
+3. If `provisioningState` equals `Updating`, wait a few minutes and click GET again to requery the cluster.
 
 ### Azure Portal - Virtual Machine Scale Set Certificate Swap
 
-#### 14. Using Resource Explorer and API Playground, swap the certificate values in the Virtual Machine Scale Set
+#### 14. Using Resource Explorer, swap the certificate values in the Virtual Machine Scale Set
 
 1. Navigate to the Virtual Machine Scale Set resource in Resource Explorer.
-2. Copy the Resource URI and open it in API Playground.
-3. Execute GET to retrieve the current configuration.
+2. Click the **GET** button to retrieve the current configuration.
+3. Click the **EDIT** button to enable editing mode.
 
 #### 15. Swap the values of "certificate" and "certificateSecondary" properties in the Virtual Machine Scale Set resource
 
@@ -271,25 +279,26 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
         },
 ```
 
-#### 16. Execute PUT to update the Virtual Machine Scale Set with swapped certificates
+#### 16. Execute PATCH to update the Virtual Machine Scale Set with swapped certificates
 
-1. Copy the modified JSON configuration with swapped certificate thumbprints.
-2. In API Playground, select **PUT** and paste the modified JSON into the Request body field.
-3. Click **Execute** to submit the update.
+1. After swapping the certificate thumbprints in EDIT mode, click the **PATCH** button to submit the changes.
+2. On success, a notification will appear confirming the operation.
 
 #### 17. **Wait** for the Virtual Machine Scale Set certificate swap to complete
 
-1. Monitor the deployment status by executing GET requests in API Playground.
+1. Click the **GET** button to retrieve the latest VMSS state.
 2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the scale set.
+3. If `provisioningState` equals `Updating`, wait a few minutes and click GET again to requery the scale set.
 
-#### 18. Perform steps 14 - 17 for each node type (Virtual Machine Scale Set)### Azure Portal - Service Fabric Cluster Certificate Swap
+#### 18. Perform steps 14 - 17 for each node type (Virtual Machine Scale Set)
 
-#### 19. Using Resource Explorer and API Playground, swap the certificate values in the Service Fabric cluster
+### Azure Portal - Service Fabric Cluster Certificate Swap
+
+#### 19. Using Resource Explorer, swap the certificate values in the Service Fabric cluster
 
 1. Navigate to the Service Fabric cluster resource in Resource Explorer.
-2. Copy the Resource URI and open it in API Playground.
-3. Execute GET to retrieve the current configuration.
+2. Click the **GET** button to retrieve the current configuration.
+3. Click the **EDIT** button to enable editing mode.
 
 #### 20. Swap the "certificate" values in "thumbprint" and "thumbprintSecondary" for the Service Fabric Cluster resource
 
@@ -312,17 +321,16 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 #### 21. Execute PUT to update the Service Fabric cluster with swapped certificates
 
-1. Copy the modified JSON configuration with swapped certificate thumbprints.
-2. In API Playground, select **PUT** and paste the modified JSON into the Request body field.
-3. Click **Execute** to submit the update.
+1. After swapping the certificate thumbprints in EDIT mode, click the **PUT** button to submit the complete updated configuration.
+2. **Important**: Currently, on a successful PUT request, **no response is shown** in the output area. This is a known quirk of Resource Explorer.
 
 **Note**: This step typically takes a while, up to an hour.
 
 #### 22. **Wait** for the Service Fabric cluster certificate swap to complete
 
-1. Monitor the deployment status by executing GET requests in API Playground.
+1. Click the **GET** button to retrieve the latest cluster state.
 2. Check the `provisioningState` field in the response - it should show `Succeeded`.
-3. If `provisioningState` equals `Updating`, wait a few minutes and execute GET again to requery the cluster.
+3. If `provisioningState` equals `Updating`, wait a few minutes and click GET again to requery the cluster.
 
 ### Azure Portal
 
@@ -338,18 +346,23 @@ Another option is to use the Azure Portal's Resource Explorer and API Playground
 
 ## Troubleshooting
 
-### Errors while performing PUT operations in API Playground
+### Errors while performing operations in Resource Explorer
 
-#### To troubleshoot errors while modifying a resource configuration:
+#### To troubleshoot errors while modifying a resource configuration
 
-1. Review the error message in the API Playground Response section.
+1. Review the error message displayed in the Resource Explorer response area.
 2. Common issues include:
 
-   - Invalid JSON syntax in the Request body
-   - Missing required fields in the configuration
-   - Certificate URL or Key Vault reference errors
-   - Incorrect thumbprint values
-3. Verify the JSON configuration is valid and complete before executing PUT.
+   * Invalid JSON syntax
+   * Missing required fields in the configuration
+   * Certificate URL or Key Vault reference errors
+   * Incorrect thumbprint values
+
+3. Verify the JSON configuration is valid and complete before executing PUT or PATCH.
 4. Check that all certificate URLs and Key Vault references are correct and accessible.
 
 For additional guidance, see [Managing Azure Resources](../Deployment/managing-azure-resources.md).
+
+### Alternative: Using ARM API Playground
+
+For advanced scenarios requiring multiple tabs or flexible API version management, you can use [ARM API Playground](https://portal.azure.com/#view/Microsoft_Azure_Resources/ResourceManagerBlade/~/armapiplayground) as an alternative. See [Managing Azure Resources](../Deployment/managing-azure-resources.md) for detailed instructions.
