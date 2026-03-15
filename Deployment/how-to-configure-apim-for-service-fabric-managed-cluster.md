@@ -485,8 +485,11 @@ Add-AzServiceFabricManagedClusterClientCertificate `
     **Key Configuration Points**:
     - **clientCertificateThumbprint**: The client certificate thumbprint from step 12 (authenticates APIM to cluster)
     - **serverX509Names**: The cluster FQDN (validates cluster certificate by common name)
-    - **validateCertificateChain/Name**: Set to `false` (cluster uses auto-generated certificate)
+    - **validateCertificateChain/Name**: Set to `true` when using a publicly trusted CA certificate (recommended). Set to `false` only if using self-signed or internal CA certificates that are not in the Azure trusted root store.
     
+    > [!NOTE]
+    > APIM uses the standard Windows/Azure trusted root store, which includes most major public CAs (DigiCert, Let's Encrypt, etc.). If your cluster certificate is issued by a public CA, `validateCertificateChain: true` and `validateCertificateName: true` will work without additional configuration. No issuer pinning (`issuerCertificateThumbprint`) is required in `serverX509Names` when using public CA certificates.
+
     The cluster certificate is **separate** from the client certificate:
     - **Cluster cert**: Authenticates cluster to APIM (auto-rotates every 90 days, validated by common name)
     - **Client cert**: Authenticates APIM to cluster (your control, validated by thumbprint or common name)
@@ -510,8 +513,8 @@ Add-AzServiceFabricManagedClusterClientCertificate `
       serviceFabricManagedClusterFqdn = $cluster.Fqdn
       protocol = 'http'
       url = $serviceFabricAppUrl
-      validateCertificateChain = $false
-      validateCertificateName = $false
+      validateCertificateChain = $true
+      validateCertificateName = $true
     }
 
     $backend | ConvertTo-Json
@@ -807,6 +810,119 @@ $apimPort = 443
 Test-NetConnection -ComputerName $apimEndpoint -Port $apimPort
 Invoke-RestMethod "https://$($apimEndpoint)/api/WeatherForecast"
 ```
+
+### DNS and Network Connectivity Issues
+
+**Symptom**: APIM returns 500/503 errors when calling Service Fabric backend, or backend health shows "unhealthy".
+
+**Architecture Context**: APIM connects to the Service Fabric managed cluster through two paths:
+
+1. **Management plane** (service discovery): APIM resolves the SFMC FQDN (e.g., `sfmcapim.<hash>.<region>.sfmc.io`) to the Service Fabric managed cluster load balancer's **public IP** on port 19080. This is used for SF service instance resolution.
+2. **Data plane** (API calls): After resolving service instances, APIM connects directly to cluster nodes via their **private IPs** (e.g., `10.0.0.x:8080`) through VNet routing.
+
+> [!IMPORTANT]
+> This guide uses **External** VNet mode for APIM (`-VpnType 'External'`). External mode provides both public internet access and VNet connectivity, allowing APIM to reach the SFMC load balancer's public IP for management endpoint resolution while also routing data plane traffic directly to cluster nodes via VNet.
+
+**Common DNS Issues**:
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| SFMC FQDN does not resolve | Custom DNS servers on VNet cannot resolve `*.sfmc.io` | Add Azure DNS (`168.63.129.16`) as a forwarder in your custom DNS, or create an Azure Private DNS zone with an A record for the SFMC FQDN pointing to the SFC_ load balancer public IP |
+| APIM cannot reach management endpoint (19080) | APIM in Internal VNet mode cannot reach public IPs | Use External VNet mode (recommended), or configure UDR/NAT to allow outbound internet from APIM subnet |
+| NSG blocking outbound traffic | NSG on APIM subnet blocking outbound to Internet | Ensure outbound rules allow APIM to reach the SFMC public IP on port 19080 |
+
+**Verification**:
+
+```powershell
+# Verify SFMC FQDN resolves correctly
+$clusterFqdn = 'sfmcapim.<hash>.<region>.sfmc.io'
+Resolve-DnsName $clusterFqdn
+
+# Verify the resolved IP matches the SFC_ managed resource group load balancer public IP
+$sfcResourceGroup = Get-AzResourceGroup | Where-Object { $_.ResourceGroupName -like 'SFC_*' }
+Get-AzPublicIpAddress -ResourceGroupName $sfcResourceGroup.ResourceGroupName | Format-Table Name, IpAddress
+
+# Verify APIM can reach the management endpoint
+Test-NetConnection -ComputerName $clusterFqdn -Port 19080
+```
+
+> [!NOTE]
+> If your VNet uses custom DNS servers (e.g., on-premises DNS or Azure DNS Private Resolver) that cannot resolve `*.sfmc.io`, you have two options:
+> 1. **Recommended**: Add Azure DNS (`168.63.129.16`) as a conditional forwarder for the `sfmc.io` zone in your custom DNS server.
+> 2. **Alternative**: Create an Azure Private DNS zone linked to your VNet with an A record mapping the SFMC FQDN to the cluster load balancer's public IP address.
+
+### Deploying Certificates to Cluster Nodes (vmSecrets)
+
+If your Service Fabric application requires a certificate on the cluster nodes (e.g., for HTTPS endpoints), you need to deploy the certificate using `vmSecrets` in the SFMC node type configuration. This is **separate from the client certificate** used for APIM/admin authentication.
+
+> [!IMPORTANT]
+> The client certificate configured in the `clients` array is NOT installed on cluster nodes. It is only used for authentication validation. If your SF application needs a certificate on the nodes (e.g., for HTTPS bindings), you must deploy it separately via `vmSecrets`.
+
+**Prerequisites**:
+- Azure Key Vault with the certificate imported
+- Key Vault access policy or RBAC granting the SFMC identity access to get secrets
+
+**ARM Template Configuration** (in node type properties):
+
+```json
+"vmSecrets": [
+    {
+        "sourceVault": {
+            "id": "/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.KeyVault/vaults/<vault-name>"
+        },
+        "vaultCertificates": [
+            {
+                "certificateUrl": "https://<vault-name>.vault.azure.net/secrets/<cert-name>/<version>",
+                "certificateStore": "My"
+            }
+        ]
+    }
+]
+```
+
+**PowerShell approach** (update existing node type):
+
+```powershell
+# Get the Key Vault certificate URL
+$kvCert = Get-AzKeyVaultCertificate -VaultName $keyVaultName -Name $certName
+$certUrl = $kvCert.SecretId
+$kvId = (Get-AzKeyVault -VaultName $keyVaultName).ResourceId
+
+# Redeploy the SFMC template with vmSecrets parameters
+$sfmcParams = @{
+    # ... existing parameters ...
+    keyVaultResourceId   = $kvId
+    keyVaultCertificateUrl = $certUrl
+}
+
+New-AzResourceGroupDeployment -Name 'sfmcVmSecrets' `
+    -ResourceGroupName $resourceGroupName `
+    -TemplateFile $clusterTemplateFile `
+    -TemplateParameterObject $sfmcParams
+```
+
+> [!WARNING]
+> **Known Issue**: vmSecrets deployment can fail mid-rollout if a VMSS upgrade domain encounters an error during reimaging. This leaves some nodes with the certificate and others without.
+>
+> **Workaround**:
+> 1. If a Service Fabric application is deployed, delete the application/service first
+> 2. Resubmit the vmSecrets deployment (same ARM template PUT)
+> 3. Wait for all upgrade domains to complete
+> 4. Verify all VMSS instances show `latestModelApplied = True`
+> 5. Redeploy the Service Fabric application
+>
+> **Verification**: Check VMSS instances in the SFC_ managed resource group:
+> ```powershell
+> $sfcRg = (Get-AzResourceGroup | Where-Object { $_.ResourceGroupName -match '^SFC_' }).ResourceGroupName
+> $vmss = Get-AzVmss -ResourceGroupName $sfcRg
+> Get-AzVmssVM -ResourceGroupName $sfcRg -VMScaleSetName $vmss.Name | ForEach-Object {
+>     $instance = Get-AzVmssVM -ResourceGroupName $sfcRg -VMScaleSetName $vmss.Name -InstanceId $_.InstanceId
+>     [PSCustomObject]@{
+>         Name = $_.Name
+>         LatestModelApplied = $instance.LatestModelApplied
+>     }
+> }
+> ```
 
 ## Certificate Rotation
 
