@@ -69,13 +69,16 @@ using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
     cert = matches[0];
 }
 
-// server cert validation callback (accept self-signed / matching thumbprint)
+// server cert validation callback (accept self-signed cluster certs for testing)
 bool ServerCertValidation(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
 {
     if (errors == SslPolicyErrors.None) return true;
-    if (certificate is X509Certificate2 serverCert)
+    // Accept self-signed certs: the cluster's server cert may differ from the client cert being tested.
+    // For testing purposes, accept any cert where the only error is untrusted root or name mismatch.
+    if (errors == SslPolicyErrors.RemoteCertificateChainErrors || errors == SslPolicyErrors.RemoteCertificateNameMismatch
+        || errors == (SslPolicyErrors.RemoteCertificateChainErrors | SslPolicyErrors.RemoteCertificateNameMismatch))
     {
-        return string.Equals(serverCert.Thumbprint, thumbprint, StringComparison.OrdinalIgnoreCase);
+        return true;
     }
     return false;
 }
