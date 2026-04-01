@@ -685,6 +685,18 @@ If the cluster is down because of cert issues and cannot be recovered through no
 
 6. **Repeat on all nodes**, starting with seed nodes.
 
+### After Emergency Recovery: Update SFRP
+
+> [!IMPORTANT]
+> The manual recovery steps above (Options 1 and 2) are **temporary fixes**. The on-node changes will be overwritten on the next cluster upgrade or VMSS reimage. To make the fix permanent:
+>
+> 1. **Contact Microsoft Support** and request that the SFRP backend record be updated to match the current certificate state. This is required when the cluster was unreachable and the SF cluster ARM resource could not be updated through normal channels.
+> 2. Once support confirms the SFRP record is corrected, **update the SF cluster ARM resource** with the correct thumbprint(s) via Resource Explorer / API Playground (see Step 5 above).
+> 3. **Update the VMSS extension settings** to match (see Step 4 above).
+> 4. **Update the VMSS osProfile/secrets** if needed (see Step 2 above).
+>
+> This aligns with the Windows recovery TSGs: [Fix Expired Cluster Certificate Manual Steps](./Fix%20Expired%20Cluster%20Certificate%20Manual%20Steps.md) and [Fix Expired Cluster Certificate Automated Script](./Fix%20Expired%20Cluster%20Certificate%20Automated%20Script.md). Note that there is no Linux equivalent of `FixExpiredCert.ps1` -- Linux emergency recovery requires the manual steps above.
+
 ## [Quick Reference: Diagnostic Commands]
 
 | Task | Command |
@@ -713,5 +725,6 @@ If the cluster is down because of cert issues and cannot be recovered through no
 - [Service Fabric Ubuntu File Locations](../Cluster/Service%20Fabric%20Ubuntu%20File%20Locations.md)
 - [Service Fabric Red Hat File Locations](../Cluster/Service%20Fabric%20Red%20Hat%20File%20Locations.md)
 - [Fix Expired Cluster Certificate Manual Steps (Windows)](./Fix%20Expired%20Cluster%20Certificate%20Manual%20Steps.md)
+- [Fix Expired Cluster Certificate Automated Script (Windows)](./Fix%20Expired%20Cluster%20Certificate%20Automated%20Script.md)
 - [How to add and swap the Secondary Certificate (Windows)](./Use%20Azure%20Resource%20Explorer%20to%20add%20the%20Secondary%20Certificate.md)
 - [Set up encryption certificate on Linux clusters (MS Learn)](https://learn.microsoft.com/azure/service-fabric/service-fabric-application-secret-management-linux)
