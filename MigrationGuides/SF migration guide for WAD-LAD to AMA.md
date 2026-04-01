@@ -10,7 +10,7 @@ title: WAD/LAD → AMA + DCR (Log Analytics only) Migration Plan (Service Fabric
 
 # Phased approach
 
-## Phase A --- Prove AMA + DCR pipeline (non‑SF signals first) {#phase-a-prove-ama-dcr-pipeline-nonsf-signals-first}
+## Phase A --- Prove AMA + DCR pipeline (non‑SF signals first)
 
 Goal: Stand up AMA and minimal DCRs and confirm data lands in **Log Analytics** before tuning for Service Fabric.
 
@@ -36,7 +36,7 @@ Goal: Stand up AMA and minimal DCRs and confirm data lands in **Log Analytics** 
 
 - AMA install & association options: [Install/manage AMA](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage)
 
-## Phase B --- Add Service Fabric signals (inventory → DCR mapping) {#phase-b-add-service-fabric-signals-inventory-dcr-mapping}
+## Phase B --- Add Service Fabric signals (inventory → DCR mapping)
 
 Goal: Capture what SF signals you rely on today, then configure DCRs to collect them into Log Analytics.
 
@@ -50,7 +50,7 @@ Service Fabric events can be accessed through Windows Event Logs (Windows), and 
 
 - DCR monitoring indicates no persistent ingestion/transform/delivery failures. [Monitor DCR data collection](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-monitor)
 
-## Phase C --- Cutover (remove WAD/LAD) {#phase-c-cutover-remove-wadlad}
+## Phase C --- Cutover (remove WAD/LAD)
 
 Goal: Once AMA+DCR covers required signals, remove WAD/LAD to avoid duplicates and align with supported path. [AMA migration guidance](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-migration-wad-lad)
 
@@ -60,9 +60,9 @@ Goal: Once AMA+DCR covers required signals, remove WAD/LAD to avoid duplicates a
 
 - Signals continue to flow via AMA+DCR into Log Analytics and DCR health remains clean. [Monitor DCR data collection](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-monitor)
 
-# Phase B --- Customer Inventory Worksheet (fill‑in) {#phase-b-customer-inventory-worksheet-fillin}
+## Phase B --- Customer Inventory Worksheet (fill‑in)
 
-## 1) Environment / Scope {#environment-scope}
+## 1) Environment / Scope
 
 - Subscription(s):
 
@@ -82,31 +82,31 @@ Goal: Once AMA+DCR covers required signals, remove WAD/LAD to avoid duplicates a
 
 - Canary scope for Phase B:
 
-## 2) Current WAD/LAD footprint (per node type / VMSS) {#current-wadlad-footprint-per-node-type-vmss}
+## 2) Current WAD/LAD footprint (per node type / VMSS)
 
 | Node type / VMSS | OS  | WAD/LAD installed? (Y/N/Unknown) | Current destinations (Storage/Other/Unknown) | Notes |
 |------------------|-----|----------------------------------|----------------------------------------------|-------|
 |                  |     |                                  |                                              |       |
 
-## 3) Windows: Service Fabric events (Event Viewer / Windows Event Logs) {#windows-service-fabric-events-event-viewer-windows-event-logs}
+## 3) Windows: Service Fabric events (Event Viewer / Windows Event Logs)
 
 DCR collects Windows events via windowsEventLogs + XPath queries. [DCR samples](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-samples)
 
 Example event (paste one sample record):
 
-## 4) Linux: Service Fabric events (Syslog vs file logs) {#linux-service-fabric-events-syslog-vs-file-logs}
+## 4) Linux: Service Fabric events (Syslog vs file logs)
 
 - Syslog collection (facility + minimum level): [Collect syslog](https://learn.microsoft.com/en-us/azure/azure-monitor/vm/data-collection-syslog)
 
 - File logs (text/JSON) via DCR logFiles + custom table/schema: [DCR samples](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-samples), [Collect JSON logs](https://learn.microsoft.com/en-us/azure/azure-monitor/vm/data-collection-log-json)
 
-### 4.1 Syslog {#syslog}
+### 4.1 Syslog
 
 | Facility (exact) | Minimum severity (Debug/Info/Notice/Warn/Error/Critical/Alert/Emergency) | Why needed | Notes |
 |------------------|--------------------------------------------------------------------------|------------|-------|
 |                  |                                                                          |            |       |
 
-### 4.2 File logs {#file-logs}
+### 4.2 File logs
 
 | File path / pattern (exact) | Format (text/json/other) | Rotation (daily/size/unknown) | Why needed | Notes |
 |-----------------------------|--------------------------|-------------------------------|------------|-------|
@@ -114,19 +114,19 @@ Example event (paste one sample record):
 
 Example record (paste one line / JSON object):
 
-## 5) Performance counters (Windows/Linux) {#performance-counters-windowslinux}
+## 5) Performance counters (Windows/Linux)
 
 Perf counters via DCR performanceCounters. [Collect perf counters](https://outlook.office365.com/owa/?ItemID=AAMkADZjNTFjNTZiLWFkNTAtNDQwOS04NWFhLTQyM2M0NmMyOTg0MQBGAAAAAADxdGEF6q3OS4rjAjxrfVDUBwB1G834VyGwT5QOtVkK5HcPAAO2uE%2bhAAB1G834VyGwT5QOtVkK5HcPAAO2uXJrAAA%3d&exvsurl=1&viewmodel=ReadMessageItem)
 
-## 6) Application / node logs (custom) {#application-node-logs-custom}
+## 6) Application / node logs (custom)
 
 If you need application logs in text/JSON files, plan for custom tables and DCR logFiles. [DCR samples](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-samples), [Collect JSON logs](https://learn.microsoft.com/en-us/azure/azure-monitor/vm/data-collection-log-json)
 
-## 7) Acceptance criteria (post‑migration) {#acceptance-criteria-postmigration}
+## 7) Acceptance criteria (post‑migration)
 
 Write 3--5 questions you expect to answer after migration (plain English): 1.
 
-# Appendix: Service Fabric DCR sample JSON (Windows events → Log Analytics) {#appendix-service-fabric-dcr-sample-json-windows-events-log-analytics}
+# Appendix: Service Fabric DCR sample JSON (Windows events → Log Analytics)
 
 ## Context
 
@@ -146,51 +146,40 @@ These DCRs require the *exact* Windows Event Log channel names that contain Serv
 
 - Customer should adjust the XPath filter using the EventIds they care about (the operational reference lists EventIds).
 
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>{<br />
-  "location": "&lt;REGION&gt;",<br />
-  "properties": {<br />
-    "dataSources": {<br />
-      "windowsEventLogs": [<br />
-        {<br />
-          "name": "sfOperationalEvents",<br />
-          "streams": ["Microsoft-Event"],<br />
-          "xPathQueries": [<br />
-            "Microsoft-ServiceFabric/Operational!*"<br />
-          ]<br />
-        }<br />
-      ]<br />
-    },<br />
-    "destinations": {<br />
-      "logAnalytics": [<br />
-        {<br />
-          "workspaceResourceId": "&lt;LOG_ANALYTICS_WORKSPACE_RESOURCE_ID&gt;",<br />
-          "name": "la"<br />
-        }<br />
-      ]<br />
-    },<br />
-    "dataFlows": [<br />
-      {<br />
-        "streams": ["Microsoft-Event"],<br />
-        "destinations": ["la"],<br />
-        "transformKql": "source",<br />
-        "outputStream": "Microsoft-Event"<br />
-      }<br />
-    ]<br />
-  }<br />
-}</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-# 
+```json
+{
+  "location": "<REGION>",
+  "properties": {
+    "dataSources": {
+      "windowsEventLogs": [
+        {
+          "name": "sfOperationalEvents",
+          "streams": ["Microsoft-Event"],
+          "xPathQueries": [
+            "Microsoft-ServiceFabric/Operational!*"
+          ]
+        }
+      ]
+    },
+    "destinations": {
+      "logAnalytics": [
+        {
+          "workspaceResourceId": "<LOG_ANALYTICS_WORKSPACE_RESOURCE_ID>",
+          "name": "la"
+        }
+      ]
+    },
+    "dataFlows": [
+      {
+        "streams": ["Microsoft-Event"],
+        "destinations": ["la"],
+        "transformKql": "source",
+        "outputStream": "Microsoft-Event"
+      }
+    ]
+  }
+}
+```
 
 # Appendix: Application Events, Reliable Actor and Stateful Service Events
 
@@ -215,7 +204,7 @@ These DCRs require the *exact* Windows Event Log channel names that contain Serv
 
 - Replace \"\<your-service-EventSource-name\>\" as appropriate
 
-### Service Fabric Reliable Actor and Service events  {#service-fabric-reliable-actor-and-service-events}
+### Service Fabric Reliable Actor and Service events
 
 - Skip if these are not being collected
 
@@ -237,48 +226,41 @@ These DCRs require the *exact* Windows Event Log channel names that contain Serv
 
 - *Replace values in \<\> with environment specific values*
 
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th><p>{<br />
-  "inputs": [<br />
-    {<br />
-      "type": "EventSource",<br />
-      "sources": [</p>
-<p>// (skip if not collecting Actor runtime events)<br />
-        { "providerName": "Microsoft-ServiceFabric-Services" },<br />
-// (skip if not collecting Stateful Service events)<br />
-        { "providerName": "Microsoft-ServiceFabric-Actors" },<br />
-// (skip if not collecting Service events using EventSource)</p>
-<p>// (Replace with value used with EventSource in code)<br />
-        { "providerName": "&lt;your-service-EventSource-name&gt;" }<br />
-      ]<br />
-    }<br />
-  ],<br />
-  "filters": [<br />
-    {<br />
-      "type": "drop",<br />
-      "include": "Level == Verbose"<br />
-    }<br />
-  ],<br />
-  "outputs": [<br />
-    {<br />
-      "type": "AzureMonitorLogs",<br />
-      "workspaceId": "&lt;workspace-GUID&gt;",<br />
-      "workspaceKey": "&lt;base-64-encoded workspace key&gt;",<br />
-      "logTypeName": "&lt;your-service-name&gt;"<br />
-    }<br />
-  ],<br />
-  "schemaVersion": "2016-08-11"<br />
-}</p></th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+```json
+{
+  "inputs": [
+    {
+      "type": "EventSource",
+      "sources": [
+        // (skip if not collecting Actor runtime events)
+        { "providerName": "Microsoft-ServiceFabric-Services" },
+
+        // (skip if not collecting Stateful Service events)
+        { "providerName": "Microsoft-ServiceFabric-Actors" },
+
+        // (skip if not collecting Service events using EventSource)
+        // (Replace with value used with EventSource in code)
+        { "providerName": "<your-service-EventSource-name>" }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "type": "drop",
+      "include": "Level == Verbose"
+    }
+  ],
+  "outputs": [
+    {
+      "type": "AzureMonitorLogs",
+      "workspaceId": "<workspace-GUID>",
+      "workspaceKey": "<base-64-encoded workspace key>",
+      "logTypeName": "<your-service-name>"
+    }
+  ],
+  "schemaVersion": "2016-08-11"
+}
+```
 
 ## How to validate
 
@@ -286,55 +268,28 @@ A table named \<your-service-name\>\_CL should be created.
 
 #### Service Events
 
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>&lt;your-service-name&gt;_CL<br />
-| where ProviderName_s == "&lt;your-service-EventSource-name&gt;"</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+```kusto
+<your-service-name>_CL
+| where ProviderName_s == "<your-service-EventSource-name>"
+```
 
 #### Reliable Actors Events
 
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>&lt;your-service-name&gt;_CL<br />
-| where ProviderName_s == "Microsoft-ServiceFabric-Actors"</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+```kusto
+<your-service-name>_CL
+| where ProviderName_s == "Microsoft-ServiceFabric-Actors"
+```
 
 #### Reliable Service Events
 
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>&lt;your-service-name&gt;_CL<br />
-| where ProviderName_s == "Microsoft-ServiceFabric-Services"</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+```kusto
+<your-service-name>_CL
+| where ProviderName_s == "Microsoft-ServiceFabric-Services"
+```
 
 # Links appendix (Microsoft Learn)
 
-## Migration & deprecation {#migration-deprecation}
+## Migration & deprecation
 
 - Migrate from WAD/LAD to AMA: [Migrate to Azure Monitor Agent from Azure Diagnostic extensions (WAD/LAD) - Azure Monitor \| Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-migration-wad-lad)
 
@@ -343,7 +298,7 @@ A table named \<your-service-name\>\_CL should be created.
 - **Diagnostics extension overview (deprecation + migration context)**  
   <https://learn.microsoft.com/en-us/azure/azure-monitor/agents/diagnostics-extension-overview>
 
-## **AMA + DCR** {#ama-dcr}
+## **AMA + DCR**
 
 - **Install / manage Azure Monitor Agent (AMA)**  
   <https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage>
@@ -368,7 +323,7 @@ A table named \<your-service-name\>\_CL should be created.
 - **Collect JSON logs with AMA**  
   <https://learn.microsoft.com/en-us/azure/azure-monitor/vm/data-collection-log-json>
 
-## **Service Fabric (events & channels)** {#service-fabric-events-channels}
+## **Service Fabric (events & channels)**
 
 - **Service Fabric diagnostics & event collection (EventSource / channels)**  
   [Monitor Azure Service Fabric - Azure Service Fabric \| Microsoft Learn](https://learn.microsoft.com/en-us/azure/service-fabric/monitor-service-fabric)
