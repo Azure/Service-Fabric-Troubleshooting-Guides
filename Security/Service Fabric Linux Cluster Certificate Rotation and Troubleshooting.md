@@ -17,7 +17,7 @@ Azure Service Fabric **Linux** clusters (Ubuntu, Red Hat) secured with X.509 cer
 | **Cert location** | `LocalMachine\My` cert store | `/var/lib/waagent/` (waagent-delivered) and `/var/lib/sfcerts/` (SF runtime) |
 | **Cert delivery** | CRP/VM Agent writes PFX to cert store | waagent downloads `.crt`/`.prv` files to `/var/lib/waagent/` |
 | **Old cert removal** | Old certs remain in store | waagent **removes** old certs on goal state change (incarnation update) |
-| **ACL/permissions** | `NETWORK SERVICE` ACL on private key | `sfuser` file ownership/permissions on `.crt`/`.prv` files |
+| **ACL/permissions** | `NETWORK SERVICE` ACL on private key | POSIX ACLs granting `sfuser` and `ServiceFabricAdministrators` read/write access (files are owned by `root:root`) |
 | **Verification tool** | RDP + `certlm.msc` | SSH + `ls` / `openssl` |
 | **Event logs** | `Microsoft-ServiceFabric%4Admin.evtx` | `/var/log/syslog` |
 | **Agent logs** | Windows Event Log + bootstrap agent | `/var/log/waagent.log` + bootstrap agent logs in extension directory |
@@ -42,6 +42,9 @@ Example:
 /var/lib/waagent/ED815E6241146A1730D6C81F06BD1B5692CC0942.prv
 ```
 
+> [!NOTE]
+> Waagent also creates `.pem` files alongside the `.crt`/`.prv` files in `/var/lib/waagent/`. You may see files like `{THUMBPRINT}.pem` in addition to the `.crt` and `.prv` files.
+
 > [!IMPORTANT]
 > When delivered via VMSS `osProfile/secrets`, waagent uses `.prv` extension for private keys (not `.key`). When using the Key Vault VM extension or manual placement, certificates follow the standard `.crt`/`.key` or single `.pem` format as described in [MS Learn](https://learn.microsoft.com/azure/service-fabric/service-fabric-configure-certificates-linux). The SF bootstrap agent copies/links certs from `/var/lib/waagent/` into `/var/lib/sfcerts/` for the SF runtime.
 
@@ -53,7 +56,21 @@ The SF runtime expects certificates in:
 /var/lib/sfcerts/    # Maps to LocalMachine\My on Windows
 ```
 
-All files must be in PEM format. Service Fabric expects either a `.pem` file containing both certificate and private key, or a `.crt` file with the certificate and a `.key` file with the private key (per [MS Learn](https://learn.microsoft.com/azure/service-fabric/service-fabric-configure-certificates-linux#location-and-format-of-x509-certificates-on-linux-nodes)).
+The SF runtime certificate directory contains more files than the waagent source. Typical contents include:
+
+```text
+/var/lib/sfcerts/
+  {THUMBPRINT}.crt           # Certificate (PEM)
+  {THUMBPRINT}.prv           # Private key (PEM)
+  {THUMBPRINT}.pem           # Combined cert+key (PEM)
+  {THUMBPRINT}.pfx           # PKCS#12 format
+  Certificates.pem           # Aggregated certificate bundle
+  TransportCert.pem          # Transport certificate
+  TransportPrivate.pem       # Transport private key
+  microsoft_root_certificate.pem  # Microsoft root CA
+```
+
+Service Fabric expects either a `.pem` file containing both certificate and private key, or a `.crt` file with the certificate and a `.key` file with the private key (per [MS Learn](https://learn.microsoft.com/azure/service-fabric/service-fabric-configure-certificates-linux#location-and-format-of-x509-certificates-on-linux-nodes)).
 
 ### Key Vault VM Extension Certificates
 
@@ -91,7 +108,10 @@ There are two locations with manifest files:
 ```
 
 > [!NOTE]
-> `TempClusterManifest.xml` is a staging file used by the extension during node bootstrap. The authoritative runtime manifest is `ClusterManifest.current.xml` under the data root. When troubleshooting, check both - they should contain the same thumbprints.
+> `TempClusterManifest.xml` is a staging file used by the extension during node bootstrap. It is **not** updated by cluster configuration upgrades - only `ClusterManifest.current.xml` is updated. The authoritative runtime manifest is `ClusterManifest.current.xml` under the data root. When troubleshooting certificate issues on a running cluster, always check `ClusterManifest.current.xml` first.
+
+> [!TIP]
+> `TempClusterManifest.xml` is typically stored as **single-line XML**, so `grep -A2` will not show surrounding context. Use `python3 -m xml.dom.minidom` or `xmllint --format` to pretty-print it before grepping, or use `grep -oP` with regex to extract values.
 
 ### Bootstrap Agent Logs
 
@@ -128,11 +148,11 @@ If the new certificate is in the **same Key Vault**, add a new entry to the exis
         "vaultCertificates": [
           {
             "certificateUrl": "https://{vault-name}.vault.azure.net/secrets/{old-cert-name}/{version}",
-            "certificateStore": "My"
+            "certificateStore": null
           },
           {
             "certificateUrl": "https://{vault-name}.vault.azure.net/secrets/{new-cert-name}/{version}",
-            "certificateStore": "My"
+            "certificateStore": null
           }
         ]
       }
@@ -152,7 +172,7 @@ If the certificate is in a **different Key Vault**, add a separate entry to the 
     "vaultCertificates": [
       {
         "certificateUrl": "https://{vault-name-1}.vault.azure.net/secrets/{old-cert-name}/{version}",
-        "certificateStore": "My"
+        "certificateStore": null
       }
     ]
   },
@@ -163,7 +183,7 @@ If the certificate is in a **different Key Vault**, add a separate entry to the 
     "vaultCertificates": [
       {
         "certificateUrl": "https://{vault-name-2}.vault.azure.net/secrets/{new-cert-name}/{version}",
-        "certificateStore": "My"
+        "certificateStore": null
       }
     ]
   }
@@ -172,7 +192,11 @@ If the certificate is in a **different Key Vault**, add a separate entry to the 
 
 **Alternatively, use PowerShell:**
 
+> [!WARNING]
+> `Add-AzServiceFabricClusterCertificate` was deprecated in Az PowerShell module 6.0+ and is no longer available. Use ARM templates, Resource Explorer, or API Playground instead.
+
 ```powershell
+# DEPRECATED - only works with Az module < 6.0
 # Add secondary certificate to the cluster (works for both Linux and Windows clusters)
 Add-AzServiceFabricClusterCertificate `
     -ResourceGroupName "{resource-group}" `
@@ -193,7 +217,7 @@ New-AzResourceGroupDeployment `
 Wait for the VMSS `provisioningState` to show `Succeeded` before proceeding.
 
 > [!NOTE]
-> On Linux, `"certificateStore": "My"` maps to `/var/lib/sfcerts/`. However, waagent delivers the cert files as `.crt`/`.prv` to `/var/lib/waagent/` regardless of this setting. The SF bootstrap agent searches `/var/lib/waagent/` for cert files.
+> On Linux, `certificateStore` is `null` in the VMSS `osProfile/secrets` JSON (not `"My"` as on Windows). Waagent delivers the cert files as `.crt`/`.prv` to `/var/lib/waagent/` regardless of this setting. The SF bootstrap agent searches `/var/lib/waagent/` for cert files.
 
 ### Step 3 - Verify Certificate Delivery on Nodes
 
@@ -236,8 +260,16 @@ Wait for the VMSS `provisioningState` to show `Succeeded` before proceeding.
 6. **Verify file permissions (sfuser must have read access):**
 
    ```bash
+   # Check basic permissions and ownership
    ls -la /var/lib/waagent/*.crt /var/lib/waagent/*.prv
+
+   # Check POSIX ACLs (files are root:root owned but grant access via ACLs)
+   getfacl /var/lib/waagent/{THUMBPRINT}.crt
+   getfacl /var/lib/waagent/{THUMBPRINT}.prv
    ```
+
+   > [!NOTE]
+   > On SF Linux clusters, cert files are owned by `root:root`. Access for `sfuser` and the `ServiceFabricAdministrators` group is granted via POSIX ACLs, not file ownership. Use `getfacl` to verify the ACL entries.
 
 ### Step 4 - Add Secondary Cert to VMSS Extension Settings
 
@@ -269,7 +301,7 @@ Modify `virtualMachineProfile / extensionProfile / extensions / settings` to add
           },
           "publisher": "Microsoft.Azure.ServiceFabric",
           "type": "ServiceFabricLinuxNode",
-          "typeHandlerVersion": "1.1"
+          "typeHandlerVersion": "2.0"
         },
         "name": "{nodetype}_ServiceFabricLinuxNode"
       }
@@ -298,6 +330,9 @@ Add `thumbprintSecondary` to the `Microsoft.ServiceFabric/clusters` resource. Na
 ```
 
 This triggers SFRP to generate an updated ClusterManifest and initiate a cluster upgrade. Wait for `provisioningState` to reach `Succeeded`. This step can take up to an hour.
+
+> [!IMPORTANT]
+> SFRP does **not** automatically update the VMSS extension settings when you update the SF cluster ARM resource. Steps 4 and 5 are independent operations. SFRP only updates the ClusterManifest (which is rolled out via cluster upgrade). You must still manually update the VMSS extension settings (Step 4) to keep them in sync. The on-node extension `.settings` file is only updated when the VMSS instance is reimaged or when a new incarnation triggers the extension.
 
 ### Step 6 - Swap and Remove Old Certificate
 
@@ -361,9 +396,18 @@ After a certificate update, verify that the **ClusterManifest Security section m
 
 1. **Check the ClusterManifest for cert thumbprints:**
 
+   Check the **runtime** manifest (authoritative) first, then the extension staging manifest:
+
    ```bash
-   grep -A2 "X509Credentials\|ClusterCertThumbprints\|ServerCertThumbprints\|ClientCertThumbprints\|Thumbprint" \
-       /var/log/azure/Microsoft.Azure.ServiceFabric.ServiceFabricLinuxNode/TempClusterManifest.xml
+   # Runtime manifest (authoritative - updated by config upgrades)
+   DATAROOT="/mnt/sfroot"
+   [ ! -d "$DATAROOT" ] && DATAROOT="/mnt/resource/sfroot"
+   MANIFEST=$(find "$DATAROOT" -name "ClusterManifest.current.xml" -print -quit 2>/dev/null)
+   python3 -c "import xml.dom.minidom,sys; print(xml.dom.minidom.parse('$MANIFEST').toprettyxml())" | grep -i "thumbprint"
+
+   # Extension staging manifest (NOT updated by config upgrades - only reflects bootstrap state)
+   # Note: TempClusterManifest.xml is single-line XML, so grep -A2 won't show context
+   python3 -c "import xml.dom.minidom; print(xml.dom.minidom.parse('/var/log/azure/Microsoft.Azure.ServiceFabric.ServiceFabricLinuxNode/TempClusterManifest.xml').toprettyxml())" | grep -i "thumbprint"
    ```
 
 2. **Check the extension settings for cert thumbprints:**
@@ -577,12 +621,17 @@ If the cluster is down because of cert issues and cannot be recovered through no
 2. **Stop SF processes and the bootstrap agent:**
 
    > [!NOTE]
-   > There is no single `servicefabric` systemd service. On Linux, the SF bootstrap agent (part of the `ServiceFabricLinuxNode` extension) launches `FabricHost`, which in turn starts all Fabric processes. The equivalent of the Windows `Stop-Service FabricHostSvc / ServiceFabricNodeBootstrapAgent` sequence is to kill the processes directly.
+   > On modern SF Linux clusters, there are two systemd services: `servicefabric.service` (starts FabricHost via `/opt/microsoft/servicefabric/bin/starthost.sh`) and `servicefabricnodebootstrapagent.service` (the bootstrap agent). Use `systemctl` to stop/start them. On older clusters where these systemd services do not exist, fall back to killing processes directly.
 
    ```bash
-   # Stop the SF bootstrap agent and FabricHost processes
-   sudo pkill -f sfbootstrapagent || true
-   sudo pkill -f FabricHost || true
+   # Preferred: use systemctl (modern SF Linux clusters)
+   sudo systemctl stop servicefabric
+   sudo systemctl stop servicefabricnodebootstrapagent
+
+   # Fallback: kill processes directly (older clusters without systemd units)
+   # sudo pkill -f sfbootstrapagent || true
+   # sudo pkill -f FabricHost || true
+
    # Wait for processes to exit
    sleep 5
    # Verify they are stopped
@@ -624,11 +673,15 @@ If the cluster is down because of cert issues and cannot be recovered through no
 5. **Restart SF processes:**
 
    ```bash
-   # Restart the waagent which will re-trigger the bootstrap agent
-   sudo systemctl restart walinuxagent
+   # Preferred: use systemctl to restart SF services (modern clusters)
+   sudo systemctl restart servicefabricnodebootstrapagent
+   sudo systemctl restart servicefabric
+
+   # Alternative: restart waagent which will re-trigger the bootstrap agent
+   # sudo systemctl restart walinuxagent
    ```
 
-   The waagent restart triggers the SF extension, which starts the bootstrap agent, which starts FabricHost.
+   On modern clusters, restarting the systemd services directly is faster and more predictable. Restarting waagent triggers the SF extension, which starts the bootstrap agent, which starts FabricHost.
 
 6. **Repeat on all nodes**, starting with seed nodes.
 
@@ -640,7 +693,8 @@ If the cluster is down because of cert issues and cannot be recovered through no
 | View cert thumbprint | `openssl x509 -in /var/lib/waagent/{THUMBPRINT}.crt -noout -fingerprint -sha1` |
 | View cert expiry | `openssl x509 -in /var/lib/waagent/{THUMBPRINT}.crt -noout -dates` |
 | View cert subject | `openssl x509 -in /var/lib/waagent/{THUMBPRINT}.crt -noout -subject` |
-| Check manifest thumbprints | `grep "Thumbprint" /var/log/azure/Microsoft.Azure.ServiceFabric.ServiceFabricLinuxNode/TempClusterManifest.xml` |
+| Check manifest thumbprints (runtime) | `python3 -c "import xml.dom.minidom; print(xml.dom.minidom.parse('$(find /mnt/sfroot -name ClusterManifest.current.xml -print -quit 2>/dev/null)').toprettyxml())" \| grep -i thumbprint` |
+| Check manifest thumbprints (staging) | `python3 -c "import xml.dom.minidom; print(xml.dom.minidom.parse('/var/log/azure/Microsoft.Azure.ServiceFabric.ServiceFabricLinuxNode/TempClusterManifest.xml').toprettyxml())" \| grep -i thumbprint` |
 | Check extension settings | `cat $(ls -t /var/lib/waagent/Microsoft.Azure.ServiceFabric.ServiceFabricLinuxNode-*/config/*.settings \| head -1) \| python3 -m json.tool \| grep thumbprint` |
 | Check waagent cert downloads | `grep -i "download.*cert\|cert.*download" /var/log/waagent.log` |
 | Check waagent incarnation | `grep "incarnation" /var/log/waagent.log \| tail -5` |
