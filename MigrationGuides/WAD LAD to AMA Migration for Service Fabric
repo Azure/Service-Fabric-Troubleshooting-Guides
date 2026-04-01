@@ -1,0 +1,200 @@
+# WAD/LAD → AMA + DCR (Log Analytics only) Migration Plan (Service Fabric)
+
+## Table of Contents
+
+- #why-this-migration
+- #phased-approach
+  - #phase-a--prove-ama--dcr-pipeline-non-sf-signals-first
+  - #phase-b--add-service-fabric-signals-inventory--dcr-mapping
+  - #phase-c--cutover-remove-wadlad
+- #phase-b--customer-inventory-worksheet
+- #appendices
+  - #appendix-a--service-fabric-dcr-sample-windows-events
+  - #appendix-b--application-reliable-actor-and-stateful-service-events
+- #visual-reference
+
+## Why this migration
+
+- The Azure Diagnostics extensions for Windows and Linux (WAD/LAD) are deprecated and retire on **March 31, 2026**. Migration to **Azure Monitor Agent (AMA)** configured by **Data Collection Rules (DCRs)** is a supported option to continue collecting guest OS logs and performance data.
+    - https://learn.microsoft.com/azure/azure-monitor/agents/azure-monitor-agent-migration-wad-lad
+- Guidance also calls out removing WAD/LAD after AMA is configured to avoid duplicate ingestion.
+    - https://learn.microsoft.com/azure/azure-monitor/agents/diagnostics-extension-overview
+
+---
+
+## Phased approach
+
+### Phase A — Prove AMA + DCR pipeline (non‑SF signals first)
+
+**Goal**: Stand up AMA and minimal DCRs and confirm data lands in **Log Analytics** before tuning for Service Fabric.
+
+#### Exit criteria
+
+- AMA installed and at least one DCR associated (collection starts only after association).
+    - https://learn.microsoft.com/azure/azure-monitor/agents/azure-monitor-agent-manage
+- Log Analytics shows:
+    - Windows event logs (`Event` table) via DCR Windows Events collection
+    - https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-samples
+    - Linux syslog (`Syslog` table) via DCR Syslog collection
+    - https://learn.microsoft.com/azure/azure-monitor/vm/data-collection-syslog
+    - Performance counters (`Perf` table) via DCR performance collection
+- DCR processing / transform / delivery errors are not persistent
+    - https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-monitor
+
+#### How-to references
+
+- Create DCRs (portal or JSON)
+    - https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-create-edit
+- DCR JSON samples
+    - https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-samples
+- AMA install & association options
+    - https://learn.microsoft.com/azure/azure-monitor/agents/azure-monitor-agent-manage
+
+---
+
+### Phase B — Add Service Fabric signals (inventory → DCR mapping)
+
+**Goal**: Capture which Service Fabric signals are used today and configure DCRs to collect them.
+
+Service Fabric events are available via Windows Event Logs (Windows) and syslog / files (Linux). Platform events are also exposed through EventStore and log channels.
+
+- https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-events
+
+#### Exit criteria
+
+- Inventory worksheet completed
+- SF-focused DCRs deployed to a canary scope
+- SF signals appear in Log Analytics (`Event`, `Syslog`, `Perf`, or custom tables)
+- No persistent DCR ingestion or delivery failures
+    - https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-monitor
+
+---
+
+### Phase C — Cutover (remove WAD/LAD)
+
+**Goal**: Remove WAD/LAD once AMA + DCR fully covers required signals.
+
+#### Exit criteria
+
+- WAD/LAD extension removed
+- Signals continue via AMA + DCR
+- DCR health remains clean
+    - https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-monitor
+
+---
+
+## Phase B — Customer Inventory Worksheet
+
+### 1) Environment / Scope
+
+- Subscription(s):
+- Resource group(s):
+- Cluster type: Classic (VM/VMSS) / Managed cluster / Other
+- OS: Windows / Linux / Mixed
+- Regions:
+- Node types / VMSS names:
+- Approx node count:
+- Target Log Analytics workspace (name / region):
+- Canary scope:
+
+---
+
+### 2) Current WAD/LAD footprint
+
+|Node type / VMSS|OS|WAD/LAD installed|Current destinations|Notes|
+|---|---|---|---|---|
+||||||
+
+---
+
+### 3) Windows — Service Fabric events
+
+DCR collects Windows events using `windowsEventLogs` with XPath queries.
+
+- https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-samples
+
+Paste one sample event here:
+
+---
+
+### 4) Linux — Service Fabric events
+
+#### 4.1 Syslog
+
+|Facility|Minimum severity|Why needed|Notes|
+|---|---|---|---|
+|||||
+
+- https://learn.microsoft.com/azure/azure-monitor/vm/data-collection-syslog
+
+#### 4.2 File logs
+
+|File path / pattern|Format|Rotation|Why needed|Notes|
+|---|---|---|---|---|
+||||||
+
+Example record:
+
+---
+
+### 5) Performance counters
+
+Collected via DCR `performanceCounters`.
+
+- https://learn.microsoft.com/azure/azure-monitor/vm/data-collection-performance
+
+---
+
+### 6) Application / node logs (custom)
+
+Use DCR `logFiles` with custom tables for text or JSON logs.
+
+- https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-samples
+- https://learn.microsoft.com/azure/azure-monitor/vm/data-collection-log-json
+
+---
+
+### 7) Acceptance criteria
+
+Write 3–5 questions you expect to answer post-migration:
+
+1.
+2.
+
+---
+
+## Appendices
+
+### Appendix A — Service Fabric DCR sample (Windows events)
+
+Service Fabric Windows events are collected from Windows Event Logs and land in the `Event` table.
+
+- Operational event reference:
+    - https://learn.microsoft.com/azure/service-fabric/service-fabric-diagnostics-event-generation-operational
+- Windows Event Logs via AMA:
+    - https://learn.microsoft.com/azure/azure-monitor/vm/data-collection-windows-events
+
+**Important**: Use the exact Windows Event Log channel names from Event Viewer.
+
+---
+
+### Appendix B — Application, Reliable Actor, and Stateful Service events
+
+Service Fabric applications and runtimes emit diagnostic events using `EventSource`.
+
+- Application events:
+    - https://learn.microsoft.com/azure/service-fabric/service-fabric-how-to-diagnostics-log
+- Reliable Actors:
+    - https://learn.microsoft.com/azure/service-fabric/service-fabric-reliable-actors-diagnostics
+- Reliable Services:
+    - https://learn.microsoft.com/azure/service-fabric/service-fabric-reliable-services-diagnostics
+
+EventFlow can be used to route these events to Azure Monitor Logs.
+
+- https://github.com/Azure/diagnostics-eventflow
+
+---
+
+## Visual reference
+
+![EMBEDDEDIMAGE](placeholder-0)
