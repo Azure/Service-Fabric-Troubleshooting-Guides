@@ -4,7 +4,7 @@
 
 - [Why this migration](#why-this-migration)
 - [Phased approach](#phased-approach)
-  - [Phase A — Prove AMA + DCR pipeline (non-SF signals first)](#phase-a-----prove-ama--dcr-pipeline-non-sf-signals-first)
+  - [Phase A — Prove AMA + DCR pipeline (non-SF signals first)](#phase-a--prove-ama--dcr-pipeline-non-sf-signals-first)
   - [Phase B — Add Service Fabric signals (inventory → DCR mapping)](#phase-b-----add-service-fabric-signals-inventory--dcr-mapping)
     - [Phase B Inventory Worksheet](#phase-b-inventory-worksheet)
       - [1) Environment / Scope](#1-environment--scope)
@@ -29,7 +29,7 @@
 
 # Phased approach
 
-## Phase A --- Prove AMA + DCR pipeline (non‑SF signals first)
+## Phase A — Prove AMA + DCR pipeline (non-SF signals first)
 
 Goal: Stand up AMA and minimal DCRs and confirm data lands in **Log Analytics** before tuning for Service Fabric.
 
