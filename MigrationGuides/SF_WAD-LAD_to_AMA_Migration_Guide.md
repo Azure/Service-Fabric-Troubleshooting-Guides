@@ -5,7 +5,7 @@
 - [Why this migration](#why-this-migration)
 - [Phased approach](#phased-approach)
   - [Phase A — Prove AMA + DCR pipeline (non-SF signals first)](#phase-a--prove-ama--dcr-pipeline-non-sf-signals-first)
-  - [Phase B — Add Service Fabric signals (inventory → DCR mapping)](#phase-b-----add-service-fabric-signals-inventory--dcr-mapping)
+  - [Phase B — Add Service Fabric signals (inventory → DCR mapping)](#phase-b--add-service-fabric-signals-inventory--dcr-mapping)
     - [Phase B Inventory Worksheet](#phase-b-inventory-worksheet)
       - [1) Environment / Scope](#1-environment--scope)
       - [2) Current WAD/LAD footprint (per node type / VMSS)](#2-current-wadlad-footprint-per-node-type--vmss)
@@ -14,7 +14,7 @@
       - [5) Performance counters (Windows/Linux)](#5-performance-counters-windowslinux)
       - [6) Application / node logs (custom)](#6-application--node-logs-custom)
       - [7) Acceptance criteria (post-migration)](#7-acceptance-criteria-post-migration)
-  - [Phase C — Cutover (remove WAD/LAD)](#phase-c-----cutover-remove-wadlad)
+  - [Phase C — Cutover (remove WAD/LAD)](#phase-c--cutover-remove-wadlad)
 - [Appendix: Service Fabric DCR sample JSON (Windows events → Log Analytics)](#appendix-service-fabric-dcr-sample-json-windows-events--log-analytics)
 - [Appendix: Application Events, Reliable Actor and Stateful Service Events](#appendix-application-events-reliable-actor-and-stateful-service-events)
 - [Links appendix (Microsoft Learn)](#links-appendix-microsoft-learn)
@@ -55,7 +55,7 @@ Goal: Stand up AMA and minimal DCRs and confirm data lands in **Log Analytics** 
 
 - AMA install & association options: [Install/manage AMA](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage)
 
-## Phase B --- Add Service Fabric signals (inventory → DCR mapping)
+## Phase B — Add Service Fabric signals (inventory → DCR mapping)
 
 Goal: Capture what SF signals you rely on today, then configure DCRs to collect them into Log Analytics. Complete the [Phase B Inventory Worksheet](#phase-b-inventory-worksheet) below before proceeding.
 
@@ -141,7 +141,7 @@ Write 3--5 questions you expect to answer after migration (plain English):
 2.
 3.
 
-## Phase C --- Cutover (remove WAD/LAD)
+## Phase C — Cutover (remove WAD/LAD)
 
 Goal: Once AMA+DCR covers required signals, remove WAD/LAD to avoid duplicates and align with supported path. [AMA migration guidance](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-migration-wad-lad)
 
@@ -287,7 +287,7 @@ These DCRs require the *exact* Windows Event Log channel names that contain Serv
 }
 ```
 
-## How to validate
+### How to validate
 
 A table named \<your-service-name\>\_CL should be created.
 
