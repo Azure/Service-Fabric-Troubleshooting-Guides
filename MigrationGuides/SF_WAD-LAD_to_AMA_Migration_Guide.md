@@ -4,8 +4,8 @@
 
 - [Why this migration](#why-this-migration)
 - [Phased approach](#phased-approach)
-  - [Phase A — Prove AMA + DCR pipeline (non-SF signals first)](#phase-a----prove-ama--dcr-pipeline-non-sf-signals-first)
-  - [Phase B — Add Service Fabric signals (inventory → DCR mapping)](#phase-b----add-service-fabric-signals-inventory--dcr-mapping)
+  - [Phase A — Prove AMA + DCR pipeline (non-SF signals first)](#phase-a-----prove-ama--dcr-pipeline-non-sf-signals-first)
+  - [Phase B — Add Service Fabric signals (inventory → DCR mapping)](#phase-b-----add-service-fabric-signals-inventory--dcr-mapping)
     - [Phase B Inventory Worksheet](#phase-b-inventory-worksheet)
       - [1) Environment / Scope](#1-environment--scope)
       - [2) Current WAD/LAD footprint (per node type / VMSS)](#2-current-wadlad-footprint-per-node-type--vmss)
@@ -14,7 +14,7 @@
       - [5) Performance counters (Windows/Linux)](#5-performance-counters-windowslinux)
       - [6) Application / node logs (custom)](#6-application--node-logs-custom)
       - [7) Acceptance criteria (post-migration)](#7-acceptance-criteria-post-migration)
-  - [Phase C — Cutover (remove WAD/LAD)](#phase-c----cutover-remove-wadlad)
+  - [Phase C — Cutover (remove WAD/LAD)](#phase-c-----cutover-remove-wadlad)
 - [Appendix: Service Fabric DCR sample JSON (Windows events → Log Analytics)](#appendix-service-fabric-dcr-sample-json-windows-events--log-analytics)
 - [Appendix: Application Events, Reliable Actor and Stateful Service Events](#appendix-application-events-reliable-actor-and-stateful-service-events)
 - [Links appendix (Microsoft Learn)](#links-appendix-microsoft-learn)
@@ -133,7 +133,7 @@ Perf counters via DCR performanceCounters. [Collect perf counters](https://learn
 
 If you need application logs in text/JSON files, plan for custom tables and DCR logFiles. [DCR samples](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-samples), [Collect JSON logs](https://learn.microsoft.com/en-us/azure/azure-monitor/vm/data-collection-log-json)
 
-#### 7) Acceptance criteria (post‑migration)
+#### 7) Acceptance criteria (post-migration)
 
 Write 3--5 questions you expect to answer after migration (plain English):
 
