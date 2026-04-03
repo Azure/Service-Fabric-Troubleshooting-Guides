@@ -2,25 +2,44 @@
 
 ## Problem Description
 
-Public certificate authorities (Microsoft, DigiCert) are removing the Client Authentication EKU (OID: 1.3.6.1.5.5.7.3.2) from public TLS certificates. While Service Fabric's server-side validation doesn't require this EKU, **browsers will not display certificates without it** in certificate selection dialogs, blocking access to Service Fabric Explorer web UI.
+Public certificate authorities (Microsoft, DigiCert) are removing the Client Authentication EKU (OID: 1.3.6.1.5.5.7.3.2) from public TLS certificates. Service Fabric's server-side validation does not check or require this EKU (see [SF Server-Side EKU Behavior](#sf-server-side-eku-behavior)). The issue is entirely **client-side**: Windows SChannel refuses to present certificates without Client Auth EKU during the TLS handshake, so the certificate never reaches the server. This affects browsers, .NET `HttpClientHandler`, and any client that relies on SChannel for client certificate selection.
 
 **Primary Impact:**
 
 - **Browser-based SFX access**: Users cannot select client certificates in browsers
-- **Clusters with REST clients connecting to http gateway port 19080**: Client certificate authentication to Service Fabric backends may fail
+- **Clusters with REST clients connecting to http gateway port 19080**: Client certificate authentication fails when client uses Windows SChannel (e.g., .NET `HttpClientHandler`, APIM)
 - **Clusters with Managed Identity Token Service**: Managed Identity authentication failures (HTTP 403)
 
-**What Still Works:**
+**What Still Works (TCP-based connections - port 19000):**
 
-- PowerShell, SDK, REST APIs, CLI tools
-- Service Fabric Explorer standalone application
+- Service Fabric SDK (`Connect-ServiceFabricCluster`) - uses TCP transport, not HTTP
+- Service Fabric Explorer desktop application
 - Node-to-node communication
 - Core cluster operations
+- .NET `SocketsHttpHandler` + `LocalCertificateSelectionCallback` workaround (.NET 8+)
+- .NET `SslStreamCertificateContext` workaround (.NET 8+)
+- PowerShell 7.4+ (pwsh) `Invoke-WebRequest` / `Invoke-RestMethod` on .NET 8+ (uses `SocketsHttpHandler` internally)
+- Node.js HTTPS clients (uses OpenSSL, not SChannel)
+- Python `urllib` / `requests` (uses OpenSSL, not SChannel)
+- curl Windows (SChannel build, cert store access)
+
+**What Is Impacted (HTTP-based connections - port 19080):**
+
+- Browser-based SFX access (certificate not shown in selection dialog)
+- .NET `HttpClientHandler.ClientCertificates` (Windows SChannel filters cert)
+- PowerShell 5.1 `Invoke-WebRequest` / `Invoke-RestMethod` (uses .NET Framework HttpClientHandler)
+- PowerShell 7 (pwsh) `Invoke-RestMethod` / `Invoke-WebRequest` with `-Certificate` parameter on **.NET 7 and earlier** (uses `HttpClientHandler.ClientCertificates` which goes through SChannel EKU filtering)
+
+> [!NOTE]
+> **PowerShell 7 on .NET 8+:** PowerShell 7.4+ running on .NET 8+ internally uses `SocketsHttpHandler` for `Invoke-WebRequest` and `Invoke-RestMethod`, which bypasses SChannel EKU filtering. Server-only EKU certificates **work** in PS 7.4+ on .NET 8+. See [Client Compatibility Matrix](#client-compatibility-matrix) for verified results.
+- `Connect-SFCluster` (SF HTTP PowerShell module)
+- Azure API Management (APIM) Service Fabric backend (uses [`Microsoft.ServiceFabric.Client.Http`](https://github.com/microsoft/service-fabric-client-dotnet) with `HttpClientHandler.ClientCertificates`)
+- MITS (Managed Identity Token Service)
 
 ### Timeline
 
 - **Microsoft certificate services**: September 15 - November 9, 2025
-- **DigiCert**: Started October 1, 2025; ends May 1, 2026
+- **DigiCert**: Started October 1, 2025; ends March 1, 2027 (extended per Google Chrome Root Program update)
 - **Impact**: Begins immediately upon certificate renewal
 
 ### Why This Is Happening
@@ -29,8 +48,8 @@ Public CAs are standardizing TLS certificates to include only Server Authenticat
 
 **Industry Context:**
 
-- **[Chrome Root Program policy (Section 3.2.2)](https://www.chromium.org/Home/chromium-security/root-ca-policy/#322-pki-hierarchies-included-in-the-chrome-root-store)** requires Certificate Authorities to use dedicated TLS root hierarchies
-- Chrome restricts TLS certificates to Server Authentication EKU only starting June 15, 2026
+- **[Chrome Root Program policy](https://googlechrome.github.io/chromerootprogram/)** requires Certificate Authorities to use dedicated TLS root hierarchies
+- Chrome restricts TLS certificates to Server Authentication EKU only starting March 15, 2026
 - DigiCert and other public CAs are implementing this change: [DigiCert announcement](https://knowledge.digicert.com/alerts/sunsetting-client-authentication-eku-from-digicert-public-tls-certificates)
 - **CA/Browser Forum** baseline requirements align with Chrome's policy for public trust
 - Private PKI and self-signed certificates remain free to issue certificates with both EKUs for internal mutual TLS scenarios
@@ -58,11 +77,12 @@ This bidirectional authentication provides stronger security for sensitive opera
 **Why Client Authentication EKU is Required:**
 
 - MITS presents the cluster certificate AS a **client certificate** when querying http gateway (REST)
-- Service Fabric management endpoint validates the certificate must have Client Authentication EKU (1.3.6.1.5.5.7.3.2) for mTLS
-- Without this EKU, the server rejects the client certificate, resulting in HTTP 403
+- Windows SChannel (the TLS provider used by MITS's .NET HTTP client) checks for Client Authentication EKU (1.3.6.1.5.5.7.3.2) during client certificate selection
+- Without this EKU, SChannel silently drops the certificate during the TLS handshake -- the certificate is never sent to the server
+- The server receives no client certificate and returns HTTP 403 "Client certificate required"
 
 > [!NOTE]
-> This is a unique scenario where the **cluster certificate** (normally used for server authentication) is also used as a **client certificate** for mTLS. This dual purpose requires both Server Authentication and Client Authentication EKUs.
+> Service Fabric's server-side validation does NOT check EKU on incoming client certificates (see [SF Server-Side EKU Behavior](#sf-server-side-eku-behavior)). The filtering happens entirely on the **client side** in Windows SChannel. This is a unique scenario where the **cluster certificate** (normally used for server authentication) is also used as a **client certificate** for mTLS. This dual purpose requires both Server Authentication and Client Authentication EKUs.
 
 **Error:**
 
@@ -89,16 +109,109 @@ This is a security measure: the browser ensures only certificates explicitly aut
 
 **Platform-Specific Behavior:**
 
-- **Edge/Chrome (Windows):** Uses Windows Schannel - strictly filters by Client Authentication EKU
-- **Firefox:** Uses NSS (Network Security Services) - may have different filtering behavior but typically requires Client Authentication EKU
-- **.NET/HttpClient:** May reject certificates missing Client Authentication EKU for client certificate authentication
-- **PowerShell/Azure CLI:** Work correctly - use certificate store directly, not browser filtering
+- **Edge/Chrome (Windows):** Uses Windows SChannel - strictly filters by Client Authentication EKU
+- **Firefox:** Uses NSS (Network Security Services) - filters by Client Authentication EKU
+- **.NET HttpClient (Windows):** Uses SChannel for TLS. SChannel silently drops client certificates missing Client Authentication EKU during the TLS handshake. This affects `HttpClientHandler.ClientCertificates` and PowerShell 5.1 `Invoke-WebRequest`/`Invoke-RestMethod`.
+- **.NET 8+ SocketsHttpHandler (default in PS 7.4+):** PowerShell 7.4+ on .NET 8+ uses `SocketsHttpHandler` internally for `Invoke-WebRequest` and `Invoke-RestMethod`, which performs TLS via managed code instead of SChannel. This **bypasses SChannel EKU filtering**, so server-only EKU certificates work. Verified with PS 7.5.4 on .NET 9.0.10.
+- **.NET SocketsHttpHandler + callback (.NET 8+):** `SocketsHttpHandler` with `LocalCertificateSelectionCallback` bypasses SChannel EKU filtering on .NET 8+.
+- **.NET SslStreamCertificateContext (.NET 8+):** Bypasses SChannel EKU filtering. See [Client Compatibility Matrix](#client-compatibility-matrix) for details.
+- **Service Fabric SDK (`Connect-ServiceFabricCluster`):** Uses TCP transport (port 19000), not HTTP. Works with server-only EKU certificates.
+- **PowerShell 5.1 `Invoke-RestMethod` / `Invoke-WebRequest`:** Uses .NET Framework HttpClient with SChannel. SChannel drops the cert. **FAILS.**
+- **PowerShell 7.4+ (pwsh) `Invoke-RestMethod` / `Invoke-WebRequest` on .NET 8+:** Uses `SocketsHttpHandler` internally, which bypasses SChannel EKU filtering via managed TLS. **WORKS.** Verified: PS 7.5.4 on .NET 9.0.10 — both `Invoke-WebRequest` and `Invoke-RestMethod` with `-Certificate` parameter successfully authenticate with a server-only EKU certificate. In the same process, `HttpClientHandler.ClientCertificates` (SChannel path) returns 403 while `Invoke-RestMethod` returns 200, proving different code paths.
+- **PowerShell 7 on .NET 7 and earlier:** Uses `HttpClientHandler.ClientCertificates` (SChannel path). **FAILS** — same behavior as PS 5.1.
+- **Node.js:** Uses OpenSSL, not Windows SChannel. Works with server-only EKU certificates.
+- **Python (`urllib`, `requests`):** Uses OpenSSL (`ssl` module), not Windows SChannel. Works with server-only EKU certificates.
+- **curl (Windows/SChannel build):** Sends client certificates from the Windows certificate store without EKU filtering. Works with server-only EKU certificates.
+
+See [Client Compatibility Matrix](#client-compatibility-matrix) for a complete list of verified client behaviors.
 
 **Result:** The browser certificate selection dialog appears empty or does not show your cluster certificate, preventing SFX web access even though the certificate exists in your certificate store.
 
 **Workaround:** Use [Service Fabric Explorer desktop application](service-fabric-explorer-desktop-app.md) which does not filter certificates by Client Authentication EKU.
 
 **Note:** Node-to-node communication and core cluster operations are unaffected.
+
+## Client Compatibility Matrix
+
+The following table shows which clients work with certificates that have **only** Server Authentication EKU (no Client Authentication EKU). Results verified against a live Service Fabric cluster configured with a server-only EKU certificate.
+
+### Verified Results
+
+| Client / Method | Port | Transport | Works? | Notes |
+|---|---|---|---|---|
+| `Connect-ServiceFabricCluster` (SF SDK) | 19000 | TCP | **Yes** | Uses `System.Fabric.FabricClient` over TCP, bypasses SChannel HTTP filtering |
+| Service Fabric Explorer (Desktop App) | 19080 | HTTP | **Yes** | Native app, does not filter certificates by EKU |
+| Node.js HTTPS client | 19080 | HTTP | **Yes** | Uses OpenSSL (bundled), not Windows SChannel |
+| Python (`urllib`, `requests`) | 19080 | HTTP | **Yes** | Uses OpenSSL (`ssl` module), not Windows SChannel |
+| curl (Windows/SChannel build) | 19080 | HTTP | **Yes** | Sends cert from Windows cert store without EKU filtering |
+| .NET `SslStreamCertificateContext` (.NET 8+) | 19080 | HTTP | **Yes** | Bypasses SChannel EKU filtering via `ClientCertificateContext` property |
+| .NET `SocketsHttpHandler` + callback (.NET 8+) | 19080 | HTTP | **Yes** | `SocketsHttpHandler` on .NET 8+ bypasses SChannel EKU filtering when using `LocalCertificateSelectionCallback` |
+| PowerShell 5.1 `Invoke-WebRequest` | 19080 | HTTP | **No** | Uses .NET Framework HttpClient; SChannel drops cert |
+| PowerShell 5.1 `Invoke-RestMethod` | 19080 | HTTP | **No** | Same as `Invoke-WebRequest` |
+| PowerShell 7.4+ (pwsh) `Invoke-RestMethod` (.NET 8+) | 19080 | HTTP | **Yes** | Uses `SocketsHttpHandler` internally on .NET 8+, bypasses SChannel EKU filtering. Verified: PS 7.5.4 / .NET 9.0.10 |
+| PowerShell 7.4+ (pwsh) `Invoke-WebRequest` (.NET 8+) | 19080 | HTTP | **Yes** | Same as `Invoke-RestMethod` — both use `SocketsHttpHandler` on .NET 8+ |
+| PowerShell 7 (pwsh) on .NET 7 or earlier | 19080 | HTTP | **No** | `-Certificate` param uses `HttpClientHandler.ClientCertificates`; SChannel drops cert |
+| .NET `HttpClientHandler.ClientCertificates` | 19080 | HTTP | **No** | SChannel silently removes cert without Client Auth EKU during TLS handshake |
+| `Connect-SFCluster` (SF HTTP PowerShell module) | 19080 | HTTP | **No** | Uses .NET HttpClient, same SChannel filtering |
+| Azure API Management (APIM) SF backend | 19080 | HTTP | **No** | Uses [`Microsoft.ServiceFabric.Client.Http`](https://github.com/microsoft/service-fabric-client-dotnet) which adds cert via `HttpClientHandler.ClientCertificates` (SChannel filters it) |
+| Browsers (Edge, Chrome) | 19080 | HTTP | **No** | SChannel filters certificate selection dialog |
+| Firefox | 19080 | HTTP | **No** | NSS filters by Client Authentication EKU |
+| MITS (Managed Identity Token Service) | 19080 | HTTP | **No** | Requires Client Auth EKU for mTLS |
+
+### Key Finding: TCP vs HTTP
+
+- **TCP connections (port 19000):** The Service Fabric SDK uses `System.Fabric.FabricClient` which communicates over TCP. The TCP transport layer does **not** filter client certificates by EKU, so server-only EKU certificates work.
+- **HTTP connections (port 19080):** HTTP clients on Windows that use **SChannel** (the Windows TLS implementation) for the TLS handshake enforce EKU filtering: when presenting a client certificate, SChannel checks for Client Authentication EKU (1.3.6.1.5.5.7.3.2) and silently drops certificates that lack it. However, clients that use **OpenSSL** (Node.js, Python), .NET 8+ `SocketsHttpHandler` with `SslStreamCertificateContext`, or **PowerShell 7.4+ on .NET 8+** (which uses `SocketsHttpHandler` internally) bypass this filtering entirely.
+
+> [!WARNING]
+> **SChannel TLS Session Caching:** Windows SChannel caches successful TLS sessions at the OS level (in lsass.exe). If a client that bypasses SChannel EKU filtering (e.g., PS 7.4+, Node.js) successfully connects first, subsequent connections from SChannel-based clients (e.g., PS 5.1) may succeed by reusing the cached TLS session. Always test in **process-isolated** environments and be aware that cache contamination can produce false positives. See [Scripts/sf-client-eku-test.csx](../Scripts/sf-client-eku-test.csx) which uses per-test process isolation for this reason.
+
+### SF Server-Side EKU Behavior
+
+Service Fabric's server-side certificate validation does **NOT** check or enforce Client Authentication EKU on incoming client certificates. The EKU filtering that causes failures is entirely a **client-side Windows SChannel behavior** - SChannel refuses to present certificates without Client Auth EKU during the TLS handshake, so the SF server never even receives the certificate.
+
+**HTTP Gateway (port 19080):**
+
+The HTTP gateway validates incoming client certificates by checking:
+
+- Certificate thumbprint matching against configured admin/readonly client certificates
+- Common name (CN) and issuer matching against configured X509 names
+- Certificate chain validity
+
+**No EKU check exists in this code path.** The gateway accepts any certificate that matches the configured thumbprint or CN/issuer, regardless of which EKUs it contains.
+
+**TLS Transport Layer (port 19000 and internal):**
+
+The TLS transport layer examines EKU only for **routing** - to determine whether to validate through the client auth or server auth code path:
+
+1. If the cert has Client Auth EKU: validates as client authentication
+2. If the cert does **not** have Client Auth EKU: skips the client auth path, falls through to server auth validation
+3. Server auth validation explicitly does NOT require Server Auth EKU for backward compatibility
+
+In both cases, the cert is **accepted** if it matches the configured thumbprint or CN/issuer. A cert with only Server Auth EKU (or no EKU at all) still passes validation on the server side.
+
+**SF Certificate Generation:**
+
+When SF generates certificates internally, it adds **both** Server Auth and Client Auth EKU - confirming that the expected configuration is to have both EKUs present.
+
+**Bottom line:** The problem is not that SF rejects server-only EKU certs. SF accepts them. The problem is that Windows SChannel on the **client side** never sends them during the TLS handshake, so they never reach SF for validation.
+
+### .NET Workaround: SslStreamCertificateContext (.NET 8+)
+
+On .NET 8 and later, the `SslStreamCertificateContext.Create()` API bypasses SChannel's EKU filtering by providing the certificate directly to the TLS layer:
+
+```csharp
+var handler = new SocketsHttpHandler();
+handler.SslOptions = new SslClientAuthenticationOptions
+{
+    ClientCertificateContext = SslStreamCertificateContext.Create(cert, additionalCerts: null, offline: true)
+};
+var client = new HttpClient(handler);
+```
+
+This works because `ClientCertificateContext` provides the certificate context directly to the TLS layer, bypassing the SChannel certificate selection that normally filters by EKU.
+
+See [Scripts/sf-client-eku-test.csx](../Scripts/sf-client-eku-test.csx) for a complete test script customers can run to verify client certificate behavior with their own cluster.
 
 ## Verify Certificate EKU
 
@@ -253,7 +366,7 @@ If browser-based SFX cannot be used due to Client Authentication EKU limitations
 
 ### Use Private PKI (Recommended)
 
-Public CAs will stop issuing certificates with Client Authentication EKU after May 2026. Use a private PKI that can issue certificates with both EKUs for internal clusters.
+Public CAs will stop issuing certificates with Client Authentication EKU (DigiCert by March 2027, others on varying timelines). Use a private PKI that can issue certificates with both EKUs for internal clusters.
 
 > [!IMPORTANT]
 > **Certificate Configuration Requirements:**
