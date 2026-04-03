@@ -32,6 +32,9 @@
 .EXAMPLE
     .\sfmc-connect.ps1 -clusterEndpoint mycluster.eastus.cloudapp.azure.com -commonName *.mycluster.com
 
+.EXAMPLE
+    .\sfmc-connect.ps1 -clusterEndpoint mycluster.eastus.cloudapp.azure.com -thumbprint ABCD... -domainNameLabelScope
+
 .LINK
     invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/sfmc-connect.ps1" -outFile "$pwd\sfmc-connect.ps1";
 
@@ -58,7 +61,11 @@ param(
     
     [Parameter(ParameterSetName = 'thumbprint')]
     [Parameter(ParameterSetName = 'commonName')]
-    $clusterendpointPort = 19000
+    $clusterendpointPort = 19000,
+    
+    [Parameter(ParameterSetName = 'thumbprint')]
+    [Parameter(ParameterSetName = 'commonName')]
+    [switch]$domainNameLabelScope
 )
 
 function main() {
@@ -130,23 +137,47 @@ function main() {
         write-host "using server thumbprint:$serverCertThumbprint" -ForegroundColor Cyan
     }
 
-    write-host "Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint`:$clusterendpointPort ``
-        -ServerCertThumbprint $serverCertThumbprint ``
-        -StoreLocation $storeLocation ``
-        -StoreName $storeName ``
-        -X509Credential ``
-        -FindType $findType ``
-        -FindValue $findValue ``
-        -Verbose" -ForegroundColor Green
+    # Extract FQDN for ServerCommonName if using domainNameLabelScope
+    $clusterFqdn = $clusterEndpoint -replace ':\d+$', ''
+    
+    if ($domainNameLabelScope) {
+        write-host "Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint`:$clusterendpointPort ``
+            -ServerCommonName $clusterFqdn ``
+            -StoreLocation $storeLocation ``
+            -StoreName $storeName ``
+            -X509Credential ``
+            -FindType $findType ``
+            -FindValue $findValue ``
+            -Verbose" -ForegroundColor Green
 
-    Connect-ServiceFabricCluster -ConnectionEndpoint "$clusterEndpoint`:$clusterendpointPort" `
-        -ServerCertThumbprint $serverCertThumbprint `
-        -StoreLocation $storeLocation `
-        -StoreName $storeName `
-        -X509Credential `
-        -FindType $findType `
-        -FindValue $findValue `
-        -verbose
+        Connect-ServiceFabricCluster -ConnectionEndpoint "$clusterEndpoint`:$clusterendpointPort" `
+            -ServerCommonName $clusterFqdn `
+            -StoreLocation $storeLocation `
+            -StoreName $storeName `
+            -X509Credential `
+            -FindType $findType `
+            -FindValue $findValue `
+            -verbose
+    }
+    else {
+        write-host "Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint`:$clusterendpointPort ``
+            -ServerCertThumbprint $serverCertThumbprint ``
+            -StoreLocation $storeLocation ``
+            -StoreName $storeName ``
+            -X509Credential ``
+            -FindType $findType ``
+            -FindValue $findValue ``
+            -Verbose" -ForegroundColor Green
+
+        Connect-ServiceFabricCluster -ConnectionEndpoint "$clusterEndpoint`:$clusterendpointPort" `
+            -ServerCertThumbprint $serverCertThumbprint `
+            -StoreLocation $storeLocation `
+            -StoreName $storeName `
+            -X509Credential `
+            -FindType $findType `
+            -FindValue $findValue `
+            -verbose
+    }
 }
 
 function get-clientCert($storeLocation, $storeName, $thumbprint = $null, $commonName = $null) {
