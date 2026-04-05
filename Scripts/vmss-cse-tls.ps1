@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    powershell script for for enabling TLS 1.2 only
+    powershell script for enabling TLS 1.2 and TLS 1.3 (on Windows Server 2022+)
     based on https://learn.microsoft.com/en-us/azure/cloud-services/applications-dont-support-tls-1-2
-    modified to only enable tls 1.2
+    modified to enable TLS 1.2 and TLS 1.3
 
     Microsoft Privacy Statement: https://privacy.microsoft.com/en-US/privacystatement
 
@@ -33,7 +33,18 @@
     suite order. Change the cipherorder variable below to the order you want to set on the
     server. Setting this requires a reboot to take effect.
     
-    v1.0
+    Use the -NoRestart option to suppress automatic reboot after applying registry changes.
+    This is useful for testing, scheduled maintenance windows, or when using orchestration
+    tools to manage reboots. Note: A reboot is required for TLS configuration changes to
+    take effect.
+    
+    Use the -RandomizeRestart option to apply a randomized delay (30-600 seconds) before
+    rebooting. This is useful for large cluster deployments to prevent simultaneous reboots.
+    By default, the script reboots after 10 seconds without randomization. This default is
+    appropriate because Custom Script Extension runs during instance provisioning (before
+    nodes join the cluster), where coordinated reboot timing is not required.
+    
+    v1.2
 
     Windows Registry Editor Version 5.00
 
@@ -115,6 +126,16 @@
     "DisabledByDefault"=dword:00000000
     "Enabled"=dword:00000001
 
+    [HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3]
+
+    [HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client]
+    "DisabledByDefault"=dword:00000000
+    "Enabled"=dword:00000001
+
+    [HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server]
+    "DisabledByDefault"=dword:00000000
+    "Enabled"=dword:00000001
+
 .LINK
 [net.servicePointManager]::Expect100Continue = $true;[net.servicePointManager]::SecurityProtocol = [net.SecurityProtocolType]::Tls12;
 invoke-webRequest "https://raw.githubusercontent.com/Azure/Service-Fabric-Troubleshooting-Guides/master/Scripts/vmss-cse-tls.p1" -outFile "$pwd\vmss-cse-tls.p1";
@@ -129,7 +150,11 @@ param (
     [switch]$SetCipherOrder,
     [bool]$registerEvent = $true,
     [string]$registerEventSource = 'CustomScriptExtension',
-    [switch]$whatif
+    [switch]$whatif,
+    [parameter(Mandatory = $false)]
+    [switch]$NoRestart,
+    [parameter(Mandatory = $false)]
+    [switch]$RandomizeRestart
 )
 
 $eventLogName = 'Application'
@@ -327,6 +352,13 @@ $reboot = Set-RegistrySetting "$protocolsKey\TLS 1.2\Client" Enabled 1 DWord $re
 $reboot = Set-RegistrySetting "$protocolsKey\TLS 1.2\Server" DisabledByDefault 0 DWord $reboot
 $reboot = Set-RegistrySetting "$protocolsKey\TLS 1.2\Server" Enabled 1 DWord $reboot
 
+# Ensure TLS 1.3 enabled for client/server (Windows Server 2022+)
+# Note: TLS 1.3 is enabled by default on Windows Server 2022, but these settings ensure explicit configuration
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Client" DisabledByDefault 0 DWord $reboot
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Client" Enabled 1 DWord $reboot
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Server" DisabledByDefault 0 DWord $reboot
+$reboot = Set-RegistrySetting "$protocolsKey\TLS 1.3\Server" Enabled 1 DWord $reboot
+
 $ciphersKey = 'HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers'
 
 # Disable RC4 ciphers
@@ -360,22 +392,46 @@ if ($SetCipherOrder) {
 $reboot = Set-Windows10PlusCurveOrder $reboot
 $currentReg = [string]::Join("`r`n", (reg query 'HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL' -s))
 
-if ($reboot) {
-    # Randomize the reboot timing since it could be run in a large cluster.
-    $tick = [System.Int32]([System.DateTime]::Now.Ticks % [System.Int32]::MaxValue)
-    $rand = [System.Random]::new($tick)
-    $sec = $rand.Next(30, 600)
-
-    Write-Event -data "current registry:
-        $currentReg
+if ($reboot -and !$NoRestart) {
+    # Apply randomization only if -RandomizeRestart is specified
+    if ($RandomizeRestart) {
+        # Randomize the reboot timing since it could be run in a large cluster.
+        $tick = [System.Int32]([System.DateTime]::Now.Ticks % [System.Int32]::MaxValue)
+        $rand = [System.Random]::new($tick)
+        $sec = $rand.Next(30, 600)
         
-        Successfully updated crypto settings
-        Warning:Rebooting after $sec second(s)...
-        shutdown.exe /r /t $sec /c ""Crypto settings changed"" /f /d p:2:4
-        "
+        Write-Event -data "current registry:
+            $currentReg
+            
+            Successfully updated crypto settings
+            Warning: Rebooting after $sec second(s) (randomized delay)...
+            shutdown.exe /r /t $sec /c ""Crypto settings changed"" /f /d p:2:4
+            "
+    }
+    else {
+        # Immediate reboot (no randomization)
+        $sec = 10
+        
+        Write-Event -data "current registry:
+            $currentReg
+            
+            Successfully updated crypto settings
+            Warning: Rebooting after $sec second(s)...
+            shutdown.exe /r /t $sec /c ""Crypto settings changed"" /f /d p:2:4
+            "
+    }
+    
     if (!$whatif) {
         shutdown.exe /r /t $sec /c "Crypto settings changed" /f /d p:2:4
     }
+}
+elseif ($reboot -and $NoRestart) {
+    Write-Event -data "current registry:
+        $currentReg
+    
+        Successfully updated crypto settings
+        Warning: Restart required for changes to take effect. Use -NoRestart to suppress automatic reboot.
+        "
 }
 else {
     Write-Event -data "current registry:
