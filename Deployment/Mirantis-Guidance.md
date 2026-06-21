@@ -271,6 +271,7 @@ Service Fabric Managed Cluster release support for custom OS images in beginning
 Documentation:
 - [Get started: Prep Windows for containers](https://docs.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment)
 - [Automatic OS image upgrade for custom images](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade#automatic-os-image-upgrade-for-custom-images)
+- [Deploy Custom OS Image to Service Fabric Managed Cluster](https://learn.microsoft.com/en-us/azure/service-fabric/how-to-deploy-custom-image)
 
 
 ## Frequently Asked Questions
