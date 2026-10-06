@@ -30,6 +30,7 @@ This contains the Security related TSG's surfaced in the Azure Portal during sup
 ### **AAD configuration**
 * [Configure Azure Active Directory Authentication for Existing Cluster](./Configure%20Azure%20Active%20Directory%20Authentication%20for%20Existing%20Cluster.md)
 * [Authentication Issue with AAD](./Authentication%20Issue%20with%20AAD.md)
+* [Service Fabric Explorer sign-in fails with AADSTS9002326 after upgrade to SF 11.10](./SFX%20sign-in%20fails%20with%20AADSTS9002326%20after%20upgrade%20to%20SF%2011.10.md)
 
 ### **Other Configuration**
 * [Change the RDP password for your nodetype (VMSS)](./Change%20the%20RDP%20password%20for%20VMSS.md)
