@@ -1,143 +1,90 @@
-# How to configure Azure Devops Service Fabric Managed Cluster Service Connection
+# How to Configure Azure DevOps for Service Fabric Managed Clusters
 
-The steps below describe how to configure the ADO service connection for Service Fabric managed clusters with Azure Active Directory (AAD / Azure AD). This solution requires both the use of Azure AD and the use of Azure provided build agents in ADO.
+> **Last updated:** March 2026
 
-Service Fabric Managed Clusters provision and manage the 'server' certificate including the rollover process before certificate expiration.
-There is currently no notification when this occurs.
-Azure Devops (ADO) service connections that use X509 Certificate authentication requires the configuration of the server certificate thumbprint.
-When the certificate is rolled over, the Service Fabric service connection will fail to connect to cluster causing pipelines to fail.
+This guide covers using Azure DevOps (ADO) pipelines with Service Fabric Managed Clusters (SFMC). There are two common scenarios - choose the one that matches what you need to do:
 
-## Process
+---
 
-- Verify [Requirements](#requirements).
-- In Azure Devops, create / modify the 'Service Fabric' service connection to be used with the build / release pipelines for the managed cluster.
-- [Test](#test) connection.
+## Which Guide Do I Need?
 
-## Requirements
+| I want to... | Guide |
+|---|---|
+| **Deploy or manage SFMC cluster resources** (create/update cluster, add node types, deploy applications via ARM) | [How to Deploy SFMC from Azure DevOps](how-to-deploy-sfmc-from-azure-devops.md) |
+| **Run SF SDK commands against a cluster** (health checks, application deployment via SDK, service queries, `Connect-ServiceFabricCluster`) | [How to Connect to SFMC from Azure DevOps](how-to-connect-to-sfmc-from-azure-devops.md) |
+| **Both** - deploy resources and then validate the cluster | Start with the [Deploy](how-to-deploy-sfmc-from-azure-devops.md) guide, which includes a [unified pipeline example](how-to-deploy-sfmc-from-azure-devops.md#unified-pipeline-example-deploy--validate) |
 
-- Service Fabric managed cluster security with Azure Active Directory enabled. See [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security#client-to-node-azure-active-directory-security-on-azure) and [Service Fabric Azure Active Directory configuration in Azure portal](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal) for additional information.
+---
 
-  ![sfmc enable aad](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-enable-aad.png)
+## Summary of Options
 
-- Azure Devops user configured to use the 'Cluster' App Registration that is configured for the managed cluster.
+### Deploying SFMC Resources ([details](how-to-deploy-sfmc-from-azure-devops.md))
 
-- Azure Devops build agent with 'Hosted' (not 'Self-Hosted') pool type. For hosted, 'Azure virtual machine scale set' is the pool type to be used.
+These operations go through the Azure Resource Manager API (`management.azure.com`). They use a standard Azure service connection (service principal) and do not connect to the cluster directly - no special certificate configuration needed.
 
-  ![sfmc ado pool type](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-pool-type.png)
+| Option | ADO Task | Description |
+|---|---|---|
+| 1 | `AzurePowerShell@5` | `Az.ServiceFabric` cmdlets - `New-AzServiceFabricManagedCluster`, `New-AzServiceFabricManagedNodeType`, etc. |
+| 2 | `AzurePowerShell@5` | `New-AzResourceGroupDeployment` with ARM/Bicep templates |
+| 3 | `AzureResourceManagerTemplateDeployment@3` | Built-in OOB ARM task |
 
-- Connectivity from ADO agent to cluster. This can be done by adding the ADO agent IP address to the cluster Network Security Group (NSG) inbound rule for the cluster endpoint port. See [Azure Network Security Group (NSG) Configuration](#azure-network-security-group-nsg-configuration) for more information.
+### Connecting to SFMC via SF SDK ([details](how-to-connect-to-sfmc-from-azure-devops.md))
 
-## Azure Network Security Group (NSG) Configuration
+These operations connect directly to the cluster on port 19000 using `Connect-ServiceFabricCluster` in a `PowerShell@2` task. The connection uses `-ServerCertThumbprint` for server certificate validation, with the thumbprint resolved dynamically from the ARM API at runtime - no maintenance required for server certificate rotations.
 
-The 'AzureCloud' [Service Tag](https://learn.microsoft.com/azure/virtual-network/service-tags-overview) can be used when configuring a Network Security Group (NSG) for access to cluster. If using a self-hosted ADO agent, the agent IP address will need to be added to the NSG inbound rule for the cluster endpoint port. If using a ADO agent pool, the agent pool IP address will need to be added to the NSG inbound rule for the cluster endpoint port. A list of IP ranges being used by ADO can be found [here](https://docs.microsoft.com/azure/devops/organizations/security/allow-list-ip-url?view=azure-devops#ip-ranges).
+| Option | Client Auth Type | Rotation Touch Points | Setup Complexity |
+|---|---|---|---|
+| 1 | Self-signed client cert | 3 (SFMC + ADO + agent) | Low |
+| 2 | CA-signed client cert | 2 (ADO + agent) | Medium |
+| 3 | Entra (AAD) + cert credential | 1 | High |
+| 4 | Entra (AAD) + client secret (ROPC) | 1 | Medium |
 
-> **Important**
-> If using a Service Tag for Azure Devops access to cluster, ensure the NSG inbound rule is using service tag 'AzureCloud' (not 'AzureDevops') and is at minimum configured for the cluster gateway endpoint port. The default port is 19000.
+---
 
-- Source: Service Tag
-- Source service tag: AzureCloud
-- Source port ranges: *
-- Destination: Any
-- Service: Custom
-- Destination port ranges: 19000
-- Protocol: TCP
-- Action: Allow
-- Priority: 110
-- Name: AzureDevopsDeployment
+## Background
 
-![nsg inbound rule](/media/how-to-configure-azure-devops-for-service-fabric-cluster/ado-nsg-service-tag.png)
+### Previous Approach
 
-### Service Fabric Service Connection
+Earlier versions of this guide recommended using the built-in `ServiceFabricPowerShell@1` ADO task with Entra (AAD) authentication and Microsoft-hosted agents. This approach relied on the SFMC server certificate's root CA (`CN=Commercial Cloud Root CA R1`) being pre-installed in the agent's trusted root store.
 
-Create / Modify the Service Fabric Service Connection to provide connectivity to Service Fabric managed cluster from ADO pipelines.
-For maintenance free configuration, only 'Azure Active Directory credential' authentication  and 'Common Name' server certificate lookup is supported.
+Microsoft-hosted agent images no longer include this root CA, so connections through the built-in task now fail with `FABRIC_E_SERVER_AUTHENTICATION_FAILED: 0x800b0109` (CERT_E_UNTRUSTEDROOT).
 
-#### Service Fabric Service Connection Properties
+### Current Approach
 
-- **Authentication method:** Select 'Azure Active Directory credential'.
-- **Cluster Endpoint:** Enter connection endpoint for cluster. This is in the format of tcp://{{cluster name}}.{{azure region}}.cloudapp.azure.com:{{cluster endpoint port}}.
-  - Example: tcp://mysftestcluster.eastus.cloudapp.azure.com:19000
-- **Server Certificate Lookup (optional):** Select 'Common Name'.
-- **Server Common Name** Enter the managed cluster server certificate common name. The common name format is {{cluster guid id with no dashes}}.sfmc.azclient.ms. This name can also be found in the cluster manifest in Service Fabric Explorer (SFX).
-  - Example: d3cfe121611d4c178f75821596a37056.sfmc.azclient.ms
+The updated guides use `PowerShell@2` with `-ServerCertThumbprint` for SF SDK operations. This parameter uses pin-based validation (thumbprint match) rather than full chain validation, so it works regardless of whether the root CA is trusted. The server cert thumbprint is resolved dynamically from the ARM API at runtime, automatically tracking SFMC's server certificate rotations.
 
-    ![sfmc cluster id](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-cluster-id.png)
+For ARM-based deployments, the standard Azure service connection and ARM tasks work without any special configuration - these operations go through `management.azure.com` and do not involve the SFMC server certificate.
 
-- **Username:** Enter an Azure AD user that has been added to the managed clusters 'Cluster' App Registration in UPN format. This can be tested by connecting to SFX as the Azure AD user.
-- **Password:** Enter Azure AD users password. If this is a new user, ensure account is not prompting for a password change. This can be tested by connecting to SFX as the Azure AD user.
-- **Service connection name:** Enter a descriptive name of connection.
+---
 
-  ![sfmc ado service connection](/media/how-to-configure-azure-devops-for-service-fabric-managed-cluster/sfmc-ado-service-connection.png)
+## Network Configuration
 
-## Test
+All scenarios require the ADO agent to reach the cluster. For ARM operations, outbound access to `management.azure.com` (443) is sufficient. For SF SDK operations, inbound access to port 19000 is also required.
 
-Use builtin task 'Service Fabric PowerShell' in pipeline to test connection.
+Use service tag **`AzureCloud`** (not `AzureDevOps`) for NSG inbound rules:
 
-```yaml
-trigger:
-  - main
+| Setting | Value |
+|---------|-------|
+| Source | Service Tag |
+| Source service tag | `AzureCloud` |
+| Source port ranges | `*` |
+| Destination | Any |
+| Destination port ranges | `19000` |
+| Protocol | TCP |
+| Action | Allow |
+| Priority | 110 |
+| Name | `AzureDevOpsDeployment` |
 
-pool:
-  vmImage: "windows-latest"
+For self-hosted agents, use the agent IP instead of the service tag. ADO hosted agent IP ranges: [Microsoft docs](https://docs.microsoft.com/azure/devops/organizations/security/allow-list-ip-url?view=azure-devops#ip-ranges).
 
-variables:
-  System.Debug: true
-  sfmcServiceConnectionName: serviceFabricConnection
+---
 
-steps:
-  - task: ServiceFabricPowerShell@1
-    inputs:
-      clusterConnection: $(sfmcServiceConnectionName)
-      ScriptType: "InlineScript"
-      Inline: |
-        $psVersionTable
-        $env:connection
-        [environment]::getEnvironmentVariables().getEnumerator()|sort Name
-```
+## Reference
 
-## Troubleshooting
-
-- Error: ##[debug]System.AggregateException: One or more errors occurred. ---> System.Fabric.FabricTransientException: Could not ping any of the provided Service Fabric gateway endpoints. ---> System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x80071C49
-- Test network connectivity. Add a powershell task to pipeline to run 'test-netConnection' command to cluster endpoint, providing tcp port. Default port is 19000.
-
-  - Example:
-
-  ```yaml
-  - powershell: |
-      $psVersionTable
-      [environment]::getEnvironmentVariables().getEnumerator()|sort Name
-      $publicIp = (Invoke-RestMethod https://ipinfo.io/json).ip
-      write-host "---`r`ncurrent public ip:$publicIp" -ForegroundColor Green
-      write-host "test-netConnection $env:clusterEndpoint -p $env:clusterPort"
-      $result = test-netConnection $env:clusterEndpoint -p $env:clusterPort
-      write-host "test net connection result: $($result | fl * | out-string)"
-      if(!($result.TcpTestSucceeded)) { throw }
-    errorActionPreference: stop
-    displayName: "PowerShell Troubleshooting Script"
-    failOnStderr: true
-    ignoreLASTEXITCODE: false
-    env:
-      clusterPort: 19000
-      clusterEndpoint: xxxxxx.xxxxx.cloudapp.azure.com
-  ```
-
-- Verify configured Azure AD user is able to logon successfully to cluster using SFX or powershell. The 'servicefabric' module is installed as part of Service Fabric SDK.
-
-  ```powershell
-  import-module servicefabric
-  import-module az.resources
-
-  $clusterEndpoint = 'mysftestcluster.eastus.cloudapp.azure.com:19000'
-  $clusterName = 'mysftestcluster'
-
-  $clusterResource = Get-AzResource -Name $clusterName -ResourceType 'Microsoft.ServiceFabric/managedclusters'
-  $serverCertThumbprint = $clusterResource.Properties.clusterCertificateThumbprints
-
-  Connect-ServiceFabricCluster -ConnectionEndpoint $clusterEndpoint `
-    -AzureActiveDirectory `
-    -ServerCertThumbprint $serverCertThumbprint `
-    -Verbose
-  ```
-
-- Use logging from task to assist with issues.
-- Enabling System.Debug in build yaml or in release variables will provide additional output.
+- [How to Deploy SFMC from Azure DevOps](how-to-deploy-sfmc-from-azure-devops.md)
+- [How to Connect to SFMC from Azure DevOps](how-to-connect-to-sfmc-from-azure-devops.md)
+- [Az.ServiceFabric module reference](https://learn.microsoft.com/powershell/module/az.servicefabric/)
+- [SFMC ARM template reference](https://learn.microsoft.com/azure/templates/microsoft.servicefabric/managedclusters)
+- [Service Fabric cluster security scenarios](https://docs.microsoft.com/azure/service-fabric/service-fabric-cluster-security)
+- [Service Fabric Entra configuration](https://learn.microsoft.com/azure/service-fabric/service-fabric-cluster-creation-setup-azure-ad-via-portal)
+- [ADO allowed IP ranges](https://docs.microsoft.com/azure/devops/organizations/security/allow-list-ip-url?view=azure-devops#ip-ranges)
