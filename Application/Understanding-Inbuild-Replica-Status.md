@@ -105,10 +105,11 @@ ACKs can still hold the build in `CopyCatchup`.
 
 ### Phase 1 -- Copy Context
 
-**Copy context** is the secondary's existing-state information the primary uses to
-decide what to send -- not the data being copied itself. Expand the replica pane and
-look at the **vertical Copy Context Phase stepper** to see which of the two sub-phases
-below is active.
+**Copy context** is primary- and secondary-side state information compared together
+to decide what to copy and how (see [Phase 3](#phase-3----copy) for that comparison).
+The **Get Copy Context** sub-phase below obtains the secondary's side of that context.
+Expand the replica pane and look at the **vertical Copy Context Phase stepper** to see
+which of the two sub-phases below is active.
 
 #### Establish Connection
 
