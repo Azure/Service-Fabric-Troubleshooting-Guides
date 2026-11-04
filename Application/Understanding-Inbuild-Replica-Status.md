@@ -1,14 +1,19 @@
 # Understanding Inbuild Replica Status
 
 When a new secondary/idle replica is added to a stateful service partition, the primary
-replica has to bring it "up to date" before it can vote or (in the case of a secondary)
-serve reads. This process is called **building** the replica, and while it's in progress
-the primary reports live progress for it under `RemoteReplicatorStatus.RemoteReplicators[].
+replica has to bring it "up to date" before it can fully participate in the replica set --
+contributing to quorum and, for a secondary, providing redundancy and serving reads. This
+process is called **building** the replica, and while it's in progress the primary reports
+live progress for it under `RemoteReplicatorStatus.RemoteReplicators[].
 RemoteInbuildReplicaStatus` (returned by the `GetReplicaDetail` REST API, and surfaced in
 Service Fabric Explorer as the **"Inbuild Replica Status"** panel on the partition page).
 
-Use this guide to locate what a slow or stuck build is waiting for, distinguish
-primary-side work from secondary-side work, and choose an evidence-based mitigation.
+Use this guide to:
+
+- Locate what a slow or stuck build is waiting for.
+- Distinguish primary-side work from secondary-side work.
+- Choose an evidence-based mitigation.
+
 The phase and field descriptions support that investigation; a phase name by itself
 does not identify the faulty node.
 
@@ -18,7 +23,7 @@ does not identify the faulty node.
 - You need to tell whether a build is making progress or is stuck, and in which phase.
 - You want to get more details about how exactly the replica is being built.
 - You want to understand what a specific field (e.g. `CopyTypeReason`, `LastCopySequenceNumber`)
-  actually means before escalating.
+  actually means.
 
 ## Start here -- identify the stuck inbuild replica
 
@@ -29,13 +34,13 @@ does not identify the faulty node.
    and where the build is spending time.
 3. **Expand the replica pane.** Open the affected replica's pane to see more details
    about its in-progress build.
-4. **If the build is in Copy Context, identify the sub-phase.** Use the **vertical
+4. **If the build is in Copy Context, check which sub-phase is active.** Use the **vertical
    Copy Context Phase stepper** to see whether it is waiting in **Establish Connection**
    or **Get Copy Context**.
 
-Once you have identified the phase or sub-phase, follow the corresponding checks below.
-A long-running phase is a starting point for investigation, not proof that progress
-has stopped.
+Once you have identified where the replica's build process is, follow the corresponding
+checks below. A long-running phase is a starting point for investigation, not proof that
+progress has stopped.
 
 ### Quick routing table
 
@@ -50,19 +55,23 @@ has stopped.
 
 ### Primary or secondary? Use the evidence, not just the phase
 
-The following are investigation directions, not root-cause verdicts.
+The following are investigation directions, not root-cause verdicts. "Received" means
+the data has arrived at the secondary; "applied" means the secondary has finished
+processing and persisting it -- a gap between the two points at the secondary, not
+the primary.
 
-| Observation across samples | What it helps distinguish | Next evidence to collect |
+| Observation across samples | Who to investigate | Next evidence to collect |
 |---|---|---|
-| Received advances, applied stays flat for the same stream. | The primary is observing receive progress but not apply progress. Investigate secondary application and apply-ACK delivery. | Secondary provider activity, disk latency/free space, CPU, locks, health, and ACK sends/receipt. |
-| Received and applied both advance. | That stream is progressing; the issue may be low throughput rather than a complete stall. | Rates over time, state size/copy mode, resource contention, and the other stream during catchup. |
-| Received and applied are both flat. | Counters alone cannot distinguish a primary provider wait, blocked send, unreachable secondary, or lost/stale ACKs. | Correlate provider `GetNext`, primary sends, secondary receives/applies, and ACKs returning to the primary. |
-| Several builds from one primary slow down together. | A shared primary or network bottleneck is a hypothesis, not proof. | Primary provider/host/storage telemetry and connectivity to each affected secondary. |
-| Only one target replica is slow while others progress. | A target-specific provider, host, or network path is a hypothesis. | Compare that secondary's health/resources and its connection with a progressing target. |
+| Received advances, applied stays flat for the same stream. | **Secondary** -- data is arriving but not being processed. | Secondary provider activity, disk latency/free space, CPU, locks, health, and ACK sends/receipt. |
+| Received and applied both advance. | Neither side looks blocked; the stream is progressing, possibly just slowly. | Rates over time, state size/copy mode, resource contention, and the other stream during catchup. |
+| Received and applied are both flat. | **Inconclusive from counters alone** -- could be the primary not sending, an unreachable secondary, or lost/stale ACKs. | Correlate provider `GetNext`, primary sends, secondary receives/applies, and ACKs returning to the primary. |
+| Several builds from one primary slow down together. | **Primary** (or its network/storage) is a hypothesis, not proof. | Primary provider/host/storage telemetry and connectivity to each affected secondary. |
+| Only one target replica is slow while others progress. | **That target secondary** (or its connection) is a hypothesis. | Compare that secondary's health/resources and its connection with a progressing target. |
 
 **Mitigation guardrails:** restore a confirmed connectivity problem, address demonstrated
 disk/capacity or CPU contention, or reduce competing workload when operationally
-appropriate. Escalate a blocked provider call with its traces and stacks. Do not select
+appropriate. Escalate a blocked provider call for trace- and stack-level investigation
+rather than guessing at recovery. Do not select
 failover, replica removal, data deletion, or simultaneous replica restarts solely from
 this panel; disruptive recovery requires checking quorum, data safety, and the applicable
 service recovery procedure first. A full copy or a dimmed progress bar is not, by itself,
@@ -96,12 +105,10 @@ ACKs can still hold the build in `CopyCatchup`.
 
 ### Phase 1 -- Copy Context
 
-**What it means:** the primary is setting up the copy and learning what state the
-secondary already has. This information is called **copy context**. It helps the
-primary decide what to send; it is not the data being copied.
-
-Expand the replica pane and look at the **vertical Copy Context Phase stepper**.
-The active sub-phase tells you which checks to follow.
+**Copy context** is the secondary's existing-state information the primary uses to
+decide what to send -- not the data being copied itself. Expand the replica pane and
+look at the **vertical Copy Context Phase stepper** to see which of the two sub-phases
+below is active.
 
 #### Establish Connection
 
@@ -142,10 +149,10 @@ whether the primary is waiting while reading it. Context is streamed, so produci
 transferring, and reading it can overlap.
 
 **What to do next:** address the provider, resource, or connection problem that the
-checks reveal. If a provider call is blocked without a clear cause, collect its traces
-and thread stacks before choosing recovery. Once the horizontal stepper moves to
-**Copy State**, follow that phase's checks instead of continuing to investigate the
-initial connection.
+checks reveal. If a provider call is blocked without a clear cause, escalate it for
+trace and thread-stack analysis before choosing recovery. Once the horizontal stepper
+moves to **Copy State**, follow that phase's checks instead of continuing to investigate
+the initial connection.
 
 ![SFX Copy Context phase with Get Copy Context active and provider details not yet available](../media/inbuild-replica-status-copycontext.png)
 
@@ -170,8 +177,8 @@ on context from the secondary. Identify what the primary's call is waiting for b
 assigning the problem to either node.
 
 **What to do next:** address the resource or context-delivery problem you have found.
-If the provider call remains blocked, collect its traces and thread stacks for
-escalation. Restarting the secondary is not a general fix for a wait on the primary.
+If the provider call remains blocked, escalate it for trace and thread-stack analysis.
+Restarting the secondary is not a general fix for a wait on the primary.
 When the stream is ready, the horizontal stepper moves to **Copy**.
 
 ### Phase 3 -- Copy
