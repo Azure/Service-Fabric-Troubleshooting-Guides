@@ -150,8 +150,7 @@ whether the primary is waiting while reading it. Context is streamed, so produci
 transferring, and reading it can overlap.
 
 **What to do next:** address the provider, resource, or connection problem that the
-checks reveal. If a provider call is blocked without a clear cause, escalate it for
-trace and thread-stack analysis before choosing recovery. Once the horizontal stepper
+checks reveal. Restarting or moving the inbuild secondary to a different node are safe mitigation operations to address the stuck secondary. Once the horizontal stepper
 moves to **Copy State**, follow that phase's checks instead of continuing to investigate
 the initial connection.
 
@@ -173,13 +172,9 @@ storage latency, CPU pressure, and calls waiting on locks or other work. If the 
 is waiting to read the secondary's copy context, follow the **Get Copy Context** checks
 as well.
 
-**Which side to investigate:** this preparation runs on the primary, but it can depend
-on context from the secondary. Identify what the primary's call is waiting for before
-assigning the problem to either node.
+**Which side to investigate:** this preparation runs on the primary entirely.
 
-**What to do next:** address the resource or context-delivery problem you have found.
-If the provider call remains blocked, escalate it for trace and thread-stack analysis.
-Restarting the secondary is not a general fix for a wait on the primary.
+**What to do next:** The mitigation step here is to restart the primary replica if there is another active secondary that has the latest Receive and Apply LSNs.
 When the stream is ready, the horizontal stepper moves to **Copy**.
 
 ### Phase 3 -- Copy
@@ -292,42 +287,6 @@ build completion/failure and reconfiguration events. That is a separate investig
 from a build waiting in one of the earlier phases. Disappearing from this panel does
 not, by itself, prove that the partition has recovered.
 
-### Reference -- who does what during a build?
-
-The primary drives the build, its state provider supplies the copy stream, and the
-secondary receives and acknowledges operations. This is a simplified successful-build
-sequence; retries and individual copy-context messages are omitted.
-
-```mermaid
-sequenceDiagram
-    participant P as Primary replicator
-    participant SP as Primary state provider
-    participant S as Secondary replica
-    Note over P,S: CopyContext
-    P->>S: StartCopy
-    S-->>P: Copy context (when applicable)
-    Note over P,SP: CopyState
-    P->>SP: GetCopyOperations(context)
-    SP-->>P: Copy enumerator
-    Note over P,S: Copy
-    loop Until the enumerator is exhausted
-        P->>SP: GetNext()
-        SP-->>P: Copy operation
-        P->>S: Send copy operation
-        S-->>P: Receive / apply ACKs
-    end
-    P->>SP: GetNext()
-    SP-->>P: null (end of enumeration)
-    Note over P: Capture LastCopyCatchupSequenceNumber
-    Note over P,S: CopyCatchup
-    S-->>P: Remaining copy / replication ACKs, if any
-    Note over P: CopyComplete after both ACK conditions are met
-```
-
-Live replication also runs during the build; the diagram omits those individual sends
-for readability. ACKs need not arrive in lockstep with each `GetNext()` call, and some
-or all required ACKs may already have arrived when enumeration ends.
-
 ## Field reference
 
 ### LSN fields -- what "received" vs "applied" means
@@ -337,10 +296,15 @@ building replica receives concurrently:
 
 | Field | Stream | Meaning |
 |---|---|---|
-| `LastReceivedCopySequenceNumber` | Copy | Highest copy-operation LSN the secondary has **received** so far. |
-| `LastAppliedCopySequenceNumber` | Copy | Highest copy-operation LSN the secondary has **applied** (persisted/committed) so far. This is the live cursor for `Copy`-phase progress. |
+| `LastReceivedCopySequenceNumber` | Copy | Highest copy-stream position the secondary has **received** so far. This numbers the copy stream itself; it is not an operation/replication LSN, even though it is read alongside LSN values. |
+| `LastAppliedCopySequenceNumber` | Copy | Highest copy-stream position the secondary has **applied** (persisted/committed) so far. This is the live cursor for `Copy`-phase progress, and is likewise not an operation/replication LSN. |
 | `LastReceivedReplicationSequenceNumber` | Replication | Highest live-replication LSN **received** while building. |
 | `LastAppliedReplicationSequenceNumber` | Replication | Highest live-replication LSN **applied**. This is the live cursor for `CopyCatchup`-phase progress. |
+
+Only the replication pair are true LSNs (operation sequence numbers in the primary's
+replication log). The copy pair numbers the copy stream's own operations; SFX labels
+them alongside LSN values for a consistent display, but they are a separate counter
+space, not positions in the replication log.
 
 "Received" can lead "applied" -- a gap between them means the secondary has data queued
 up but hasn't finished processing/persisting it yet (worth checking for disk or CPU pressure
