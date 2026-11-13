@@ -310,22 +310,9 @@ space, not positions in the replication log.
 up but hasn't finished processing/persisting it yet (worth checking for disk or CPU pressure
 on the secondary if the gap grows).
 
-```mermaid
-flowchart LR
-    subgraph CopyStream["Copy stream"]
-        CSend["Primary sends<br/>copy operations"] --> CReceive["LastReceivedCopySequenceNumber"]
-        CReceive --> CApply["LastAppliedCopySequenceNumber"]
-    end
-    subgraph ReplicationStream["Live replication stream"]
-        RSend["Primary sends<br/>replication operations"] --> RReceive["LastReceivedReplicationSequenceNumber"]
-        RReceive --> RApply["LastAppliedReplicationSequenceNumber"]
-    end
-```
-
 Read each row independently: the space between its received and applied counters is
-work received but not yet acknowledged as applied. The arrows show processing order,
-not relative speed or a shared numeric scale between the two streams. Compare repeated
-samples of the **same** counter to see whether it is advancing.
+work received but not yet acknowledged as applied. Compare repeated samples of the
+**same** counter to see whether it is advancing.
 
 ### The two frozen targets
 
